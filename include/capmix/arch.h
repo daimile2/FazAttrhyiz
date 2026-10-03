@@ -1,0 +1,111 @@
+#ifndef CAPMIX_ARCH_H
+#define CAPMIX_ARCH_H
+
+#include "types.h"
+
+
+
+void     cm_arch_early_init(void);
+void     cm_serial_init(void);
+void     cm_serial_putchar(char c);
+uint64_t cm_rdtsc(void);
+uint64_t cm_ticks_now(void);
+
+void     cm_gdt_load(void);
+void     cm_gdt_load_cpu(int cpu);
+void     cm_idt_load(void);
+void     cm_idt_load_ap(int cpu);
+void      cm_smp_start(void);
+void      cm_smp_dump(void);
+int       cm_smp_online(void);
+uint64_t cm_idt_firings(void);
+
+/* 4-level page tables. Hosted: build only. Bare metal: may load CR3. */
+int      cm_paging_init(cm_paddr_t phys_base, uint64_t npages);
+uint64_t cm_paging_tables(void);
+void     cm_paging_dump(void);
+void     *cm_mmio_map(uint64_t phys, uint64_t npages);
+
+/* Cooperative register/stack switch. Hosted uses swapcontext. */
+int      cm_arch_ctx_init(int tid, void (*entry)(void *), void *arg, void *stack, size_t stack_sz);
+void     cm_arch_ctx_swap(int from_tid, int to_tid); /* -1 = scheduler host */
+int      cm_arch_ctx_done(int tid);
+void     cm_arch_ctx_set_cr3(int tid, uint64_t cr3);
+void     cm_arch_ctx_clear(int tid);
+void     cm_arch_ctx_clear(int tid);
+
+int      cm_limine_memory(cm_paddr_t *base, uint64_t *npages, uint64_t *hhdm);
+int      cm_limine_mp(uint64_t *cpu_count, uint32_t *bsp_lapic_id,
+                      uint32_t *lapic_ids, int max_ids);
+int      cm_limine_mp_start(uint64_t idx, void *entry);
+uint64_t  cm_limine_rsdp(void);
+int       cm_ioapic_init(void);
+void      cm_idt_set_gate(int vec, void *fn, uint8_t ist);
+uint64_t cm_hhdm(void);
+uint64_t cm_kernel_phys(void);
+uint64_t cm_kernel_virt(void);
+uint64_t cm_kernel_size(void);
+
+uint64_t cm_read_cr4(void);
+
+uint64_t *cm_paging_pml4(void);
+uint64_t  cm_paging_cr3(void);
+uint64_t *cm_space_create(uint64_t *out_phys);
+int       cm_space_map(uint64_t *pml4, uint64_t virt, uint64_t phys, int user);
+int       cm_space_map_flags(uint64_t *pml4, uint64_t virt, uint64_t phys, int uncached);
+void      cm_space_load(uint64_t cr3);
+void      cm_paging_enable_pge(void);
+void     *cm_boot_stack_base(void);
+
+void      cm_lapic_map_before_cr3(void);
+void      cm_lapic_init(void);
+void      cm_lapic_eoi(void);
+void      cm_timer_isr(void);
+void      cm_timer_arm(void);
+void      cm_irq_enable(void);
+uint64_t  cm_timer_ticks(void);
+uint32_t  cm_lapic_ccr(void);
+uint64_t  cm_tsc_deadline(void);
+void      cm_timer_dump_early_ticks(void);
+int       cm_need_resched(void);
+void      cm_need_resched_clear(void);
+void      cm_sched_maybe_preempt(void);
+
+/* Preemption (called from the timer ISR). */
+void      cm_sched_preempt_now(void);
+int       cm_sched_in_thread(void);
+uint64_t  cm_sched_preempts(void);
+
+/* SMP discovery. cm_cpu_id() returns 0 before the LAPIC is mapped and
+ * before cm_smp_probe() has run, which is correct: the BSP is index 0. */
+uint32_t  cm_lapic_id(void);
+int       cm_cpu_id(void);
+int       cm_cpu_count(void);
+void      cm_smp_probe(void);
+void      cm_smp_sched_enable(void);
+void      cm_smp_sched_disable(void);
+void      cm_smp_sched_stress(uint64_t rounds);
+uint64_t  cm_timer_ticks_cpu(int cpu);
+uint64_t  cm_sched_preempts_cpu(int cpu);
+uint64_t  cm_sched_lock_contend(void);
+int       cm_sched_runnable(void);
+
+/* SMP stress helpers: drain the runqueue to a defined state, and drop a
+ * parked CPU's claim on the thread it last ran. */
+void      cm_sched_release_current(void);
+int       cm_sched_drain(void);
+
+/* Fault reporting. cm_fault_install() re-points the error-code vectors
+ * (8/10/11/12/13/14/17) at stubs that report and halt; it uses sidt and
+ * so needs nothing from idt.c. */
+void      cm_fault_isr(uint64_t vec, uint64_t err, uint64_t rip, uint64_t frame);
+void      cm_fault_install(void);
+void      cm_fault_dump_gate(uint32_t vec);
+
+void     cm_usermode_init(void);
+int      cm_usermode_selftest(void);
+uint64_t cm_usermode_syscalls(void);
+uint64_t cm_usermode_cpl(void);
+uint64_t cm_space_switch_cost(void);
+
+#endif

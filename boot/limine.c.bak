@@ -1,0 +1,369 @@
+#include "capmix/arch.h"
+#include "capmix/klog.h"
+#include "capmix/types.h"
+
+#include <stdint.h>
+
+static uint64_t g_hhdm;
+static uint64_t g_kphys;
+static uint64_t g_kvirt;
+static uint64_t g_ksize;
+
+uint64_t cm_hhdm(void)        { return g_hhdm; }
+uint64_t cm_kernel_phys(void) { return g_kphys; }
+uint64_t cm_kernel_virt(void) { return g_kvirt; }
+uint64_t cm_kernel_size(void) { return g_ksize; }
+
+#ifdef CAPMIX_HOSTED
+
+int cm_limine_memory(cm_paddr_t *base, uint64_t *npages, uint64_t *hhdm)
+{
+    if (base) *base = 0;
+    if (npages) *npages = 0;
+    if (hhdm) *hhdm = 0;
+    return -1;
+}
+
+int cm_limine_mp(uint64_t *cpu_count, uint32_t *bsp_lapic_id,
+                 uint32_t *lapic_ids, int max_ids)
+{
+    if (cpu_count) *cpu_count = 1;
+    if (bsp_lapic_id) *bsp_lapic_id = 0;
+    if (lapic_ids && max_ids > 0) lapic_ids[0] = 0;
+    return -1;
+}
+int cm_limine_mp_start(uint64_t idx, void *entry)
+{
+    (void)idx;
+    (void)entry;
+    return -1;
+}
+#else
+
+#define LIMINE_COMMON_MAGIC 0xc7b1dd30df4c8b88ull, 0x0a82e883a194f07bull
+
+/* Limine protocol sentinels — without these the request block is invisible. */
+__attribute__((used, section(".limine_requests_start")))
+static volatile uint64_t limine_requests_start_marker[4] = {
+    0xf6b8f4b39de7d1aeull, 0xfab91a6940fcb9cfull,
+    0x785c6ed015d3e316ull, 0x181e920a7852b9d9ull
+};
+
+__attribute__((used, section(".limine_requests_end")))
+static volatile uint64_t limine_requests_end_marker[2] = {
+    0xadc0e0531bb10d03ull, 0x9572709f31764c62ull
+};
+
+__attribute__((used, section(".limine_requests")))
+static volatile uint64_t limine_base_rev[3] = {
+    0xf9562b2d5c95a6c8ull, 0x6a7b384944536bdcull, 3
+};
+
+struct limine_req {
+    uint64_t id[4];
+    uint64_t revision;
+    void    *response;
+};
+
+struct limine_mmap_entry {
+    uint64_t base;
+    uint64_t length;
+    uint64_t type;
+};
+
+struct limine_mmap_resp {
+    uint64_t revision;
+    uint64_t entry_count;
+    struct limine_mmap_entry **entries;
+};
+
+struct limine_hhdm_resp {
+    uint64_t revision;
+    uint64_t offset;
+};
+
+struct limine_kaddr_resp {
+    uint64_t revision;
+    uint64_t physical_base;
+    uint64_t virtual_base;
+};
+
+/* MP — base revision is 3, so limine.h names these limine_mp_*, NOT
+ * limine_smp_*. The magic is identical between the two spellings
+ * (0x95a67b819a1b857e / 0xa0b61b723b6a73e0), only the struct names moved.
+ * Layout below matches LIMINE_API_REVISION >= 1 for x86_64. */
+struct limine_mp_info {
+    uint32_t processor_id;
+    uint32_t lapic_id;
+    uint64_t reserved;
+    void (*goto_address)(struct limine_mp_info *);
+    uint64_t extra_argument;
+};
+
+struct limine_mp_resp {
+    uint64_t revision;
+    uint32_t flags;
+    uint32_t bsp_lapic_id;
+    uint64_t cpu_count;
+    struct limine_mp_info **cpus;
+};
+
+#define LIMINE_MP_MAGIC 0x95a67b819a1b857eull, 0xa0b61b723b6a73e0ull
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_req mmap_req = {
+    .id = { LIMINE_COMMON_MAGIC, 0x67cf3d9d378a806full, 0xe304acdfc50c3c62ull },
+    .revision = 0,
+    .response = 0,
+};
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_req hhdm_req = {
+    .id = { LIMINE_COMMON_MAGIC, 0x48dcf1cb8ad2b852ull, 0x63984e959a98244bull },
+    .revision = 0,
+    .response = 0,
+};
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_req kaddr_req = {
+    .id = { LIMINE_COMMON_MAGIC, 0x71ba76863cc55f63ull, 0xb2644a48c516a487ull },
+    .revision = 0,
+    .response = 0,
+};
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_req mp_req = {
+    .id = { LIMINE_COMMON_MAGIC, LIMINE_MP_MAGIC },
+    .revision = 0,
+    .response = 0,
+};
+/* RSDP — needed to reach the MADT for the IOAPIC address and IRQ->GSI
+ * overrides. Limine returns the physical address of the RSDP. */
+#define LIMINE_RSDP_MAGIC 0xc5e77b6b397e577bull, 0xe5d9a5c07e2e0f1aull
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_req rsdp_req = {
+    .id = { LIMINE_COMMON_MAGIC, LIMINE_RSDP_MAGIC },
+    .revision = 0,
+    .response = 0,
+};
+
+struct limine_rsdp_resp {
+    uint64_t revision;
+    void    *address;
+};
+
+uint64_t cm_limine_rsdp(void)
+{
+    struct limine_rsdp_resp *rr = (struct limine_rsdp_resp *)rsdp_req.response;
+    if (!rr || !rr->address) return 0;
+    return (uint64_t)(uintptr_t)rr->address;
+}
+
+
+extern uint8_t __kernel_start[], __kernel_end[];
+
+static int usable_piece(uint64_t b, uint64_t len,
+                        uint64_t k0, uint64_t k1,
+                        uint64_t *ob, uint64_t *olen)
+{
+    uint64_t e = b + len;
+    uint64_t a0 = b, a1 = e, c0 = 0, c1 = 0;
+    if (k1 > k0 && !(e <= k0 || b >= k1)) {
+        a1 = k0 < e ? k0 : e;
+        if (a1 < a0) a1 = a0;
+        c0 = k1 > b ? k1 : b;
+        c1 = e;
+        if (c1 < c0) c1 = c0;
+    }
+    uint64_t l0 = a1 > a0 ? a1 - a0 : 0;
+    uint64_t l1 = c1 > c0 ? c1 - c0 : 0;
+    if (l1 > l0) { *ob = c0; *olen = l1; }
+    else { *ob = a0; *olen = l0; }
+    return *olen >= CM_PAGE_SIZE;
+}
+
+int cm_limine_memory(cm_paddr_t *base, uint64_t *npages, uint64_t *hhdm)
+{
+    struct limine_hhdm_resp *hr = (struct limine_hhdm_resp *)hhdm_req.response;
+    struct limine_mmap_resp *mr = (struct limine_mmap_resp *)mmap_req.response;
+    struct limine_kaddr_resp *kr = (struct limine_kaddr_resp *)kaddr_req.response;
+    kinfo("req: mmap=%p hhdm=%p kaddr=%p",
+          (void *)mmap_req.response, (void *)hhdm_req.response,
+          (void *)kaddr_req.response);
+    g_hhdm = hr ? hr->offset : 0;
+    if (hhdm) *hhdm = g_hhdm;
+    if (kr) {
+        g_kphys = kr->physical_base;
+        g_kvirt = kr->virtual_base;
+        g_ksize = (uint64_t)(__kernel_end - __kernel_start);
+        kinfo("kaddr: phys=%llx virt=%llx size=%llu (excluded from buddy)",
+              (unsigned long)g_kphys, (unsigned long)g_kvirt,
+              (unsigned long)g_ksize);
+    }
+    if (!mr || !mr->entries || mr->entry_count == 0) return -1;
+
+    uint64_t k0 = g_kphys, k1 = g_kphys + g_ksize;
+
+    uint64_t best_len = 0, best_base = 0;
+    for (uint64_t i = 0; i < mr->entry_count; i++) {
+        struct limine_mmap_entry *e = mr->entries[i];
+        if (!e || e->type != 0) continue;
+        uint64_t pb = 0, pl = 0;
+        if (!usable_piece(e->base, e->length, k0, k1, &pb, &pl)) continue;
+        if (pl > best_len) {
+            best_len = pl;
+            best_base = pb;
+        }
+    }
+    if (best_len < CM_PAGE_SIZE) return -1;
+    if (base) *base = best_base;
+    if (npages) *npages = best_len / CM_PAGE_SIZE;
+    return 0;
+}
+/* --- on-demand HHDM mapping for Limine response pages ------------------
+ * Limine hands back response structures at HHDM addresses that our own
+ * page tables do not necessarily cover. mmap/hhdm/kaddr happened to land
+ * inside a mapped region; the MP response did not, which is the -smp 4
+ * #PF at cr2=0xffff80001ff60010 (== &resp->cpu_count). Stop relying on
+ * luck: walk the tables first and map the page on demand. */
+static uint64_t *g_pml4_cached;
+static uint64_t  g_hhdm_cached;
+
+static uint64_t *lvl_next(uint64_t entry)
+{
+    /* Table entries hold PHYSICAL addresses; we address them through HHDM. */
+    return (uint64_t *)(uintptr_t)((entry & 0x000ffffffffff000ull) + g_hhdm_cached);
+}
+
+static uint64_t walk_pte(uint64_t virt)
+{
+    if (!g_pml4_cached) return 0;
+    uint64_t *l = g_pml4_cached;
+    for (int shift = 39; shift >= 12; shift -= 9) {
+        uint64_t e = l[(virt >> shift) & 0x1ff];
+        if (!(e & 1)) return 0;
+        if (shift == 12 || (e & (1ull << 7))) return e; /* PTE, or huge page */
+        l = lvl_next(e);
+    }
+    return 0;
+}
+
+static int ensure_mapped_range(uint64_t virt, uint64_t len)
+{
+    uint64_t start = virt & ~0xfffull;
+    uint64_t end   = (virt + len + 0xfff) & ~0xfffull;
+    int mapped = 0;
+    for (uint64_t v = start; v < end; v += 0x1000) {
+        if (walk_pte(v) & 1) continue;
+        uint64_t phys = v - g_hhdm_cached;
+        if (cm_space_map_flags(g_pml4_cached, v, phys, 0) != 0) {
+            kwarn("mp: cannot map response page %llx (phys %llx)",
+                  (unsigned long)v, (unsigned long)phys);
+            return -1;
+        }
+        __asm__ volatile("invlpg (%0)" :: "r"(v) : "memory");
+        mapped++;
+    }
+    if (mapped)
+        kinfo("mp: mapped %d response page(s) on demand at %llx",
+              mapped, (unsigned long)start);
+    return 0;
+}
+int cm_limine_mp(uint64_t *cpu_count, uint32_t *bsp_lapic_id,
+                 uint32_t *lapic_ids, int max_ids)
+{
+    struct limine_mp_resp *mr = (struct limine_mp_resp *)mp_req.response;
+
+    kinfo("mp: response=%p max_ids=%d", (void *)mr, max_ids);
+    if (!mr) {
+        kinfo("mp: no response (request not answered)");
+        if (cpu_count) *cpu_count = 1;
+        if (bsp_lapic_id) *bsp_lapic_id = 0;
+        if (lapic_ids && max_ids > 0) lapic_ids[0] = 0;
+        return -1;
+    }
+
+    g_pml4_cached = cm_paging_pml4();
+    g_hhdm_cached = cm_hhdm();
+    if (!g_pml4_cached || !g_hhdm_cached) {
+        kwarn("mp: no pml4/hhdm yet — refusing to dereference %p", (void *)mr);
+        if (cpu_count) *cpu_count = 1;
+        if (bsp_lapic_id) *bsp_lapic_id = 0;
+        if (lapic_ids && max_ids > 0) lapic_ids[0] = 0;
+        return -1;
+    }
+
+    if (ensure_mapped_range((uint64_t)(uintptr_t)mr, sizeof(*mr)) != 0) {
+        if (cpu_count) *cpu_count = 1;
+        if (bsp_lapic_id) *bsp_lapic_id = 0;
+        if (lapic_ids && max_ids > 0) lapic_ids[0] = 0;
+        return -1;
+    }
+
+    kinfo("mp: revision=%llu flags=%x bsp=%u cpu_count=%llu cpus=%p",
+          (unsigned long)mr->revision, (unsigned)mr->flags,
+          (unsigned)mr->bsp_lapic_id, (unsigned long)mr->cpu_count,
+          (void *)mr->cpus);
+
+    if (cpu_count) *cpu_count = mr->cpu_count;
+    if (bsp_lapic_id) *bsp_lapic_id = mr->bsp_lapic_id;
+
+    uint64_t n = mr->cpu_count;
+
+    /* Sanity BEFORE dereferencing the array. */
+    if (n == 0 || n > 256) {
+        kwarn("mp: cpu_count=%llu implausible — struct layout suspect",
+              (unsigned long)n);
+        n = 0;
+    } else if (!mr->cpus) {
+        kwarn("mp: cpus array is NULL");
+        n = 0;
+    } else if ((uint64_t)(uintptr_t)mr->cpus < 0xffff800000000000ull) {
+        kwarn("mp: cpus=%p is not an HHDM address — struct layout suspect",
+              (void *)mr->cpus);
+        n = 0;
+    } else if (ensure_mapped_range((uint64_t)(uintptr_t)mr->cpus,
+                                   n * sizeof(void *)) != 0) {
+        n = 0;
+    }
+
+    if (n > (uint64_t)max_ids) n = (uint64_t)max_ids;
+    for (uint64_t i = 0; i < n; i++) {
+        struct limine_mp_info *ci = mr->cpus[i];
+        if (!ci) { if (lapic_ids) lapic_ids[i] = 0; continue; }
+        if (ensure_mapped_range((uint64_t)(uintptr_t)ci, sizeof(*ci)) != 0) {
+            if (lapic_ids) lapic_ids[i] = 0;
+            continue;
+        }
+        if (lapic_ids) lapic_ids[i] = ci->lapic_id;
+        kinfo("mp:   [%llu] info=%p lapic_id=%u",
+              (unsigned long)i, (void *)ci, (unsigned)ci->lapic_id);
+    }
+    for (int i = (int)n; i < max_ids; i++)
+        if (lapic_ids) lapic_ids[i] = 0;
+    return 0;
+}
+/* Per the Limine protocol: an ATOMIC WRITE to goto_address makes the
+ * parked CPU jump to the written address. It is a field to STORE INTO,
+ * NOT a function to call. Limine passes &info in RDI to the AP.
+ *
+ * Safe to dereference ci here: cm_smp_probe() already ran
+ * cm_limine_mp(), which ensure_mapped_range()'d every info struct. */
+int cm_limine_mp_start(uint64_t idx, void *entry)
+{
+    struct limine_mp_resp *mr = (struct limine_mp_resp *)mp_req.response;
+    if (!mr || !mr->cpus || idx >= mr->cpu_count) return -1;
+
+    struct limine_mp_info *ci = mr->cpus[idx];
+    if (!ci) return -1;
+    if (ci->lapic_id == mr->bsp_lapic_id) return -2;  /* that's us, not an AP */
+
+    ci->extra_argument = idx;
+    __atomic_store_n(&ci->goto_address,
+                     (void (*)(struct limine_mp_info *))entry,
+                     __ATOMIC_RELEASE);
+    return 0;
+}
+
+#endif

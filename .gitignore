@@ -1,0 +1,4 @@
+capmix.iso
+*.o
+*.elf
+build/
