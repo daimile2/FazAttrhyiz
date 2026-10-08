@@ -32,6 +32,13 @@ struct tss64 {
 extern void     cm_isr_stub(void);
 extern void     cm_timer_stub(void);
 extern uint64_t cm_isr_count;
+extern void     cm_fault_stub_8(void);
+extern void     cm_fault_stub_10(void);
+extern void     cm_fault_stub_11(void);
+extern void     cm_fault_stub_12(void);
+extern void     cm_fault_stub_13(void);
+extern void     cm_fault_stub_14(void);
+extern void     cm_fault_stub_17(void);
 
 /* The IDT is SHARED by all CPUs (same gates, same handlers). The GDT is
  * NOT: entry 6/7 is the TSS descriptor, and each CPU needs its own TSS to
@@ -62,10 +69,19 @@ static void idt_build(void)
 #ifndef CAPMIX_HOSTED
     for (int i = 0; i < 32; i++)
         set_gate(i, (void *)cm_isr_stub, 0);
-    set_gate(8,  (void *)cm_isr_stub, 1); /* #DF */
-    set_gate(12, (void *)cm_isr_stub, 1); /* #SS */
-    set_gate(13, (void *)cm_isr_stub, 1); /* #GP */
-    set_gate(14, (void *)cm_isr_stub, 1); /* #PF */
+    /* Every vector the CPU pushes an error code for must use a FAULT_STUB,
+     * not cm_isr_stub: cm_isr_stub iretq's without popping the error code,
+     * so it reads the code as RIP and jumps into garbage. On an IST stack
+     * that becomes fault -> bad iret -> fault with no triple fault, i.e.
+     * the silent hang we keep chasing. #TS/#NP/#AC used to be installed
+     * here as plain cm_isr_stub. */
+    set_gate(8,  (void *)cm_fault_stub_8,  1); /* #DF */
+    set_gate(10, (void *)cm_fault_stub_10, 1); /* #TS */
+    set_gate(11, (void *)cm_fault_stub_11, 1); /* #NP */
+    set_gate(12, (void *)cm_fault_stub_12, 1); /* #SS */
+    set_gate(13, (void *)cm_fault_stub_13, 1); /* #GP */
+    set_gate(14, (void *)cm_fault_stub_14, 1); /* #PF */
+    set_gate(17, (void *)cm_fault_stub_17, 1); /* #AC */
     /* IST=0: current stack. Avoids IST tops that may sit past kernel map. */
     set_gate(0x40, (void *)cm_timer_stub, 0);
 #endif
@@ -213,5 +229,44 @@ void cm_idt_set_gate(int vec, void *fn, uint8_t ist)
 #else
     (void)fn;
     (void)ist;
+#endif
+}
+
+/* Point this CPU's ring0 stack at whatever is about to run.
+ *
+ * rsp0 is initialised once to g_ist2[cpu] and NEVER changed, which makes
+ * every thread on a CPU share one ring0 stack. A thread preempted while
+ * running in ring3 leaves its iret frame at ist2_top-40 and its saved
+ * registers around ist2_top-136; the next ring3 interrupt on that CPU
+ * pushes a fresh frame at exactly the same addresses and overwrites both.
+ * When the first thread is switched back it unwinds through the remains
+ * and iretq pops the OTHER thread's RIP/CS/RFLAGS.
+ *
+ * Handing each thread its own kstack as rsp0 removes the sharing: an
+ * abandoned frame sits on the stack of the thread that owns it, and
+ * nothing else ever pushes there. cm_arch_ctx_swap() calls this on every
+ * switch into a thread slot. */
+void cm_tss_set_rsp0(int cpu, uint64_t top)
+{
+#ifndef CAPMIX_HOSTED
+    if (cpu < 0 || cpu >= CM_MAX_CPUS) cpu = 0;
+    g_tss[cpu].rsp0 = top;
+#else
+    (void)cpu;
+    (void)top;
+#endif
+}
+
+/* Back to the per-CPU default stack. Used when the CPU is not running a
+ * thread (boot, AP idle, or switching into the scheduler context): the
+ * g_ist2[] stack is otherwise unused once threads own their own ring0
+ * stacks, so it makes a safe home for the scheduler. */
+void cm_tss_reset_rsp0(int cpu)
+{
+#ifndef CAPMIX_HOSTED
+    if (cpu < 0 || cpu >= CM_MAX_CPUS) cpu = 0;
+    g_tss[cpu].rsp0 = (uint64_t)(uintptr_t)&g_ist2[cpu][16384];
+#else
+    (void)cpu;
 #endif
 }

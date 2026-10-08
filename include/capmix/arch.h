@@ -32,7 +32,34 @@ void     cm_arch_ctx_swap(int from_tid, int to_tid); /* -1 = scheduler host */
 int      cm_arch_ctx_done(int tid);
 void     cm_arch_ctx_set_cr3(int tid, uint64_t cr3);
 void     cm_arch_ctx_clear(int tid);
-void     cm_arch_ctx_clear(int tid);
+int      cm_arch_ctx_ready(int tid);
+void     cm_tss_set_rsp0(int cpu, uint64_t top);
+void     cm_tss_reset_rsp0(int cpu);
+
+/* Local interrupt save/disable + restore. Anything that reads "which CPU am
+ * I on" and then acts on per-CPU state must run between these: with IF=1 a
+ * tick can preempt the thread in between, and the scheduler may resume it
+ * on a DIFFERENT CPU, so the cpu index it computed is stale. Hosted is a
+ * ring-3 process (cli faults) with no ISR, so both are no-ops there. */
+static inline uint64_t cm_irq_save(void)
+{
+#ifndef CAPMIX_HOSTED
+    uint64_t f;
+    __asm__ volatile("pushfq; popq %0; cli" : "=r"(f) :: "memory");
+    return f;
+#else
+    return 0;
+#endif
+}
+
+static inline void cm_irq_restore(uint64_t f)
+{
+#ifndef CAPMIX_HOSTED
+    if (f & 0x200) __asm__ volatile("sti" ::: "memory");
+#else
+    (void)f;
+#endif
+}
 
 int      cm_limine_memory(cm_paddr_t *base, uint64_t *npages, uint64_t *hhdm);
 int      cm_limine_mp(uint64_t *cpu_count, uint32_t *bsp_lapic_id,

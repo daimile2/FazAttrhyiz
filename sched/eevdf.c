@@ -79,9 +79,29 @@ void cm_sched_init(void)
     g_lock_contend = 0;
 }
 
-cm_thread_t *cm_sched_current(void)   { return g_current[cm_cpu_id()]; }
-void cm_sched_set_current(cm_thread_t *th){ g_current[cm_cpu_id()] = th; }
-int          cm_sched_in_thread(void) { return g_in_thread[cm_cpu_id()]; }
+/* Per-CPU accessors run with IF=0: cm_cpu_id() and the array access must
+ * happen on the same CPU, and a thread can be preempted and migrated in
+ * between. See cm_irq_save() in arch.h. */
+cm_thread_t *cm_sched_current(void)
+{
+    uint64_t fl = cm_irq_save();
+    cm_thread_t *th = g_current[cm_cpu_id()];
+    cm_irq_restore(fl);
+    return th;
+}
+void cm_sched_set_current(cm_thread_t *th)
+{
+    uint64_t fl = cm_irq_save();
+    g_current[cm_cpu_id()] = th;
+    cm_irq_restore(fl);
+}
+int cm_sched_in_thread(void)
+{
+    uint64_t fl = cm_irq_save();
+    int r = g_in_thread[cm_cpu_id()];
+    cm_irq_restore(fl);
+    return r;
+}
 
 /* Summed across CPUs: the selftest compares this against a single-CPU
  * expectation, and per-CPU counters are the only thing that stays correct
@@ -304,7 +324,7 @@ cm_thread_t *cm_thread_create(cm_task_t *task, cm_th_entry_t entry, void *arg, c
 
 void cm_sched_yield(void)
 {
-    cm_thread_t *th = g_current[cm_cpu_id()];
+    cm_thread_t *th = cm_sched_current();
     if (!th) return;
     cm_arch_ctx_swap(th->ctx_slot, -1);
 }
@@ -316,7 +336,7 @@ void cm_thread_block(cm_thread_t *th, cm_thread_t *on)
     th->state = CM_TH_BLOCKED;
     th->blocked_on = on;
     if (on) cm_turnstile_propagate(th);
-    if (th == g_current[cm_cpu_id()])
+    if (th == cm_sched_current())
         cm_arch_ctx_swap(th->ctx_slot, -1);
 }
 
@@ -334,8 +354,27 @@ void cm_thread_reap(cm_thread_t *th)
      * recycled memory and got a garbage %s pointer.
      *
      * Our own thread is fine to reap — we only get here after
-     * cm_arch_ctx_swap() has returned control to us. */
-    if (thread_busy_elsewhere(th, cm_cpu_id())) return;
+     * cm_arch_ctx_swap() has returned control to us.
+     *
+     * TWO ORDERING FIXES, both needed for the cr2=0x96 fault:
+     *
+     * (1) The busy check now runs UNDER the BKL. It used to read
+     *     g_current[] unlocked, contradicting the contract stated above
+     *     thread_busy_elsewhere (g_current[] is only stable under the
+     *     lock). Unlocked, another CPU could set g_current[i]=th between
+     *     the check and the free below, and swap onto a stack that was
+     *     already handed back to the buddy.
+     *
+     * (2) Detaching g_current[] now happens BEFORE cm_page_free(), not
+     *     after. The old order left a window in which the kstack was
+     *     already recycled while some CPU still advertised this thread as
+     *     current — and the reaped thread's slot was still pickable
+     *     through it. */
+    sched_lock();
+    if (thread_busy_elsewhere(th, cm_cpu_id())) { sched_unlock(); return; }
+    for (int i = 0; i < CM_MAX_CPUS; i++)
+        if (g_current[i] == th) g_current[i] = NULL;
+    sched_unlock();
 
     rq_remove(th);
     if (th->kstack) { cm_page_free(th->kstack, 2); th->kstack = NULL; }
@@ -347,8 +386,6 @@ void cm_thread_reap(cm_thread_t *th)
      * frame ends up pushed at rsp=0, faulting with cr2=0xfffffffffffffff8. */
     cm_arch_ctx_clear(th->ctx_slot);
 
-    for (int i = 0; i < CM_MAX_CPUS; i++)
-        if (g_current[i] == th) g_current[i] = NULL;
     memset(th, 0, sizeof(*th));
 }
 
@@ -545,20 +582,29 @@ void cm_sched_tick(void)
         if (cm_obs_enabled()) cm_obs_emit(cm_trace_new(), CM_EV_SCHED_SWITCH, prev->id, th->id, th->qos);
 
 #ifndef CAPMIX_HOSTED
-    /* A thread must never be entered with interrupts disabled.
+    /* Interrupts stay off across g_in_thread=1 AND the swap.
      *
-     * cm_ctx_switch_asm() saves rbx/rbp/r12-r15/rsp/rip and NOTHING else,
-     * so a thread inherits whatever RFLAGS.IF is live on the CPU at the
-     * moment of the switch. Two ways it ends up 0: (a) a preemption
-     * returned here from cm_timer_isr WITHOUT going through iretq, and
-     * (b) whatever the preceding selftest left behind — the syscall entry
-     * masks IF via SFMASK.
+     * g_current[cpu] is already th at this point, so a tick landing in
+     * this window passes every check in cm_sched_preempt_now() and runs
+     * cm_arch_ctx_swap(th->ctx_slot, -1): it stores the SCHEDULER's rsp
+     * (the AP stack, just after this call) as the thread's context and
+     * then resumes the scheduler at the frame cm_sched_tick() was in one
+     * tick ago, whose `th` and `cpu` are stale. That is where the two
+     * remaining faults come from — th==NULL read at offset 0x10
+     * (cr2=0x10) and a wild write through g_current[cpu]
+     * (cr2=0xfffffffb80186d38) — and it leaves two live contexts stacked
+     * on one kernel stack, which later unwinds into an iretq that pops
+     * someone else's frame (#GP, err=0).
      *
-     * Order matters: sti BEFORE g_in_thread=1. A tick landing in this
-     * window sees g_in_thread==0, so cm_sched_preempt_now() no-ops
-     * instead of saving the SCHEDULER's state over the not-yet-entered
-     * thread's context. */
-    __asm__ volatile("sti");
+     * "sti before g_in_thread=1" only moves the window: with
+     * g_in_thread==0 the tick no-ops, but it still lands between sti and
+     * the swap. Closing it is the only fix.
+     *
+     * The incoming thread's IF now comes from its saved rflags instead of
+     * from whatever the CPU was running with: fresh threads start at
+     * 0x202, and a preempted one resumes with IF=0 and gets IF=1 back
+     * from its own iretq. */
+    __asm__ volatile("cli");
 #endif
 
     g_in_thread[cpu] = 1;
@@ -605,6 +651,27 @@ void cm_sched_preempt_now(void)
     if (!cm_need_resched()) return;
 
     cm_need_resched_clear();
+
+    /* The outgoing thread must still be the owner of its ctx slot.
+     *
+     * This path takes no lock, so `cur` can have been reaped by another
+     * CPU between the read above and here. cm_thread_reap() memsets the
+     * thread (ctx_slot -> 0) and clears g_ctx[slot]; if that slot has
+     * since been handed to a freshly created thread, cm_arch_ctx_swap()
+     * writes the state we are leaving into the NEW thread's context —
+     * rsp/rip pointing into a kstack that is already freed. When that
+     * thread is next entered it unwinds into recycled memory, which is
+     * the shape of every remaining SMP fault (garbage `th`, garbage
+     * `cpu`, iretq popping a foreign frame).
+     *
+     * Bail out instead of swapping: the tick is simply dropped. */
+    if (cur->id == 0 || &g_threads[cur->ctx_slot] != cur ||
+        !cm_arch_ctx_ready(cur->ctx_slot)) {
+        g_current[cpu] = NULL;
+        g_in_thread[cpu] = 0;
+        return;
+    }
+
     g_in_thread[cpu] = 0;
     g_preempt_count[cpu]++;
 

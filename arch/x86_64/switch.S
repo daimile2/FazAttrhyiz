@@ -1,9 +1,16 @@
-/* Callee-saved + rsp/rip fiber switch. Works hosted and freestanding. */
+/* Callee-saved + rsp/rip/rflags fiber switch. Works hosted and freestanding. */
 .globl cm_ctx_switch_asm
 .type  cm_ctx_switch_asm, @function
 cm_ctx_switch_asm:
 /* rdi = from, rsi = to
-* layout: rbx rbp r12 r13 r14 r15 rsp rip */
+* layout: rbx rbp r12 r13 r14 r15 rsp rip rflags
+*
+* rflags is part of the context because a thread that was PREEMPTED must
+* resume with IF=0 (it is still logically inside cm_timer_isr and gets IF=1
+* back from its own iretq), while a fresh or cooperatively yielded thread
+* must resume with IF=1. Deriving IF from whatever the CPU happened to be
+* running with forces the caller to leave interrupts on across the swap,
+* which is exactly the window that corrupted the scheduler stack. */
 movq	%rbx,  0(%rdi)
 movq	%rbp,  8(%rdi)
 movq	%r12, 16(%rdi)
@@ -13,14 +20,25 @@ movq	%r15, 40(%rdi)
 movq	%rsp, 48(%rdi)
 leaq	1f(%rip), %rax
 movq	%rax, 56(%rdi)
+pushfq
+popq	%rax
+movq	%rax, 64(%rdi)
+
+/* Restore. rsp is switched LAST but one, so popfq runs on the INCOMING
+* stack: a tick landing between popfq and jmp re-saves the incoming
+* context at exactly the rsp we just loaded, which is a no-op instead of
+* "the scheduler's stack position recorded as the thread's context". */
 movq	 0(%rsi), %rbx
 movq	 8(%rsi), %rbp
 movq	16(%rsi), %r12
 movq	24(%rsi), %r13
 movq	32(%rsi), %r14
 movq	40(%rsi), %r15
-movq	48(%rsi), %rsp
 movq	56(%rsi), %rax
+movq	64(%rsi), %r11
+movq	48(%rsi), %rsp
+pushq	%r11
+popfq
 jmp	*%rax
 1:
 ret
@@ -29,7 +47,7 @@ ret
 .type  cm_isr_stub, @function
 cm_isr_stub:
 pushq	%rax
-incq	cm_isr_count(%rip)
+lock incq cm_isr_count(%rip)
 popq	%rax
 iretq
 
@@ -67,7 +85,7 @@ FAULT_STUB 17	/* #AC */
 .type  cm_timer_stub, @function
 cm_timer_stub:
 /* Full C-call path. Entry rsp is 8 (mod 16) after the hardware pushes
-* 5 words; subq $8 then 11 pushes (88 bytes, 88%16==8) leaves rsp 0
+* 5 words; subq $8 then 10 pushes (80 bytes, 80%16==0) leaves rsp 0
 * (mod 16) at the call site, which is what the SysV ABI wants. */
 subq	$8, %rsp
 pushq	%rax
@@ -80,7 +98,7 @@ pushq	%r9
 pushq	%r10
 pushq	%r11
 pushq	%rbp
-incq	cm_isr_count(%rip)
+lock incq cm_isr_count(%rip)
 call	cm_timer_isr
 popq	%rbp
 popq	%r11

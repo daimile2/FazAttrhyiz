@@ -25,6 +25,58 @@ static uint8_t         *g_page_state; /* one byte per page */
 static uint8_t *g_sim_heap;
 #endif
 
+/* The free lists are plain singly-linked lists and EVERY operation on them
+ * is a non-atomic read-modify-write: pop_free() does g_free[o] = b->next,
+ * push_free() does b->next = g_free[o]; g_free[o] = b, and the coalesce
+ * walk in cm_page_free() traverses and unlinks entries. Two CPUs in
+ * cm_page_alloc() at the same instant walk away with the SAME block.
+ *
+ * For cm_thread_create() that means two threads sharing one 8 KiB kstack:
+ * both push frames and save contexts into it, so each one's `th` and `cpu`
+ * locals are overwritten by the other. That is the shape of every
+ * remaining SMP fault — garbage `th` (cr2=0x96), a wild write through
+ * g_current[cpu] (cr2=0xfffffffb80186d38), and an iretq that pops a
+ * foreign frame (#GP, err=0). It only shows up under the SMP stress
+ * phase because that is the only place threads are created and reaped
+ * en masse while four CPUs schedule.
+ *
+ * The coalesce path is worse: an unlocked unlink can splice a list into a
+ * cycle or push one block twice, after which the allocator hands the same
+ * pages to two callers with no further race required.
+ *
+ * Locking: spinlock for cross-CPU exclusion, plus cli on bare metal so an
+ * ISR landing on the same CPU cannot re-enter a half-updated list. ISR
+ * paths must therefore NOT call cm_page_alloc/cm_page_free (the timer ISR
+ * does not: cm_sched_tick() only picks and swaps). Hosted has no cli and
+ * no ISR, so it takes the spinlock alone — same style as sched_lock() in
+ * sched/eevdf.c, which keeps this file free of new dependencies. */
+static volatile unsigned int g_buddy_lock;
+
+static uint64_t buddy_lock(void)
+{
+#ifndef CAPMIX_HOSTED
+    uint64_t flags;
+    __asm__ volatile("pushfq; popq %0; cli" : "=r"(flags) :: "memory");
+#else
+    uint64_t flags = 0;
+#endif
+    if (__sync_lock_test_and_set(&g_buddy_lock, 1u) == 0u) return flags;
+    for (;;) {
+        __asm__ volatile("pause" ::: "memory");
+        if (__sync_lock_test_and_set(&g_buddy_lock, 1u) == 0u) return flags;
+    }
+}
+
+static void buddy_unlock(uint64_t flags)
+{
+    __sync_lock_release(&g_buddy_lock);
+#ifndef CAPMIX_HOSTED
+    if (flags & 0x200) __asm__ volatile("sti");
+#else
+    (void)flags;
+#endif
+}
+
 static const char *state_names[] = {
     "Active", "Transition", "Standby", "Modified",
     "ModNoWrite", "Free", "Zeroed", "Bad"
@@ -118,9 +170,20 @@ void cm_mm_init(const cm_mem_region_t *regions, int nregions)
 void *cm_page_alloc(unsigned order)
 {
     if (order > CM_BUDDY_MAX_ORDER) return NULL;
+
+    uint64_t flags = buddy_lock();
+
     unsigned o = order;
     while (o <= CM_BUDDY_MAX_ORDER && !g_free[o]) o++;
-    if (o > CM_BUDDY_MAX_ORDER) return NULL;
+    if (o > CM_BUDDY_MAX_ORDER) { buddy_unlock(flags); return NULL; }
+
+    /* Checked BEFORE the block is unlinked. The old code popped first and
+     * tested g_free_pages afterwards, so a failing check dropped the block
+     * on the floor: it was already off the free list and never pushed
+     * back, leaking 2^o pages for the rest of the run. */
+    uint64_t n = 1ull << order;
+    if (g_free_pages < n) { buddy_unlock(flags); return NULL; }
+
     void *blk = pop_free(o);
     while (o > order) {
         o--;
@@ -128,10 +191,14 @@ void *cm_page_alloc(unsigned order)
         push_free(o, buddy);
         mark_state(buddy, o, CM_PAGE_FREE);
     }
-    uint64_t n = 1ull << order;
-    if (g_free_pages < n) return NULL;
     g_free_pages -= n;
     mark_state(blk, order, CM_PAGE_ACTIVE);
+
+    buddy_unlock(flags);
+
+    /* Outside the lock: cm_obs_emit() touches the trace ring, which is a
+     * different subsystem holding its own state, and the event is
+     * informational — the allocation is already complete. */
     cm_obs_emit(cm_trace_new(), CM_EV_ALLOC, (uint64_t)(uintptr_t)blk, order, n);
     return blk;
 }
@@ -140,6 +207,14 @@ void cm_page_free(void *ptr, unsigned order)
 {
     if (!ptr || order > CM_BUDDY_MAX_ORDER) return;
     uint64_t n = 1ull << order;
+
+    /* The whole coalesce walk must be atomic. Unlocked, another CPU can
+     * pop the buddy we are in the middle of unlinking, or splice the list
+     * while we hold a **pp cursor into it — which turns the list into a
+     * cycle or leaves one block reachable twice. Either way the next
+     * allocation hands these pages out again while they are still in use. */
+    uint64_t flags = buddy_lock();
+
     g_free_pages += n;
     mark_state(ptr, order, CM_PAGE_FREE);
     /* Coalesce: walk up while buddy is sitting on the free list of same order. */
@@ -166,6 +241,9 @@ void cm_page_free(void *ptr, unsigned order)
         o++;
     }
     push_free(o, cur);
+
+    buddy_unlock(flags);
+
     cm_obs_emit(cm_trace_new(), CM_EV_FREE, (uint64_t)(uintptr_t)ptr, order, n);
 }
 

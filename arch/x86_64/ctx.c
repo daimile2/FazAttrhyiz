@@ -8,7 +8,11 @@
 extern void cm_ctx_switch_asm(void *from, void *to);
 
 typedef struct {
+    /* Offsets 0..64 are the layout cm_ctx_switch_asm() walks: do not
+     * reorder these eight fields. */
     uint64_t rbx, rbp, r12, r13, r14, r15, rsp, rip;
+    uint64_t rflags;      /* offset 64 — IF included, see switch.S */
+    uint64_t kstack_top;  /* ring0 stack top handed to TSS.rsp0 */
     uint64_t cr3;
     int      ready;
     int      done;
@@ -65,7 +69,12 @@ static int ctx_rsp_sane(uint64_t rsp)
 static void landing(void)
 {
     for (;;) {
+        /* cm_cpu_id() + g_running[] must be one step: preempted between
+         * them and resumed on another CPU, we would read THAT CPU's
+         * g_running[] and run some other thread's entry on our stack. */
+        uint64_t fl = cm_irq_save();
         int tid = g_running[cm_cpu_id()];
+        cm_irq_restore(fl);
         if (tid >= 0 && tid < CM_MAX_THREADS && g_entry[tid])
             g_entry[tid](g_arg[tid]);
         cm_arch_ctx_swap(tid, -1);
@@ -82,6 +91,8 @@ int cm_arch_ctx_init(int tid, void (*entry)(void *), void *arg, void *stack, siz
     *--sp = 0;
     g_ctx[tid].rsp = (uint64_t)(uintptr_t)sp;
     g_ctx[tid].rip = (uint64_t)(uintptr_t)landing;
+    g_ctx[tid].rflags = 0x202;   /* IF=1: a fresh thread starts enabled */
+    g_ctx[tid].kstack_top = (uint64_t)(uintptr_t)top;
     g_ctx[tid].ready = 1;
     g_ctx[tid].done = 0;
     g_entry[tid] = entry;
@@ -108,7 +119,44 @@ void cm_arch_ctx_clear(int tid)
     g_arg[tid] = NULL;
 }
 
+/* Liveness probe for a thread's switch slot, for callers (the preemption
+ * path) that hold no lock and must decide whether swapping out of a thread
+ * is still safe. A slot is live iff it has been initialised and not yet
+ * cleared: after cm_arch_ctx_clear() the stack below rsp may already have
+ * been handed back to the buddy. */
+int cm_arch_ctx_ready(int tid)
+{
+    if (tid < 0 || tid >= CM_MAX_THREADS) return 0;
+    return g_ctx[tid].ready && ctx_rsp_sane(g_ctx[tid].rsp);
+}
+
+static void ctx_swap_locked(int from_tid, int to_tid);
+
+/* The whole swap runs with interrupts OFF.
+ *
+ * Thread-side callers (landing() when an entry returns, cm_sched_yield,
+ * cm_thread_block) arrive here with IF=1. A tick landing anywhere between
+ * cm_cpu_id() below and the end of cm_ctx_switch_asm() runs
+ * cm_sched_preempt_now(), which saves this half-finished swap as the
+ * thread's context and returns to the scheduler. If another CPU picks the
+ * thread next, it resumes HERE with `cpu`/`hs` still naming the OLD CPU and
+ * switches into that CPU's scheduler slot — whose stack the old CPU is
+ * still running on. Two CPUs on one stack: garbage `cpu` in
+ * cm_sched_tick (cr2=0xfffffffb8018xxxx), garbage `from` pointer in
+ * cm_ctx_switch_asm, garbage `th` (cr2=0x96).
+ *
+ * IF is restored on the way back out from the flags we were called with:
+ * a thread resuming from a preemption was swapped out inside the ISR
+ * (IF=0) and gets IF=1 back from its own iretq; a cooperative caller had
+ * IF=1 and gets it back here. */
 void cm_arch_ctx_swap(int from_tid, int to_tid)
+{
+    uint64_t fl = cm_irq_save();
+    ctx_swap_locked(from_tid, to_tid);
+    cm_irq_restore(fl);
+}
+
+static void ctx_swap_locked(int from_tid, int to_tid)
 {
     int cpu = cm_cpu_id();
     if (cpu < 0 || cpu >= CM_MAX_CPUS) {
@@ -149,6 +197,17 @@ void cm_arch_ctx_swap(int from_tid, int to_tid)
                      t, (unsigned long)g_ctx[t].rsp);
             return;
         }
+    } else if (!ctx_rsp_sane(g_ctx[hs].rsp)) {
+        /* Switching into a scheduler slot that was never entered on this
+         * CPU: rsp is 0, cm_ctx_switch_asm() loads it, and the next push
+         * (any interrupt, or the call itself) faults at cr2 = -8. This is
+         * the cr2=0xfffffffffffffff8 frame from the AP traces. */
+        static volatile int warned_hs;
+        if (!__sync_lock_test_and_set(&warned_hs, 1))
+            kerr("ctx: refusing swap into scheduler slot %d, rsp=%llx "
+                 "(never initialised on cpu %d?)",
+                 hs, (unsigned long)g_ctx[hs].rsp, cpu);
+        return;
     }
 
     g_ctx[hs].ready = 1;
@@ -160,6 +219,22 @@ void cm_arch_ctx_swap(int from_tid, int to_tid)
             cm_space_load(want);
     }
 #endif
+#ifndef CAPMIX_HOSTED
+    /* Take the next interrupt on the stack of whatever is about to run,
+     * before the switch happens — a tick arriving right after it would
+     * otherwise be pushed onto the previous thread's stack.
+     *
+     * Corollaries:
+     *  - a thread preempted in ring3 leaves its iret frame on ITS OWN
+     *    kstack, so nothing overwrites it while it waits;
+     *  - the scheduler (slot hs) runs on this CPU's g_ist2 stack, which
+     *    no thread ever pushes to any more. */
+    if (t != hs && g_ctx[t].kstack_top)
+        cm_tss_set_rsp0(cpu, g_ctx[t].kstack_top);
+    else
+        cm_tss_reset_rsp0(cpu);
+#endif
+
     cm_ctx_switch_asm(&g_ctx[f], &g_ctx[t]);
 }
 
