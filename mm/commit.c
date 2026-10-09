@@ -34,6 +34,14 @@ cm_error_t cm_commit_charge(uint64_t pages)
     return CM_OK;
 }
 
+/* Windows: commit limit = RAM + pagefile. Called once swap is known. */
+void cm_commit_add_backing(uint64_t pages)
+{
+    g_limit += pages;
+    kinfo("mm: commit limit %llu pages (+%llu backed by swap)",
+          (unsigned long)g_limit, (unsigned long)pages);
+}
+
 void cm_commit_uncharge(uint64_t pages)
 {
     if (pages > g_committed) pages = g_committed;

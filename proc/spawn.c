@@ -4,6 +4,7 @@
 #include "capmix/obs.h"
 
 #include <string.h>
+#include <stdint.h>
 
 static cm_proc_t g_procs[CM_MAX_PROCS];
 static cm_id_t   g_pid_next = 1;
@@ -139,30 +140,92 @@ cm_error_t cm_fork_compat(cm_id_t *out_pid)
     return CM_ERR_NOTSUP;
 }
 
-int cm_proc_jetsam(void)
+int cm_proc_alive(cm_id_t pid)
+{
+    cm_proc_t *p = cm_proc_lookup(pid);
+    return !p || !p->exited;     /* kernel-owned (no proc) counts as alive */
+}
+
+/* Victims in the order L4 took them, for the selftest and post-mortem. */
+#define KILL_LOG_N 16
+static cm_id_t g_kill_log[KILL_LOG_N];
+static int     g_kill_n;
+
+int cm_proc_kill_log(cm_id_t *out, int max)
+{
+    int n = g_kill_n < max ? g_kill_n : max;
+    for (int i = 0; i < n; i++) out[i] = g_kill_log[i];
+    return n;
+}
+
+void cm_proc_kill_log_reset(void) { g_kill_n = 0; }
+
+static void proc_kill(cm_proc_t *p, int64_t code)
+{
+    if (g_kill_n < KILL_LOG_N) g_kill_log[g_kill_n++] = p->pid;
+    cm_fdio_close_all(p);
+    if (p->main) p->main->state = CM_TH_DEAD;
+    if (p->aspace_pages) {
+        cm_commit_uncharge(p->aspace_pages);
+        p->aspace_pages = 0;
+    }
+    p->exited = 1;
+    p->exit_code = code;
+}
+
+/* L4 victim selection.
+ *
+ * jetsam (macOS): walk bands from most to least disposable —
+ *   Idle -> Background -> Utility -> Default -> UserInitiated
+ * and take the biggest process in the first non-empty band. UserInteractive
+ * (foreground) is never a jetsam victim: killing what the user is looking
+ * at to save memory is the wrong trade.
+ *
+ * OOM killer (Linux), only when no band candidate exists: badness =
+ * footprint in permille of RAM + oom_score_adj, foreground included.
+ *
+ * Processes holding no anon memory are skipped: killing them frees nothing.
+ * Returns the pid (the caller releases its memory) or 0. */
+cm_id_t cm_proc_jetsam_pick(int *is_oom)
 {
     cm_proc_t *best = NULL;
+    uint64_t best_rss = 0;
+    int best_band = -1;
     for (int i = 0; i < CM_MAX_PROCS; i++) {
         cm_proc_t *p = &g_procs[i];
-        if (!p->used || p->exited || !p->user_mode) continue;
-        if (!best) { best = p; continue; }
-        cm_qos_t bq = best->task ? best->task->qos : CM_QOS_DEFAULT;
-        cm_qos_t pq = p->task ? p->task->qos : CM_QOS_DEFAULT;
-        if (pq > bq) best = p; /* higher band number = more disposable */
+        if (!p->used || p->exited || !p->user_mode || !p->task) continue;
+        int band = (int)p->task->qos;
+        if (band == CM_QOS_USER_INTERACTIVE) continue;
+        uint64_t rss = cm_anon_owner_pages(p->pid);
+        if (!rss) continue;
+        int64_t adj = p->task->oom_score_adj;
+        int64_t score = (int64_t)rss + adj;
+        int64_t bscore = best ? (int64_t)best_rss + best->task->oom_score_adj : 0;
+        if (band > best_band || (band == best_band && score > bscore)) {
+            best = p; best_rss = rss; best_band = band;
+        }
     }
-    if (!best) return 0;
-    kinfo("jetsam: kill pid=%llu path=%s qos=%s",
+    if (is_oom) *is_oom = 0;
+    if (!best) {
+        int64_t bad_best = INT64_MIN;
+        uint64_t total = cm_mm_total_pages() ? cm_mm_total_pages() : 1;
+        for (int i = 0; i < CM_MAX_PROCS; i++) {
+            cm_proc_t *p = &g_procs[i];
+            if (!p->used || p->exited || !p->user_mode || !p->task) continue;
+            uint64_t rss = cm_anon_owner_pages(p->pid);
+            if (!rss) continue;
+            int64_t bad = (int64_t)(rss * 1000 / total) + p->task->oom_score_adj;
+            if (bad > bad_best) { bad_best = bad; best = p; best_rss = rss; }
+        }
+        if (!best) return 0;
+        if (is_oom) *is_oom = 1;
+    }
+    kinfo("%s: kill pid=%llu path=%s band=%s rss=%llu pages",
+          (is_oom && *is_oom) ? "oom" : "jetsam",
           (unsigned long)best->pid, best->path,
-          best->task ? cm_qos_name(best->task->qos) : "?");
-    if (best->main) best->main->state = CM_TH_DEAD;
-    if (best->aspace_pages) {
-        cm_commit_uncharge(best->aspace_pages);
-        best->aspace_pages = 0;
-    }
-    best->exited = 1;
-    best->exit_code = 9; /* SIGKILL stand-in */
-    cm_pressure_note_jetsam();
-    return 1;
+          cm_qos_name(best->task->qos), (unsigned long)best_rss);
+    proc_kill(best, 9);   /* SIGKILL stand-in */
+    return best->pid;
 }
 
 int cm_user_hello_ran(void) { return g_hello_ran; }

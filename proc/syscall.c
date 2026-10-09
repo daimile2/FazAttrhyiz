@@ -4,6 +4,7 @@
 #include "capmix/proc.h"
 #include "capmix/kernel.h"
 #include "capmix/obs.h"
+#include "capmix/fs.h"
 
 #include <string.h>
 
@@ -24,6 +25,8 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
         if (p->aspace_pages)
             cm_commit_uncharge(p->aspace_pages);
         p->aspace_pages = 0;
+        cm_fdio_close_all(p);
+        cm_anon_free_owner(p->pid);
     }
     if (th) th->state = CM_TH_DEAD;
 #ifndef CAPMIX_HOSTED
@@ -37,6 +40,41 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     return 0;
 }
 
+/* fd -> handle (fdio) -> CM_OBJ_FILE, with the HANDLE's rights checked.
+ * The open mode is not consulted here: a handle duplicated with fewer
+ * rights must be weaker even though it names the same open file. */
+static cm_file_t *fd_file(int fd, cm_rights_t need, int64_t *err)
+{
+    cm_proc_t *p = cm_proc_current();
+    cm_thread_t *th = cm_sched_current();
+    *err = CM_ERR_INVAL;
+    if (!p || !th || !th->task) return NULL;
+    cm_handle_t *h = cm_handle_lookup(th->task, cm_fdio_lookup(p, fd));
+    if (!h || !h->obj || h->obj->type != CM_OBJ_FILE) return NULL;
+    if ((h->rights & need) != need) { *err = CM_ERR_DENIED; return NULL; }
+    return (cm_file_t *)h->obj->payload;
+}
+
+static int64_t close_fd(cm_proc_t *p, cm_task_t *t, int fd)
+{
+    int hid = cm_fdio_lookup(p, fd);
+    cm_handle_t *h = cm_handle_lookup(t, hid);
+    if (!h || h->obj->type != CM_OBJ_FILE) return CM_ERR_INVAL;
+    cm_object_t *obj = h->obj;
+    cm_file_t *f = (cm_file_t *)obj->payload;
+    cm_handle_drop(t, hid);
+    p->fd[fd] = -1;
+    if (obj->type == CM_OBJ_INVALID) cm_vfs_close(f);   /* last reference */
+    return 0;
+}
+
+void cm_fdio_close_all(cm_proc_t *p)
+{
+    if (!p || !p->task) return;
+    for (int fd = 3; fd < CM_FD_MAX; fd++)
+        if (p->fd[fd] >= 0) (void)close_fd(p, p->task, fd);
+}
+
 static int64_t sys_write(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
     CM_UNUSED(a3);
@@ -45,6 +83,11 @@ static int64_t sys_write(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     uint64_t len = a2;
     cm_proc_t *p = cm_proc_current();
     if (!buf) return CM_ERR_INVAL;
+    if (fd > 2) {
+        int64_t err;
+        cm_file_t *f = fd_file(fd, CM_RIGHT_WRITE, &err);
+        return f ? cm_vfs_write(f, buf, len) : err;
+    }
     if (p && fd >= 0 && cm_fdio_lookup(p, fd) < 0 && fd > 2)
         return CM_ERR_DENIED;
     /* stdout/stderr: kernel log. Real tty comes with DriverKit. */
@@ -56,6 +99,75 @@ static int64_t sys_write(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     if (n && tmp[n - 1] == '\n') tmp[n - 1] = 0;
     kinfo("user[%llu]: %s", (unsigned long)(p ? p->pid : 0), tmp);
     return (int64_t)len;
+}
+
+static int64_t sys_open(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    CM_UNUSED(a2); CM_UNUSED(a3);
+    const char *path = (const char *)(uintptr_t)a0;
+    uint32_t flags = (uint32_t)a1;
+    cm_proc_t *p = cm_proc_current();
+    cm_thread_t *th = cm_sched_current();
+    if (!path || !p || !th || !th->task) return CM_ERR_INVAL;
+
+    cm_file_t *f = NULL;
+    cm_error_t e = cm_vfs_open(path, flags, &f);
+    if (e != CM_OK) return e;
+
+    cm_rights_t r = CM_RIGHT_DUPLICATE | CM_RIGHT_TRANSFER | CM_RIGHT_INSPECT;
+    uint32_t acc = flags & CM_O_ACCMODE;
+    if (acc != CM_O_WRONLY) r |= CM_RIGHT_READ;
+    if (acc != CM_O_RDONLY) r |= CM_RIGHT_WRITE;
+    cm_object_t *obj = cm_obj_mint(CM_OBJ_FILE, f, r);
+    if (!obj) { cm_vfs_close(f); return CM_ERR_NOMEM; }
+    int hid = cm_handle_install(th->task, obj, r);
+    cm_obj_release(obj);                     /* the handle owns it now */
+    if (hid < 0) { cm_vfs_close(f); return hid; }
+    int fd = cm_fdio_install(p, hid);
+    if (fd < 0) {
+        cm_handle_drop(th->task, hid);
+        cm_vfs_close(f);
+        return CM_ERR_NOSPC;
+    }
+    return fd;
+}
+
+static int64_t sys_read(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    CM_UNUSED(a3);
+    if (!a1) return CM_ERR_INVAL;
+    int64_t err;
+    cm_file_t *f = fd_file((int)a0, CM_RIGHT_READ, &err);
+    return f ? cm_vfs_read(f, (void *)(uintptr_t)a1, a2) : err;
+}
+
+static int64_t sys_close(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
+    cm_proc_t *p = cm_proc_current();
+    cm_thread_t *th = cm_sched_current();
+    if (!p || !th || !th->task || (int)a0 <= 2) return CM_ERR_INVAL;
+    return close_fd(p, th->task, (int)a0);
+}
+
+static int64_t sys_mkdir(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
+    return a0 ? cm_vfs_mkdir((const char *)(uintptr_t)a0) : CM_ERR_INVAL;
+}
+
+static int64_t sys_unlink(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
+    return a0 ? cm_vfs_unlink((const char *)(uintptr_t)a0) : CM_ERR_INVAL;
+}
+
+static int64_t sys_fsync(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
+    int64_t err;
+    cm_file_t *f = fd_file((int)a0, CM_RIGHT_WRITE, &err);
+    return f ? cm_vfs_fsync(f) : err;
 }
 
 static int64_t sys_spawn(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
@@ -182,6 +294,12 @@ static const struct {
     { CM_SYS_COMMIT_STAT,    "commit_stat",    sys_commit_stat },
     { CM_SYS_IPC_SEND,       "ipc_send",       sys_ipc_send },
     { CM_SYS_IPC_RECV,       "ipc_recv",       sys_ipc_recv },
+    { CM_SYS_OPEN,           "open",           sys_open },
+    { CM_SYS_READ,           "read",           sys_read },
+    { CM_SYS_CLOSE,          "close",          sys_close },
+    { CM_SYS_MKDIR,          "mkdir",          sys_mkdir },
+    { CM_SYS_UNLINK,         "unlink",         sys_unlink },
+    { CM_SYS_FSYNC,          "fsync",          sys_fsync },
     { CM_SYS_FORK,           "fork",           sys_fork },
 };
 
@@ -214,7 +332,7 @@ static void bench_fn(void *arg) { (void)arg; }
  */
 uint64_t cm_bench_syscall_ipc(int rounds)
 {
-    uint64_t f; __asm__ volatile("pushfq; popq %0; cli":"=r"(f)::"memory");
+    uint64_t f = cm_irq_save();   /* cli is privileged: no-op on hosted */
     uint64_t r = 0;
     cm_task_t *t = cm_task_create("ipc-e2e", CM_QOS_USER_INTERACTIVE);
     cm_thread_t *th = t ? cm_thread_create(t, bench_fn, 0, CM_QOS_USER_INTERACTIVE) : 0;
@@ -242,7 +360,7 @@ uint64_t cm_bench_syscall_ipc(int rounds)
               (unsigned long)r, (unsigned long)mn, (unsigned long)mx, rounds);
     } while(0);
     cm_sched_set_current(0);
-    __asm__ volatile("pushq %0; popfq"::"r"(f):"memory","cc");
+    cm_irq_restore(f);
     return r;
 }
 

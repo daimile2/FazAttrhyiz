@@ -20,6 +20,16 @@
 #define CM_SYS_TRACE_NEW      9
 #define CM_SYS_COMMIT_STAT   10
 
+/* File I/O. Native shape is still capability: open() mints a CM_OBJ_FILE
+ * and installs a handle whose rights follow the open mode; the fd is only
+ * an fdio index onto that handle. read/write check the HANDLE's rights. */
+#define CM_SYS_OPEN          11
+#define CM_SYS_READ          12
+#define CM_SYS_CLOSE         13
+#define CM_SYS_MKDIR         14
+#define CM_SYS_UNLINK        15
+#define CM_SYS_FSYNC         16
+
 /* POSIX compat band — routed, not native. */
 #define CM_SYS_FORK         128
 #define CM_SYS_EXECVE       129

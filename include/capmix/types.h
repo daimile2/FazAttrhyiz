@@ -28,6 +28,12 @@ typedef int32_t  cm_error_t;
 #define CM_ERR_BUSY    -8
 #define CM_ERR_DEAD    -9
 #define CM_ERR_OVERCOMMIT -10
+#define CM_ERR_IO      -11   /* checksum mismatch / media error */
+#define CM_ERR_NOENT   -12
+#define CM_ERR_NOTEMPTY -13
+#define CM_ERR_ISDIR   -14
+#define CM_ERR_NOTDIR  -15
+#define CM_ERR_ROFS    -16
 
 #define CM_ALIGN_UP(x, a)   (((x) + ((a) - 1)) & ~((a) - 1))
 #define CM_ALIGN_DOWN(x, a) ((x) & ~((a) - 1))

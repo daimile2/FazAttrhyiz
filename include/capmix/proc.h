@@ -50,9 +50,13 @@ cm_error_t cm_fork_compat(cm_id_t *out_pid);
 
 int        cm_fdio_install(cm_proc_t *p, int handle);
 int        cm_fdio_lookup(cm_proc_t *p, int fd);
+void       cm_fdio_close_all(cm_proc_t *p);
 
 int        cm_user_hello_ran(void);
 void       cm_user_hello(void);
-int        cm_proc_jetsam(void); /* kill lowest QoS live user proc */
+cm_id_t    cm_proc_jetsam_pick(int *is_oom); /* L4: kill one, return pid */
+int        cm_proc_alive(cm_id_t pid);
+int        cm_proc_kill_log(cm_id_t *out, int max);
+void       cm_proc_kill_log_reset(void);
 
 #endif

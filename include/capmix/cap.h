@@ -21,6 +21,7 @@ typedef enum {
     CM_OBJ_JOB,           /* Fuchsia-style container / coalition */
     CM_OBJ_PORT,
     CM_OBJ_EVENT,
+    CM_OBJ_FILE,          /* open VFS file; fdio maps fd -> this handle */
     CM_OBJ_NTYPES
 } cm_obj_type_t;
 

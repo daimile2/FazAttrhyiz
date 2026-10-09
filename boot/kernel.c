@@ -249,8 +249,8 @@ void capmix_after_paging(void)
     cm_sched_init();
     cm_proc_init();
     cm_syscall_init();
+    cm_io_init();      /* blk first: the VFS mounts the COW volume from it */
     cm_vfs_init();
-    cm_io_init();
     cm_net_init();
     cm_security_init();
     cm_virt_init();
@@ -455,91 +455,10 @@ int capmix_selftest(void)
         }
     }
 
-    kinfo("--- selftest: COW volume ---");
+    kinfo("--- selftest: phase 3 (pressure pipeline + VFS + COW volume) ---");
     {
-        cm_id_t orig = 0, clone = 0;
-        if (cm_vfs_create("/data/note", 0, &orig) != CM_OK) { kerr("create"); fails++; }
-        const char *v1 = "generation-one";
-        if (cm_vfs_write(orig, 0, v1, 15) != CM_OK) { kerr("write v1"); fails++; }
-        uint64_t gen0 = cm_vfs_super_gen();
-        if (cm_cow_snapshot("tm-1") != CM_OK) { kerr("snap"); fails++; }
-        if (cm_cow_clone(orig, &clone) != CM_OK) { kerr("clone"); fails++; }
-        const char *v2 = "generation-two";
-        if (cm_vfs_write(clone, 0, v2, 15) != CM_OK) { kerr("write clone"); fails++; }
-        char ra[16], rb[16];
-        memset(ra, 0, sizeof(ra));
-        memset(rb, 0, sizeof(rb));
-        cm_vfs_read(orig, 0, ra, 15);
-        cm_vfs_read(clone, 0, rb, 15);
-        if (memcmp(ra, v1, 15) != 0) { kerr("COW broken: origin mutated"); fails++; }
-        else kinfo("cow: origin still '%s' after clone write", ra);
-        if (memcmp(rb, v2, 15) != 0) { kerr("clone readback fail"); fails++; }
-        else kinfo("cow: clone is '%s' (independent)", rb);
-        if (cm_vfs_super_gen() <= gen0) { kerr("super gen did not flip"); fails++; }
-        cm_id_t nc = 0;
-        cm_vfs_create("/data/db.wal", CM_FS_NOCOW, &nc);
-        cm_vfs_write(nc, 0, "xxxx", 4);
-        cm_vfs_write(nc, 0, "yyyy", 4);
-        cm_vfs_scrub();
-        cm_vol_stat_t vs;
-        cm_vfs_stat(&vs);
-        kinfo("vol: gen=%llu snaps=%llu used=%llu/%llu files=%llu scrub_err=%u",
-              (unsigned long)vs.super_gen, (unsigned long)vs.nsnaps,
-              (unsigned long)vs.used_blocks,
-              (unsigned long)(vs.used_blocks + vs.free_blocks),
-              (unsigned long)vs.files, vs.last_scrub_errors);
-    }
-
-    kinfo("--- selftest: pressure pipeline (fill, reclaim, survive) ---");
-    {
-        cm_mm_stats_t before, after;
-        /* File cache: more writes → clean pages L1 can drop. */
-        for (int i = 0; i < 40; i++) {
-            cm_id_t ino = 0;
-            char path[16];
-            path[0] = '/'; path[1] = 'c'; path[2] = '0' + (char)(i / 10);
-            path[3] = '0' + (char)(i % 10); path[4] = 0;
-            if (cm_vfs_create(path, 0, &ino) == CM_OK)
-                cm_vfs_write(ino, 0, "cache-fill", 10);
-        }
-        for (int i = 0; i < 80; i++) {
-            void *pg = cm_page_alloc(0);
-            if (!pg) break;
-            cm_anon_track(pg);
-        }
-        cm_id_t hog = 0;
-        cm_spawn_attr_t hattr = {
-            .path = "idle-hog",
-            .entry = cm_user_hello,
-            .qos = CM_QOS_IDLE,
-            .image_pages = 4,
-            .stack_pages = 2,
-        };
-        (void)cm_posix_spawn(&hattr, &hog);
-
-        cm_mm_stats(&before);
-        kinfo("pressure before: free=%llu cache=%llu anon=%llu",
-              (unsigned long)before.free_pages,
-              (unsigned long)before.file_cache_pages,
-              (unsigned long)before.anon_pages);
-        uint64_t got = cm_pressure_reclaim(64);
-        cm_pressure_tick();
-        cm_mm_stats(&after);
-        kinfo("pressure after:  free=%llu cache=%llu anon=%llu comp=%llu swap=%llu jetsam=%u reclaimed=%llu",
-              (unsigned long)after.free_pages,
-              (unsigned long)after.file_cache_pages,
-              (unsigned long)after.anon_pages,
-              (unsigned long)after.compressed_pages,
-              (unsigned long)after.swap_slots,
-              after.jetsam_kills, (unsigned long)got);
-        if (after.free_pages <= before.free_pages) {
-            kerr("reclaim did not free pages");
-            fails++;
-        } else {
-            kinfo("pressure: survived fill, free %llu → %llu",
-                  (unsigned long)before.free_pages,
-                  (unsigned long)after.free_pages);
-        }
+        extern int cm_phase3_selftest(void);
+        fails += cm_phase3_selftest();
         cm_mm_dump();
     }
 

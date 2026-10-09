@@ -240,6 +240,8 @@ uint32_t cm_lapic_ccr(void)
     return lapic_read(0x390);
 }
 
+uint64_t cm_tsc_hz(void) { return g_tsc_freq; }   /* 0 = unknown (hosted) */
+
 uint64_t cm_tsc_deadline(void)
 {
     return g_deadline ? rdmsr(MSR_TSC_DEADLINE) : 0;

@@ -22,6 +22,19 @@
 #define CM_BLK_QD        32
 #define CM_BLK_SECTOR    512
 
+/* Ramdisk layout (8 MiB, sectors of 512 B). Three fixed partitions, so the
+ * raw uring/blk selftest at LBA 0 can never land on swap or the volume.
+ *   [0, 64)          raw   — uring/blk-mq selftests
+ *   [64, 8256)       swap  — 4 MiB, compressed-segment swap (pressure L3)
+ *   [8256, 16384)    fs    — COW volume, 1016 blocks of 4 KiB          */
+#define CM_BLK_DISK_SECT   16384u
+#define CM_BLK_RAW_LBA     0u
+#define CM_BLK_RAW_SECT    64u
+#define CM_BLK_SWAP_LBA    64u
+#define CM_BLK_SWAP_SECT   8192u
+#define CM_BLK_FS_LBA      8256u
+#define CM_BLK_FS_SECT     (CM_BLK_DISK_SECT - CM_BLK_FS_LBA)
+
 #define CM_OP_NOP    0
 #define CM_OP_READ   1
 #define CM_OP_WRITE  2
@@ -70,6 +83,7 @@ typedef struct {
     void    *buf;
     int32_t  status;
     int      qid;
+    uint64_t tag;      /* caller cookie; cm_blk_rw() matches on it */
 } cm_bio_t;
 
 cm_error_t cm_irq_init(void);
@@ -90,6 +104,13 @@ cm_error_t cm_blk_init(void);
 cm_error_t cm_blk_submit(const cm_bio_t *bio);
 cm_error_t cm_blk_poll(cm_bio_t *out);
 uint64_t   cm_blk_completed(void);
+/* Synchronous helper: submit one bio through blk-mq and reap exactly its own
+ * completion. Returns CM_OK or the bio's negative status. */
+cm_error_t cm_blk_rw(uint32_t op, uint64_t lba, uint32_t nsect, void *buf);
+int        cm_blk_online(void);
+/* Test hook: raw sector access that bypasses the queue, so a selftest can
+ * corrupt media the way a failing disk would (bit rot under the FS). */
+uint8_t   *cm_blk_raw_sector(uint64_t lba);
 
 cm_error_t   cm_drv_init(void);
 int          cm_drv_bind(const char *name, int irq, cm_id_t pid);

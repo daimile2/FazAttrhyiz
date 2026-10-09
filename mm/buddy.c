@@ -161,6 +161,9 @@ void cm_mm_init(const cm_mem_region_t *regions, int nregions)
     extern void cm_commit_init(uint64_t total_pages);
     cm_slab_init();
     cm_commit_init(g_total_pages);
+    cm_pressure_init();
+    cm_pcache_init();
+    cm_anon_init();
     kinfo("mm: buddy ready, %llu pages (%llu KiB), max order %d",
           (unsigned long)g_total_pages,
           (unsigned long)(g_total_pages * CM_PAGE_SIZE / 1024),
@@ -259,22 +262,32 @@ void cm_mm_stats(cm_mm_stats_t *out)
     cm_commit_stats(&out->committed_pages, &out->commit_limit);
     out->pressure         = cm_pressure_current();
     out->compressed_pages = cm_compressed_pages();
+    out->pool_pages       = cm_pool_pages();
     out->file_cache_pages = cm_file_cache_pages();
     out->anon_pages       = cm_anon_pages();
+    out->swapped_pages    = cm_swapped_pages();
     out->swap_slots       = cm_swap_slots();
+    out->swap_total       = cm_swap_total();
     out->jetsam_kills     = cm_jetsam_kills();
+    out->oom_kills        = cm_oom_kills();
 }
+
+uint64_t cm_mm_free_pages(void)  { return g_free_pages; }
+uint64_t cm_mm_total_pages(void) { return g_total_pages; }
 
 void cm_mm_dump(void)
 {
     cm_mm_stats_t s;
     cm_mm_stats(&s);
-    kinfo("mm: total=%llu free=%llu commit=%llu/%llu cache=%llu anon=%llu comp=%llu swap=%llu jetsam=%u press=%s",
+    kinfo("mm: total=%llu free=%llu commit=%llu/%llu cache=%llu anon=%llu "
+          "comp=%llu(pool %llu) swapped=%llu(segs %llu/%llu) jetsam=%u oom=%u press=%s",
           (unsigned long)s.total_pages, (unsigned long)s.free_pages,
           (unsigned long)s.committed_pages, (unsigned long)s.commit_limit,
           (unsigned long)s.file_cache_pages, (unsigned long)s.anon_pages,
-          (unsigned long)s.compressed_pages, (unsigned long)s.swap_slots,
-          s.jetsam_kills, cm_pressure_name(s.pressure));
+          (unsigned long)s.compressed_pages, (unsigned long)s.pool_pages,
+          (unsigned long)s.swapped_pages, (unsigned long)s.swap_slots,
+          (unsigned long)s.swap_total, s.jetsam_kills, s.oom_kills,
+          cm_pressure_name(s.pressure));
     for (unsigned o = 0; o <= CM_BUDDY_MAX_ORDER; o++) {
         if (g_free_count[o])
             kinfo("  order %u: %llu free blocks", o, (unsigned long)g_free_count[o]);

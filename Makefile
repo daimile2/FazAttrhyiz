@@ -28,6 +28,7 @@ SRC = \
 	mm/commit.c \
 	mm/pressure.c \
 	mm/cache.c \
+	mm/anon.c \
 	cap/object.c \
 	cap/handle.c \
 	sched/eevdf.c \
@@ -35,7 +36,7 @@ SRC = \
 	proc/syscall.c \
 	proc/spawn.c \
 	fs/vfs.c \
-	fs/cowvol.c \
+	fs/cowfs.c \
 	io/irq.c \
 	io/blk.c \
 	io/uring.c \
@@ -52,6 +53,7 @@ SRC = \
 	virt/job.c \
 	virt/kvm.c \
 	boot/kernel.c \
+	boot/phase3_test.c \
  
      
         

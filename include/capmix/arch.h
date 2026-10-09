@@ -107,6 +107,7 @@ uint64_t  cm_sched_preempts(void);
  * before cm_smp_probe() has run, which is correct: the BSP is index 0. */
 uint32_t  cm_lapic_id(void);
 int       cm_cpu_id(void);
+uint64_t  cm_tsc_hz(void);
 int       cm_cpu_count(void);
 void      cm_smp_probe(void);
 void      cm_smp_sched_enable(void);
