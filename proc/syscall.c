@@ -2,6 +2,7 @@
 #include "capmix/cap.h"
 #include "capmix/ipc.h"
 #include "capmix/proc.h"
+#include "capmix/io.h"
 #include "capmix/kernel.h"
 #include "capmix/obs.h"
 #include "capmix/fs.h"
@@ -29,6 +30,7 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
         } /* ELF commit belongs to image until off-CPU reap. */
         cm_fdio_close_all(p);
         cm_anon_free_owner(p->pid);
+        cm_drv_process_exit(p->pid);
     }
     if (th) th->state = CM_TH_DEAD;
 #ifndef CAPMIX_HOSTED
@@ -275,11 +277,18 @@ static int64_t sys_ipc_recv(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 
     int hid = (int)a0;
     uint64_t uout = a1;
-    if (!cm_user_ok(uout, sizeof(cm_ipc_msg_t))) return CM_ERR_INVAL;
-    if (!cm_handle_lookup(th->task, hid)) return CM_ERR_DENIED;
-
+    cm_proc_t *p = cm_proc_current();
+    if (p && p->elf) {
+        if (!cm_elf_user_range(p->elf, uout, sizeof(cm_ipc_msg_t), 6)) return CM_ERR_INVAL;
+    } else {
+        if (!cm_user_ok(uout, sizeof(cm_ipc_msg_t))) return CM_ERR_INVAL;
+        if (!cm_handle_lookup(th->task, hid)) return CM_ERR_DENIED;
+    }
     cm_ipc_msg_t kmsg;
-    cm_error_t e = cm_ipc_recv(th->task, hid, &kmsg);
+    cm_error_t e;
+    if (p && p->elf) {
+        e = cm_drv_receive(p->pid, hid, &kmsg); /* polling, no ELF blocking */
+    } else e = cm_ipc_recv(th->task, hid, &kmsg);
     if (e != CM_OK) return e;
     memcpy((void *)(uintptr_t)uout, &kmsg, sizeof(kmsg));
     return 0;
@@ -392,6 +401,8 @@ int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t 
     cm_proc_t *elf_proc = cm_proc_current();
     if (elf_proc && elf_proc->elf) {
         if (nr == CM_SYS_FORK) return CM_ERR_NOTSUP;
+        if (nr == CM_SYS_IPC_RECV && cm_drv_has_receiver(elf_proc->pid))
+            return sys_ipc_recv(a0, a1, a2, a3);
         if (nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)
             return CM_ERR_NOTSUP;
     }

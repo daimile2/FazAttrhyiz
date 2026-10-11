@@ -126,7 +126,7 @@ cm_error_t cm_channel_create(cm_task_t *owner, int *out_a, int *out_b)
     return CM_OK;
 }
 
-cm_error_t cm_ipc_send(cm_task_t *sender, int hid, const cm_ipc_msg_t *msg)
+static cm_error_t send_message(cm_task_t *sender, int hid, const cm_ipc_msg_t *msg, int direct)
 {
     if (!msg || msg->nhandles > CM_IPC_MAX_HANDLES || msg->len > CM_IPC_SMALL_BYTES)
         return CM_ERR_INVAL;
@@ -172,13 +172,13 @@ cm_error_t cm_ipc_send(cm_task_t *sender, int hid, const cm_ipc_msg_t *msg)
         cm_obs_emit(q.msg.trace, CM_EV_IPC_HANDOFF, channel_id, w->id, 0);
         cm_thread_wake(w);
         cm_thread_t *cur = cm_sched_current();
-        if (cur && cur != w) cm_arch_ctx_swap(cur->ctx_slot, w->ctx_slot);
+        if (direct && cur && cur != w) cm_arch_ctx_swap(cur->ctx_slot, w->ctx_slot);
     }
     cm_obj_release(endpoint);
     return CM_OK;
 }
 
-cm_error_t cm_ipc_recv(cm_task_t *receiver, int hid, cm_ipc_msg_t *out)
+static cm_error_t recv_message(cm_task_t *receiver, int hid, cm_ipc_msg_t *out, int park, cm_id_t expected)
 {
     if (!out) return CM_ERR_INVAL;
     uint64_t flags = cm_cap_lock();
@@ -187,6 +187,7 @@ cm_error_t cm_ipc_recv(cm_task_t *receiver, int hid, cm_ipc_msg_t *out)
     int side;
     cm_error_t err = endpoint_locked(receiver, hid, CM_RIGHT_READ, &c, &side, &endpoint);
     if (err) { cm_cap_unlock(flags); return err; }
+    if (expected && endpoint->id != expected) { cm_cap_unlock(flags); return CM_ERR_DENIED; }
     cm_endp_t *local = local_end(c, side);
     if (local->count) {
         cm_queued_msg_t *q = &local->slots[local->head];
@@ -211,6 +212,7 @@ cm_error_t cm_ipc_recv(cm_task_t *receiver, int hid, cm_ipc_msg_t *out)
         return CM_OK;
     }
     if (c->closed[side ^ 1]) { cm_cap_unlock(flags); return CM_ERR_DEAD; }
+    if (!park) { cm_cap_unlock(flags); return CM_ERR_AGAIN; }
     cm_thread_t *cur = cm_sched_current();
     if (cur) {
         if (local->recv_waiter && local->recv_waiter != cur) {
@@ -225,6 +227,40 @@ cm_error_t cm_ipc_recv(cm_task_t *receiver, int hid, cm_ipc_msg_t *out)
     if (cur) cm_arch_ctx_swap(cur->ctx_slot, -1);
     cm_irq_restore(flags);
     return CM_ERR_AGAIN;
+}
+
+cm_error_t cm_ipc_send(cm_task_t *sender, int hid, const cm_ipc_msg_t *msg)
+{ return send_message(sender, hid, msg, 1); }
+cm_error_t cm_ipc_send_deferred(cm_task_t *sender, int hid, const cm_ipc_msg_t *msg)
+{ return send_message(sender, hid, msg, 0); }
+cm_error_t cm_ipc_recv(cm_task_t *receiver, int hid, cm_ipc_msg_t *out)
+{ return recv_message(receiver, hid, out, 1, 0); }
+cm_error_t cm_ipc_try_recv(cm_task_t *receiver, int hid, cm_ipc_msg_t *out)
+{ return recv_message(receiver, hid, out, 0, 0); }
+
+cm_error_t cm_ipc_try_recv_object(cm_task_t *receiver, int hid, cm_id_t object, cm_ipc_msg_t *out)
+{ return recv_message(receiver, hid, out, 0, object); }
+
+cm_error_t cm_ipc_export_sender(cm_task_t *owner, int send_hid, int recv_hid,
+                                cm_task_t *broker, int *out_hid, cm_id_t *recv_object)
+{
+    if (!broker || !out_hid || !recv_object) return CM_ERR_INVAL;
+    uint64_t flags = cm_cap_lock();
+    cm_channel_t *a, *b;
+    cm_object_t *send_obj, *recv_obj;
+    int sa, sb;
+    cm_error_t err = endpoint_locked(owner, send_hid, CM_RIGHT_WRITE, &a, &sa, &send_obj);
+    if (!err) err = endpoint_locked(owner, recv_hid, CM_RIGHT_READ, &b, &sb, &recv_obj);
+    if (!err && (a != b || sa == sb)) err = CM_ERR_INVAL;
+    cm_handle_t *send = cm_handle_lookup(owner, send_hid);
+    if (!err && !(send->rights & CM_RIGHT_DUPLICATE)) err = CM_ERR_DENIED;
+    if (!err) {
+        int n = cm_handle_install_locked(broker, send_obj, CM_RIGHT_WRITE);
+        if (n < 0) err = n;
+        else { *out_hid = n; *recv_object = recv_obj->id; }
+    }
+    cm_cap_unlock(flags);
+    return err;
 }
 
 cm_error_t cm_ipc_call(cm_task_t *sender, int hid,

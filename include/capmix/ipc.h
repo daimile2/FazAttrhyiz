@@ -36,6 +36,14 @@ typedef struct cm_channel cm_channel_t;
 cm_error_t cm_channel_create(cm_task_t *owner, int *out_a, int *out_b);
 cm_error_t cm_ipc_send(cm_task_t *sender, int hid, const cm_ipc_msg_t *msg);
 cm_error_t cm_ipc_recv(cm_task_t *receiver, int hid, cm_ipc_msg_t *out);
+/* Bottom-half safe: queue and wake, never directly switch into the peer. */
+cm_error_t cm_ipc_send_deferred(cm_task_t *sender, int hid, const cm_ipc_msg_t *msg);
+/* Poll receive: empty -> AGAIN without parking the caller. */
+cm_error_t cm_ipc_try_recv(cm_task_t *receiver, int hid, cm_ipc_msg_t *out);
+cm_error_t cm_ipc_try_recv_object(cm_task_t *receiver, int hid, cm_id_t object, cm_ipc_msg_t *out);
+/* Export a WRITE-only sender for a validated opposite-endpoint pair. */
+cm_error_t cm_ipc_export_sender(cm_task_t *owner, int send_hid, int recv_hid,
+                                cm_task_t *broker, int *out_hid, cm_id_t *recv_object);
 cm_error_t cm_ipc_call(cm_task_t *sender, int hid,
                        const cm_ipc_msg_t *req, cm_ipc_msg_t *reply);
 

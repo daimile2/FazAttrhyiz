@@ -1,4 +1,5 @@
 #include "capmix/proc.h"
+#include "capmix/io.h"
 #include "capmix/syscall.h"
 #include "capmix/kernel.h"
 #include "capmix/obs.h"
@@ -237,6 +238,7 @@ static void proc_kill(cm_proc_t *p, int64_t code)
     }
     p->exited = 1;
     p->exit_code = code;
+    cm_drv_process_exit(p->pid);
 }
 
 /* L4 victim selection.

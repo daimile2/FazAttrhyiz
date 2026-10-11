@@ -505,45 +505,8 @@ int capmix_selftest(void)
                   cm_uring_inflight(), (unsigned long)cm_blk_completed());
         }
 
-        cm_id_t dpid = 0;
-        cm_spawn_attr_t dattr = {
-            .path = "com.capmix.blockd",
-            .entry = cm_user_hello,
-            .qos = CM_QOS_UTILITY,
-            .image_pages = 4,
-            .stack_pages = 2,
-        };
-        (void)cm_posix_spawn(&dattr, &dpid);
-        int did = cm_drv_bind("blockd", 12, dpid);
-        if (did < 0) { kerr("drv bind"); fails++; }
-
-        cm_irq_inject(12);
-        uint64_t bh = cm_irq_softirq_flush();
-        kinfo("irq: top=%llu bot=%llu flushed=%llu",
-              (unsigned long)cm_irq_top_count(),
-              (unsigned long)cm_irq_bot_count(),
-              (unsigned long)bh);
-
-        if (cm_drv_crash(did) != CM_OK) { kerr("drv crash helper"); fails++; }
-        cm_irq_inject(12);
-        (void)cm_irq_softirq_flush();
-
-        sq.opcode = CM_OP_READ;
-        sq.user_data = 0x33;
-        (void)cm_uring_submit(&sq);
-        (void)cm_uring_complete(&cq);
-        kinfo("after crash: uring res=%d kernel_alive=%d drv_state=%d crashes=%u",
-              cq.res, cm_drv_kernel_alive(),
-              cm_drv_get(did) ? (int)cm_drv_get(did)->state : -1,
-              cm_drv_get(did) ? cm_drv_get(did)->crashes : 0);
-        {
-            void *still = cm_page_alloc(0);
-            if (!still) { kerr("kernel alloc failed after driver death"); fails++; }
-            else {
-                kinfo("isolation: after driver death buddy still works (%p)", still);
-                cm_page_free(still, 0);
-            }
-        }
+        extern int cm_phase4_selftest(void);
+        fails += cm_phase4_selftest();
     }
 
     kinfo("--- selftest: net + XDP/eBPF + nft ---");

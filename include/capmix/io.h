@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "config.h"
+#include "ipc.h"
 
 /* Layer 5 + phase 4:
  *   io_uring SQ/CQ          — Linux
@@ -64,13 +65,25 @@ typedef enum {
     CM_DRV_OFFLINE,   /* crashed or unbound — kernel still up */
 } cm_drv_state_t;
 
+#define CM_DRV_IRQ_EVENT 0x495251u
+/* Sequence is the first IRQ in a coalesced packet; count is its multiplicity. */
+typedef struct {
+    uint32_t irq, driver_id;
+    uint64_t sequence, count;
+} cm_drv_irq_packet_t;
+
 typedef struct {
     int           id;
     const char   *name;
     cm_drv_state_t state;
     int           irq;
     cm_id_t       pid;         /* user-mode driver process */
-    int           chan_k;      /* kernel endpoint handle in kernel task */
+    int           chan_k;      /* WRITE-only endpoint in broker task */
+    int           chan_u;
+    cm_id_t       recv_object, thread_id;
+    uint64_t      delivered, received, pending, pending_sequence;
+    uint64_t      backpressure, dropped;
+    char          name_storage[64];
     uint32_t      crashes;
     uint64_t      irqs;
     uint64_t      ios;
@@ -88,10 +101,13 @@ typedef struct {
 
 cm_error_t cm_irq_init(void);
 cm_error_t cm_irq_request(int irq, cm_irq_handler_t h, void *arg, const char *name);
+cm_error_t cm_irq_release(int irq, cm_irq_handler_t h, void *arg);
 void       cm_irq_inject(int irq);          /* hosted: pretend hardware fired */
 uint64_t   cm_irq_softirq_flush(void);      /* bottom half */
 uint64_t   cm_irq_top_count(void);
 uint64_t   cm_irq_bot_count(void);
+uint64_t   cm_irq_overflow_count(void);
+uint64_t   cm_irq_stale_count(void);
 
 cm_error_t cm_uring_init(void);
 cm_error_t cm_uring_submit(const cm_sqe_t *e);
@@ -114,6 +130,11 @@ uint8_t   *cm_blk_raw_sector(uint64_t lba);
 
 cm_error_t   cm_drv_init(void);
 int          cm_drv_bind(const char *name, int irq, cm_id_t pid);
+int          cm_drv_bind_channel(const char *name, int irq, cm_id_t pid, int send_hid, int recv_hid);
+uint64_t     cm_drv_irq_retry(void);
+cm_error_t   cm_drv_receive(cm_id_t pid, int recv_hid, cm_ipc_msg_t *out);
+int          cm_drv_has_receiver(cm_id_t pid);
+void         cm_drv_process_exit(cm_id_t pid);
 cm_error_t   cm_drv_crash(int id);          /* isolate: offline device, keep kernel */
 cm_driver_t *cm_drv_get(int id);
 int          cm_drv_kernel_alive(void);
