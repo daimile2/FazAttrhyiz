@@ -23,6 +23,8 @@ typedef struct {
     uint64_t         stack_pages;
 } cm_spawn_attr_t;
 
+struct cm_elf_image;
+
 typedef struct cm_proc {
     int           used;
     cm_id_t       pid;
@@ -36,14 +38,24 @@ typedef struct cm_proc {
     int           fd[CM_FD_MAX]; /* posix fd → capability handle, -1 empty */
     cm_object_t  *vmar;
     cm_object_t  *vmo;
+    struct cm_elf_image *elf;
+    cm_id_t       elf_thread_id;
+    int           elf_started, elf_cpl, elf_write_calls;
+    uint64_t      elf_written_bytes, elf_timer_entries, elf_timer_before;
+    int           elf_cpu;
 } cm_proc_t;
 
 void       cm_proc_init(void);
 cm_proc_t *cm_proc_current(void);
 cm_proc_t *cm_proc_lookup(cm_id_t pid);
 
-/* First-class. Charges commit up front (no-overcommit). */
+/* entry!=NULL: existing C entry; entry==NULL: load static ET_EXEC from path. */
 cm_error_t cm_posix_spawn(const cm_spawn_attr_t *attr, cm_id_t *out_pid);
+
+/* Release an exited ELF image only after its thread has left the CPU. */
+cm_error_t cm_proc_reap_elf(cm_id_t pid);
+/* Stage-2 serial runner: timer stays live, but no kernel-thread TSS restore. */
+int cm_proc_elf_serial_task(const cm_task_t *task);
 
 /* Compat only. Hosted: returns -CM_ERR_NOTSUP and logs the reason. */
 cm_error_t cm_fork_compat(cm_id_t *out_pid);

@@ -5,6 +5,7 @@
 #include "capmix/kernel.h"
 #include "capmix/obs.h"
 #include "capmix/fs.h"
+#include "capmix/elf.h"
 
 #include <string.h>
 
@@ -22,9 +23,10 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     if (p) {
         p->exited = 1;
         p->exit_code = (int64_t)a0;
-        if (p->aspace_pages)
-            cm_commit_uncharge(p->aspace_pages);
-        p->aspace_pages = 0;
+        if (!p->elf) {
+            if (p->aspace_pages) cm_commit_uncharge(p->aspace_pages);
+            p->aspace_pages = 0;
+        } /* ELF commit belongs to image until off-CPU reap. */
         cm_fdio_close_all(p);
         cm_anon_free_owner(p->pid);
     }
@@ -83,6 +85,11 @@ static int64_t sys_write(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     uint64_t len = a2;
     cm_proc_t *p = cm_proc_current();
     if (!buf) return CM_ERR_INVAL;
+    if (p && p->elf) {
+        if (fd != 1 && fd != 2) return CM_ERR_INVAL;
+        if (!cm_elf_user_range(p->elf, a1, len, 4)) return CM_ERR_INVAL;
+        p->elf_write_calls++; p->elf_written_bytes += len;
+    }
     if (fd > 2) {
         int64_t err;
         cm_file_t *f = fd_file(fd, CM_RIGHT_WRITE, &err);
@@ -380,6 +387,14 @@ const char *cm_sys_name(uint32_t nr)
 
 int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
+    /* Bounded ELF ABI until all pointer-bearing syscalls have copyin/out.
+     * Leave the existing hosted/C-entry and embedded ring3 tests unchanged. */
+    cm_proc_t *elf_proc = cm_proc_current();
+    if (elf_proc && elf_proc->elf) {
+        if (nr == CM_SYS_FORK) return CM_ERR_NOTSUP;
+        if (nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)
+            return CM_ERR_NOTSUP;
+    }
     if (cm_obs_enabled()) {
         cm_trace_t tr = cm_trace_new();
         cm_obs_emit(tr, CM_EV_BOOT /* reuse until SYS event exists */, nr, a0, a1);

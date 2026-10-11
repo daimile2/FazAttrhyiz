@@ -4,6 +4,7 @@
 #include "capmix/klog.h"
 #include "capmix/kernel.h"
 #include "capmix/config.h"
+#include "capmix/elf.h"
 
 #include <string.h>
 
@@ -50,6 +51,15 @@ void cm_pcpu_init(int cpu, uint64_t kstack_top)
 
 #ifdef CAPMIX_HOSTED
 
+void cm_usermode_run_elf(struct cm_proc *p)
+{
+    /* Hosted validates the loader without pretending to execute x86 ring3. */
+    p->elf_started = 0;
+    p->exited = 1; p->exit_code = CM_ERR_NOTSUP;
+    cm_thread_t *th = cm_sched_current();
+    if (th) th->state = CM_TH_DEAD;
+    kinfo("exec: hosted ELF execution skipped (no ring3)");
+}
 void cm_usermode_init(void) {}
 void cm_land_user(void) {}
 int  cm_usermode_selftest(void)
@@ -239,8 +249,60 @@ int cm_usermode_selftest(void)
     return -1; /* not reached after a successful iretq */
 }
 
+void cm_usermode_run_elf(struct cm_proc *p)
+{
+    if (!g_um_ready) cm_usermode_init();
+    cm_thread_t *th = cm_sched_current();
+    if (!p || !p->elf || !th || th->task != p->task || cm_cpu_id() != p->elf_cpu)
+        cm_panic("exec: invalid ELF runner context");
+    uint64_t irq = cm_irq_save();
+    CM_UNUSED(irq); /* returns through scheduler rather than this frame */
+    int cpu = cm_cpu_id();
+    uint64_t kstack;
+    __asm__ volatile("movq %%rsp, %0" : "=r"(kstack));
+    cm_pcpu_init(cpu, kstack);
+    g_pcpu[cpu].full_cr3 = p->elf->cr3;
+    g_pcpu[cpu].user_cr3 = p->elf->shadow_cr3;
+    g_pcpu[cpu].incoming_cr3 = 0; g_pcpu[cpu].bad_entries = 0;
+    uint64_t entry_top = (uint64_t)(uintptr_t)&g_entry_stacks[cpu][16384];
+    cm_tss_set_rsp0(cpu, entry_top);
+    cm_leave_user = 0;
+    extern uint64_t cm_entry_user_irqs;
+    p->elf_timer_before = cm_entry_user_irqs;
+    p->elf_started = 1;
+    kinfo("exec ring3: pid=%llu entry=%llx rsp=%llx cpu=%d",
+          (unsigned long)p->pid, (unsigned long)p->elf->entry,
+          (unsigned long)p->elf->stack, cpu);
+    cm_space_load(p->elf->cr3);
+    cm_enter_user(p->elf->shadow_cr3, p->elf->entry, p->elf->stack, entry_top);
+    cm_panic("exec: unexpected return from IRET");
+}
+
 void cm_land_user(void)
 {
+    cm_proc_t *elf_proc = cm_proc_current();
+    if (elf_proc && elf_proc->elf) {
+        int cpu = cm_cpu_id();
+        uint64_t actual;
+        __asm__ volatile("movq %%cr3, %0" : "=r"(actual));
+        if (!elf_proc->exited || actual != elf_proc->elf->cr3)
+            cm_panic("exec: exit did not retain full image CR3");
+#if CM_KPTI
+        if (g_pcpu[cpu].bad_entries || g_pcpu[cpu].incoming_cr3 != elf_proc->elf->shadow_cr3)
+            cm_panic("exec: shadow CR3 mismatch");
+#else
+        CM_UNUSED(cpu);
+#endif
+        extern uint64_t cm_entry_user_irqs;
+        elf_proc->elf_timer_entries = cm_entry_user_irqs - elf_proc->elf_timer_before;
+        kinfo("exec exit: pid=%llu code=%lld writes=%d bytes=%llu timer_entries=%llu",
+              (unsigned long)elf_proc->pid, (long)elf_proc->exit_code,
+              elf_proc->elf_write_calls, (unsigned long)elf_proc->elf_written_bytes,
+              (unsigned long)elf_proc->elf_timer_entries);
+        cm_space_load(cm_paging_cr3());
+        cm_arch_ctx_swap(elf_proc->main->ctx_slot, -1);
+        cm_panic("exec: exited ELF thread resumed");
+    }
 #if CM_KPTI
     int cpu = cm_cpu_id();
     uint64_t actual;

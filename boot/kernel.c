@@ -467,6 +467,9 @@ int capmix_selftest(void)
         cm_mm_dump();
     }
 
+    extern int cm_phase2_selftest(void);
+    fails += cm_phase2_selftest();
+
     kinfo("--- selftest: irq + blk-mq + user driver isolation ---");
     {
         static uint8_t wbuf[CM_BLK_SECTOR];

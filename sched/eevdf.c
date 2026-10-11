@@ -5,6 +5,7 @@
 #include "capmix/klog.h"
 #include "capmix/obs.h"
 #include "capmix/config.h"
+#include "capmix/proc.h"
 
 #include <string.h>
 
@@ -657,6 +658,9 @@ void cm_sched_preempt_now(void)
     if (!cm_need_resched()) return;
 
     cm_need_resched_clear();
+    /* Only the bounded ELF runner executes to exit. Normal kernel threads
+     * keep their existing preemption behavior; timer/EOI still run for ELF. */
+    if (cm_proc_elf_serial_task(cur->task)) return;
 
     /* The outgoing thread must still be the owner of its ctx slot.
      *

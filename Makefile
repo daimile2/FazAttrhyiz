@@ -34,7 +34,7 @@ SRC = \
 	sched/eevdf.c \
 	ipc/channel.c \
 	proc/syscall.c \
-	proc/spawn.c \
+	proc/spawn.c proc/elf.c \
 	fs/vfs.c \
 	fs/cowfs.c \
 	io/irq.c \
@@ -53,7 +53,7 @@ SRC = \
 	virt/job.c \
 	virt/kvm.c \
 	boot/kernel.c \
-	boot/phase0_test.c boot/phase1_test.c \
+	boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c \
 	boot/phase3_test.c \
  
      
@@ -74,7 +74,7 @@ FREE_LDFLAGS = -nostdlib -static -no-pie -Wl,--build-id=none \
 
 all: test
 
-$(HOST_BIN): $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
+$(HOST_BIN): build/hello_elf.inc $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
 	$(CC) $(CFLAGS) $(INCLUDES) -DCAPMIX_HOSTED -o $@ $(HOST_SRC)
 
 test: $(HOST_BIN)
@@ -82,9 +82,19 @@ test: $(HOST_BIN)
 	@if [ -x $(HOST_BIN) ]; then ./$(HOST_BIN); \
 	 else cp $(HOST_BIN) /tmp/capmix-hosted && chmod +x /tmp/capmix-hosted && /tmp/capmix-hosted; fi
 
+build/hello-elf.o: tests/hello_elf.S
+	mkdir -p build
+	$(CC) -c -nostdlib -fno-pie -o $@ $<
+
+build/hello.elf: build/hello-elf.o tests/hello_elf.ld
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -Wl,-T,tests/hello_elf.ld -o $@ $<
+
+build/hello_elf.inc: build/hello.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@
+
 kernel: $(FREE_BIN)
 
-$(FREE_BIN): $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
+$(FREE_BIN): build/hello_elf.inc $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
 	$(CC) $(FREE_CFLAGS) $(INCLUDES) $(FREE_LDFLAGS) -o $@ $(FREE_SRC)
 
 iso: $(FREE_BIN)
@@ -109,5 +119,5 @@ iso: $(FREE_BIN)
 
 clean:
 	rm -f $(HOST_BIN) $(FREE_BIN) capmix.iso
-	rm -rf iso
+	rm -rf iso build
 	find . -name '*.o' -delete

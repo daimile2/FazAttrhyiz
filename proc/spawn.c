@@ -2,6 +2,7 @@
 #include "capmix/syscall.h"
 #include "capmix/kernel.h"
 #include "capmix/obs.h"
+#include "capmix/elf.h"
 
 #include <string.h>
 #include <stdint.h>
@@ -9,6 +10,7 @@
 static cm_proc_t g_procs[CM_MAX_PROCS];
 static cm_id_t   g_pid_next = 1;
 static int       g_hello_ran;
+static cm_proc_t *g_elf_pending;
 
 static cm_proc_t *alloc_proc(void)
 {
@@ -75,9 +77,73 @@ static void user_entry_wrap(void *arg)
         cm_syscall(CM_SYS_EXIT, 0, 0, 0, 0);
 }
 
+static void elf_entry_wrap(void *arg)
+{
+    cm_proc_t *p = arg;
+    cm_usermode_run_elf(p);
+}
+
+/* One pending ELF task at a time. Spawn is restricted to the boot CPU;
+ * this bounded first runner does not support user-thread migration. */
+static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
+{
+    if (!attr->path || cm_cpu_id() != 0) return CM_ERR_INVAL;
+    uint64_t irq = cm_irq_save();
+    if (g_elf_pending) { cm_irq_restore(irq); return CM_ERR_BUSY; }
+    cm_elf_image_t *im = NULL;
+    cm_error_t err = cm_elf_load(attr->path, &im);
+    if (err) { cm_irq_restore(irq); return err; }
+    cm_proc_t *p = alloc_proc();
+    if (!p) { cm_elf_destroy(im); cm_irq_restore(irq); return CM_ERR_NOSPC; }
+    p->pid = g_pid_next++; p->path = im->path; p->user_mode = 1;
+    p->elf = im; p->aspace_pages = im->charged; p->elf_cpu = 0;
+    p->task = cm_task_create(p->path, attr->qos);
+    if (!p->task) { cm_elf_destroy(im); memset(p, 0, sizeof(*p)); cm_irq_restore(irq); return CM_ERR_NOSPC; }
+    p->fd[0] = 0; p->fd[1] = 1; p->fd[2] = 2;
+    /* Publish pending state before the runnable thread becomes visible. */
+    g_elf_pending = p;
+    p->main = cm_thread_create(p->task, elf_entry_wrap, p, attr->qos);
+    if (!p->main) {
+        g_elf_pending = NULL;
+        /* This task has not been published to any caller and has no thread. */
+        cm_obj_release(p->task->self_obj);
+        memset(p->task, 0, sizeof(*p->task));
+        cm_elf_destroy(im); p->elf = NULL; p->path = NULL; p->used = 0;
+        cm_irq_restore(irq); return CM_ERR_NOSPC;
+    }
+    p->elf_thread_id = p->main->id;
+    kinfo("exec spawn: pid=%llu path=%s ELF entry=%llx full=%llx shadow=%llx",
+          (unsigned long)p->pid, p->path, (unsigned long)im->entry,
+          (unsigned long)im->cr3, (unsigned long)im->shadow_cr3);
+    if (out_pid) *out_pid = p->pid;
+    cm_irq_restore(irq);
+    return CM_OK;
+}
+
+int cm_proc_elf_serial_task(const cm_task_t *task)
+{
+    return g_elf_pending && g_elf_pending->task == task &&
+           g_elf_pending->elf_started && !g_elf_pending->exited;
+}
+
+cm_error_t cm_proc_reap_elf(cm_id_t pid)
+{
+    cm_proc_t *p = cm_proc_lookup(pid);
+    if (!p || !p->elf) return CM_ERR_INVAL;
+    if (!p->exited || (p->main && p->main->id == p->elf_thread_id)) return CM_ERR_BUSY;
+    cm_elf_image_t *im = p->elf;
+    p->task->name = "elf-exited"; /* do not retain a name in freed image metadata */
+    p->elf = NULL; p->path = "elf-exited"; p->aspace_pages = 0; p->main = NULL;
+    if (g_elf_pending == p) g_elf_pending = NULL;
+    cm_elf_destroy(im);
+    kinfo("exec reap: pid=%llu image/pages/commit reclaimed", (unsigned long)pid);
+    return CM_OK;
+}
+
 cm_error_t cm_posix_spawn(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
 {
-    if (!attr || !attr->entry) return CM_ERR_INVAL;
+    if (!attr) return CM_ERR_INVAL;
+    if (!attr->entry) return spawn_elf(attr, out_pid);
 
     uint64_t img = attr->image_pages ? attr->image_pages : CM_USER_IMAGE_PAGES;
     uint64_t stk = attr->stack_pages ? attr->stack_pages : CM_USER_STACK_PAGES;
@@ -165,7 +231,7 @@ static void proc_kill(cm_proc_t *p, int64_t code)
     if (g_kill_n < KILL_LOG_N) g_kill_log[g_kill_n++] = p->pid;
     cm_fdio_close_all(p);
     if (p->main) p->main->state = CM_TH_DEAD;
-    if (p->aspace_pages) {
+    if (p->aspace_pages && !p->elf) {
         cm_commit_uncharge(p->aspace_pages);
         p->aspace_pages = 0;
     }

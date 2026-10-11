@@ -139,6 +139,8 @@ void     cm_usermode_init(void);
 int      cm_usermode_selftest(void);
 uint64_t cm_usermode_syscalls(void);
 uint64_t cm_usermode_cpl(void);
+struct cm_proc;
+void cm_usermode_run_elf(struct cm_proc *proc);
 uint64_t cm_space_switch_cost(void);
 
 #endif
