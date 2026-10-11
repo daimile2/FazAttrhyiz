@@ -31,6 +31,15 @@ cm_iface_t *cm_if_get(int id)
     return &g_if[id];
 }
 
+int cm_if_find(const char *name)
+{
+    if (!name) return -1;
+    size_t len = strlen(name);
+    for (int i = 0; i < g_nif; i++)
+        if (g_if[i].name && strlen(g_if[i].name) == len && !memcmp(g_if[i].name, name, len)) return i;
+    return -1;
+}
+
 void cm_net_dump_if(void)
 {
     for (int i = 0; i < g_nif; i++)

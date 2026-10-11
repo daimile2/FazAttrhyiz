@@ -42,11 +42,11 @@ cm_xdp_act_t cm_net_rx(int ifid, const uint8_t *raw, uint16_t len)
 {
     cm_iface_t *iff = cm_if_get(ifid);
     if (!iff || !iff->up) return CM_XDP_ABORTED;
-    iff->rx++;
+    __sync_fetch_and_add(&iff->rx, 1);
 
     cm_pkt_view_t v;
     if (cm_pkt_parse(raw, len, &v) != CM_OK) {
-        iff->drop++;
+        __sync_fetch_and_add(&iff->drop, 1);
         return CM_XDP_DROP;
     }
 
@@ -54,11 +54,11 @@ cm_xdp_act_t cm_net_rx(int ifid, const uint8_t *raw, uint16_t len)
     if (cm_bpf_enabled() && iff->xdp_prog >= 0) {
         int act = cm_xdp_run(iff->xdp_prog, &v);
         if (act == CM_XDP_DROP || act == CM_XDP_ABORTED) {
-            iff->drop++;
+            __sync_fetch_and_add(&iff->drop, 1);
             return (cm_xdp_act_t)act;
         }
         if (act == CM_XDP_TX) {
-            iff->tx++;
+            __sync_fetch_and_add(&iff->tx, 1);
             return CM_XDP_TX;
         }
     }
@@ -66,10 +66,10 @@ cm_xdp_act_t cm_net_rx(int ifid, const uint8_t *raw, uint16_t len)
     /* nftables-style slow path. */
     int n = cm_nft_match(&v);
     if (n == 1) {
-        iff->drop++;
+        __sync_fetch_and_add(&iff->drop, 1);
         return CM_XDP_DROP;
     }
-    iff->tx++; /* stand-in: delivered to in-kernel stack */
+    /* PASS classifies ingress; transmit is counted only by real TX/XDP_TX. */
     cm_obs_emit(cm_trace_new(), CM_EV_ALLOC, v.proto, v.dport, v.saddr);
     return CM_XDP_PASS;
 }

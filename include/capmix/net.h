@@ -2,6 +2,7 @@
 #define CAPMIX_NET_H
 
 #include "types.h"
+#include "cap.h"
 
 /* Phase 5: in-kernel net (XNU lesson) + nftables expressiveness
  * + eBPF/XDP data plane. Conflict #5: verifier is a CVE source —
@@ -90,6 +91,7 @@ typedef struct {
 cm_error_t cm_net_init(void);
 int        cm_if_add(const char *name, uint32_t addr);
 cm_iface_t *cm_if_get(int id);
+int cm_if_find(const char *name);
 
 cm_error_t cm_pkt_parse(const uint8_t *raw, uint16_t len, cm_pkt_view_t *v);
 cm_xdp_act_t cm_net_rx(int ifid, const uint8_t *raw, uint16_t len);
@@ -104,5 +106,30 @@ uint64_t   cm_bpf_rejects(void);
 cm_error_t cm_nft_add(uint8_t proto, uint16_t dport, uint32_t src,
                       int drop, const char *label);
 void       cm_net_dump(void);
+
+/* Phase 5 bounded IPv4 UDP over lo. PORT capabilities carry typed UDP
+ * payloads, not POSIX fds. No TCP, routing, fragmentation, or blocking. */
+#define CM_UDP_ENDPOINTS 16u
+#define CM_UDP_QUEUE 8u
+#define CM_UDP_PAYLOAD 256u
+#define CM_UDP_LO_ADDR 0x7f000001u
+#define CM_UDP_FRAME_MAX (14u + 20u + 8u + CM_UDP_PAYLOAD)
+typedef struct {
+    uint32_t saddr, daddr;
+    uint16_t sport, dport, len, reserved;
+    uint8_t data[CM_UDP_PAYLOAD];
+} cm_udp_datagram_t;
+cm_error_t cm_udp_init(void);
+cm_error_t cm_udp_open(cm_task_t *task, int *out_hid);
+cm_error_t cm_udp_bind(cm_task_t *task, int hid, int ifid, uint16_t port);
+cm_error_t cm_udp_sendto(cm_task_t *task, int hid, uint16_t dport, const void *data, uint16_t len);
+cm_error_t cm_udp_recv(cm_task_t *task, int hid, cm_udp_datagram_t *out);
+cm_error_t cm_udp_close(cm_task_t *task, int hid);
+void cm_udp_process_exit(cm_task_t *task);
+/* Strict transport ingress, routed through existing XDP -> nft before queueing. */
+cm_error_t cm_udp_inject(int ifid, const uint8_t *frame, uint16_t len);
+/* Shared frame encoder for local transmit and malformed-packet tests. */
+cm_error_t cm_udp_frame(uint32_t addr, uint16_t sport, uint16_t dport,
+                        const void *data, uint16_t len, uint8_t *out, uint16_t *frame_len);
 
 #endif

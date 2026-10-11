@@ -1,5 +1,6 @@
 #include "capmix/security.h"
 #include "capmix/arch.h"
+#include "capmix/config.h"
 #include "capmix/klog.h"
 
 static uint32_t g_sip = CM_SIP_DEFAULT;
@@ -31,10 +32,7 @@ cm_error_t cm_sip_write_check(cm_vaddr_t addr)
 
 int cm_sip_allows_kext(const cm_sign_t *s)
 {
-    if (!(g_sip & CM_SIP_UNTRUSTED_KEXT)) return 1;
-    if (!s) return 0;
-    return (s->flags & (CM_SIGN_SIGNED | CM_SIGN_MODULE)) ==
-           (CM_SIGN_SIGNED | CM_SIGN_MODULE);
+    return cm_sign_verify(s, 1) == CM_OK;
 }
 
 void cm_sip_init(void)
@@ -43,7 +41,8 @@ void cm_sip_init(void)
     g_mitigations = 0;
     if (cr4 & (1ull << 20)) g_mitigations |= 0x02; /* SMEP */
     if (cr4 & (1ull << 21)) g_mitigations |= 0x04; /* SMAP */
-    /* KPTI/KASLR are policy bits we have not flipped in hardware. */
+    /* CR4 observations and configured KPTI are reported separately. */
+    kinfo("sip: kpti_configured=%u kaslr=not implemented slide=0", (unsigned)CM_KPTI);
     kinfo("sip: mask=%x cr4=%llx mitigations=%x (only SMEP/SMAP bits that are actually set)",
           g_sip, (unsigned long)cr4, g_mitigations);
 }

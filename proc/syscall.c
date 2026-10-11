@@ -31,6 +31,7 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
         cm_fdio_close_all(p);
         cm_anon_free_owner(p->pid);
         cm_drv_process_exit(p->pid);
+        cm_udp_process_exit(p->task);
     }
     if (th) th->state = CM_TH_DEAD;
 #ifndef CAPMIX_HOSTED
@@ -294,6 +295,61 @@ static int64_t sys_ipc_recv(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     return 0;
 }
 
+static cm_proc_t *udp_caller(void)
+{
+    cm_proc_t *p = cm_proc_current();
+    return p && p->elf && !p->exited ? p : NULL;
+}
+static int64_t sys_udp_open(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    CM_UNUSED(a0); CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
+    cm_proc_t *p = udp_caller();
+    if (!p) return CM_ERR_NOTSUP;
+    int hid;
+    cm_error_t err = cm_udp_open(p->task, &hid);
+    return err ? err : hid;
+}
+static int64_t sys_udp_bind(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    CM_UNUSED(a3);
+    cm_proc_t *p = udp_caller();
+    if (!p) return CM_ERR_NOTSUP;
+    if (a0 >= CM_HANDLES_PER_TASK || a1 >= CM_MAX_IFACE || !a2 || a2 > 65535) return CM_ERR_INVAL;
+    return cm_udp_bind(p->task, (int)a0, (int)a1, (uint16_t)a2);
+}
+static int64_t sys_udp_send(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    cm_proc_t *p = udp_caller();
+    if (!p) return CM_ERR_NOTSUP;
+    if (a0 >= CM_HANDLES_PER_TASK || !a1 || a1 > 65535 || !a3 || a3 > CM_UDP_PAYLOAD ||
+        !cm_elf_user_range(p->elf, a2, a3, 4)) return CM_ERR_INVAL;
+    uint8_t payload[CM_UDP_PAYLOAD];
+    memcpy(payload, (const void *)(uintptr_t)a2, (size_t)a3);
+    cm_error_t err = cm_udp_sendto(p->task, (int)a0, (uint16_t)a1, payload, (uint16_t)a3);
+    return err ? err : (int64_t)a3;
+}
+static int64_t sys_udp_recv(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    CM_UNUSED(a2); CM_UNUSED(a3);
+    cm_proc_t *p = udp_caller();
+    if (!p) return CM_ERR_NOTSUP;
+    if (a0 >= CM_HANDLES_PER_TASK || !cm_elf_user_range(p->elf, a1, sizeof(cm_udp_datagram_t), 6))
+        return CM_ERR_INVAL;
+    cm_udp_datagram_t out;
+    cm_error_t err = cm_udp_recv(p->task, (int)a0, &out);
+    if (err) return err;
+    memcpy((void *)(uintptr_t)a1, &out, sizeof(out));
+    return out.len;
+}
+static int64_t sys_udp_close(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
+    cm_proc_t *p = udp_caller();
+    if (!p) return CM_ERR_NOTSUP;
+    if (a0 >= CM_HANDLES_PER_TASK) return CM_ERR_INVAL;
+    return cm_udp_close(p->task, (int)a0);
+}
+
 static const struct {
     uint32_t    nr;
     const char *name;
@@ -317,6 +373,11 @@ static const struct {
     { CM_SYS_UNLINK,         "unlink",         sys_unlink },
     { CM_SYS_FSYNC,          "fsync",          sys_fsync },
     { CM_SYS_FORK,           "fork",           sys_fork },
+    { CM_SYS_UDP_OPEN,       "udp_open",       sys_udp_open },
+    { CM_SYS_UDP_BIND,       "udp_bind",       sys_udp_bind },
+    { CM_SYS_UDP_SEND,       "udp_send",       sys_udp_send },
+    { CM_SYS_UDP_RECV,       "udp_recv",       sys_udp_recv },
+    { CM_SYS_UDP_CLOSE,      "udp_close",      sys_udp_close },
 };
 
 
@@ -403,7 +464,8 @@ int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t 
         if (nr == CM_SYS_FORK) return CM_ERR_NOTSUP;
         if (nr == CM_SYS_IPC_RECV && cm_drv_has_receiver(elf_proc->pid))
             return sys_ipc_recv(a0, a1, a2, a3);
-        if (nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)
+        int udp_call = nr >= CM_SYS_UDP_OPEN && nr <= CM_SYS_UDP_CLOSE;
+        if (!udp_call && nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)
             return CM_ERR_NOTSUP;
     }
     if (cm_obs_enabled()) {

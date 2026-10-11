@@ -42,18 +42,18 @@ SRC = \
 	io/uring.c \
 	io/driverkit.c \
 	net/if.c \
-	net/pkt.c \
+	net/pkt.c net/udp.c \
 	net/ebpf.c \
 	net/filter.c \
 	security/seatbelt.c \
 	security/sip.c \
 	security/authz.c \
-	security/sign.c \
+	security/sign.c lib/sha256.c \
 	security/gate.c \
 	virt/job.c \
 	virt/kvm.c \
 	boot/kernel.c \
-	boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c \
+	boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c \
 	boot/phase3_test.c \
  
      
@@ -74,7 +74,7 @@ FREE_LDFLAGS = -nostdlib -static -no-pie -Wl,--build-id=none \
 
 all: test
 
-$(HOST_BIN): build/hello_elf.inc build/blockd_elf.inc $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
+$(HOST_BIN): build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
 	$(CC) $(CFLAGS) $(INCLUDES) -DCAPMIX_HOSTED -o $@ $(HOST_SRC)
 
 test: $(HOST_BIN)
@@ -102,9 +102,19 @@ build/blockd.elf: build/blockd-elf.o tests/hello_elf.ld
 build/blockd_elf.inc: build/blockd.elf scripts/embed-elf.py
 	python3 scripts/embed-elf.py $< $@ cm_blockd_elf
 
+build/net-elf.o: tests/net_elf.S
+	mkdir -p build
+	$(CC) -c -nostdlib -fno-pie -o $@ $<
+
+build/net.elf: build/net-elf.o tests/hello_elf.ld
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -Wl,-T,tests/hello_elf.ld -o $@ $<
+
+build/net_elf.inc: build/net.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_net_elf
+
 kernel: $(FREE_BIN)
 
-$(FREE_BIN): build/hello_elf.inc build/blockd_elf.inc $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
+$(FREE_BIN): build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
 	$(CC) $(FREE_CFLAGS) $(INCLUDES) $(FREE_LDFLAGS) -o $@ $(FREE_SRC)
 
 iso: $(FREE_BIN)

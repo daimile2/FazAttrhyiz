@@ -52,6 +52,7 @@ cm_error_t cm_net_init(void)
     cm_net_core_if_init();
     cm_ebpf_init();
     cm_nft_init();
+    cm_udp_init();
     kinfo("net: in-kernel stack (XNU lesson), XDP + nft");
     return CM_OK;
 }

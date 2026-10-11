@@ -16,7 +16,20 @@ cm_error_t cm_sign_verify(const cm_sign_t *s, int want_module)
         kwarn("sign: module '%s' not notarized", s->id ? s->id : "?");
         return CM_ERR_DENIED;
     }
-    kinfo("sign: ok id=%s flags=%x", s->id ? s->id : "-", s->flags);
+    uint8_t digest[CM_SHA256_SIZE];
+    if (!s->expected_digest || s->digest_size != CM_SHA256_SIZE ||
+        cm_sha256(s->content, s->content_size, digest) != CM_OK) {
+        kinfo("sign: reject missing/invalid digest or content id=%s", s->id ? s->id : "-");
+        return CM_ERR_DENIED;
+    }
+    /* Examine every digest byte without an early mismatch exit. */
+    volatile uint8_t diff = 0;
+    for (size_t i = 0; i < CM_SHA256_SIZE; i++) diff |= digest[i] ^ s->expected_digest[i];
+    if (diff) {
+        kinfo("sign: digest mismatch rejected id=%s", s->id ? s->id : "-");
+        return CM_ERR_DENIED;
+    }
+    kinfo("sign: digest verified id=%s flags=%x", s->id ? s->id : "-", s->flags);
     return CM_OK;
 }
 

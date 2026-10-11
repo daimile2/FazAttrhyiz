@@ -470,6 +470,9 @@ int capmix_selftest(void)
     extern int cm_phase2_selftest(void);
     fails += cm_phase2_selftest();
 
+    extern int cm_phase5_selftest(void);
+    fails += cm_phase5_selftest();
+
     kinfo("--- selftest: irq + blk-mq + user driver isolation ---");
     {
         static uint8_t wbuf[CM_BLK_SECTOR];
@@ -511,7 +514,8 @@ int capmix_selftest(void)
 
     kinfo("--- selftest: net + XDP/eBPF + nft ---");
     {
-        int lo = cm_if_add("lo", 0x7f000001);
+        int lo = cm_if_find("lo");
+        if (lo < 0) lo = cm_if_add("lo", 0x7f000001);
         int eth = cm_if_add("eth0", 0x0a000002);
         CM_UNUSED(lo);
 
@@ -614,14 +618,8 @@ int capmix_selftest(void)
             kinfo("sip: root cannot write kernel text");
         }
 
-        cm_sign_t unsigned_img = { .hash = 1, .flags = CM_SIGN_NONE, .id = "evil.kext" };
-        cm_sign_t signed_only  = { .hash = 2, .flags = CM_SIGN_SIGNED | CM_SIGN_MODULE, .id = "half.kext" };
-        cm_sign_t good         = { .hash = 3,
-            .flags = CM_SIGN_SIGNED | CM_SIGN_NOTARIZED | CM_SIGN_MODULE,
-            .id = "ok.kext" };
-        if (cm_sign_verify(&unsigned_img, 1) != CM_ERR_DENIED) { kerr("unsigned"); fails++; }
-        if (cm_sign_verify(&signed_only, 1) != CM_ERR_DENIED) { kerr("unnotarized kext"); fails++; }
-        if (cm_sign_verify(&good, 1) != CM_OK) { kerr("good kext"); fails++; }
+        extern int cm_phase6_selftest(void);
+        fails += cm_phase6_selftest();
 
         /* One-shot elevate for kext load — second consume fails. */
         if (cm_authz_grant(sbox->id, CM_OP_KEXT_LOAD) < 0) { kerr("authz grant"); fails++; }

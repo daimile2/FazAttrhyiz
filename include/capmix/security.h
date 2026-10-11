@@ -1,5 +1,6 @@
 #ifndef CAPMIX_SECURITY_H
 #define CAPMIX_SECURITY_H
+#include "capmix/sha256.h"
 
 #include "types.h"
 #include "cap.h"
@@ -48,7 +49,12 @@ typedef struct {
 } cm_dac_t;
 
 typedef struct {
-    uint64_t hash;
+    /* Expected digest must come from trusted policy, not the untrusted image.
+     * Caller keeps both buffers immutable throughout verification. */
+    const void *content;
+    size_t content_size;
+    const uint8_t *expected_digest;
+    size_t digest_size;
     uint32_t flags;
     const char *id;
 } cm_sign_t;
@@ -80,7 +86,7 @@ void       cm_lsm_register(cm_lsm_hook_t h);
 cm_error_t cm_lsm_check(uint32_t op, cm_id_t subject, uint64_t obj);
 
 uint64_t   cm_kaslr_slide(void);
-int        cm_mitigations(void); /* bitmask: KPTI|SMEP|SMAP|KASLR */
+int        cm_mitigations(void); /* Actual CR4 bits: 0x02 SMEP, 0x04 SMAP; no KASLR claim. */
 
 /* Combined gate used by syscall-shaped helpers. */
 cm_error_t cm_sec_gate(cm_task_t *task, int hid, cm_rights_t cap_need,
