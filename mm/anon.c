@@ -1,3 +1,4 @@
+#include "capmix/trace.h"
 #include "capmix/mm.h"
 #include "capmix/compress.h"
 #include "capmix/io.h"
@@ -610,6 +611,7 @@ void *cm_anon_access(cm_anon_id_t id, int write)
         cm_page_free(pg, 0);
         return r;
     }
+    CM_TRACE(MM_FAULT,0,id,owner,a->state);
     if (!fault_in(a, id, pg)) {
         cm_mm_unlock();
         cm_page_free(pg, 0);

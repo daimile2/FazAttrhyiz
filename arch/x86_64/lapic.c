@@ -1,3 +1,4 @@
+#include "capmix/trace.h"
 #include "capmix/arch.h"
 #include "capmix/config.h"      /* CM_MAX_CPUS 的唯一来源 */
 #include "capmix/klog.h"
@@ -124,6 +125,42 @@ static uint64_t pit_run(uint32_t count)
     outb(CM_PIT_GATE, gate);
     if (!ok || t1 <= t0) return 0;
     return t1 - t0;
+}
+
+#ifndef CAPMIX_HOSTED
+static void (*trace_callback)(unsigned);
+static unsigned trace_generation,trace_rounds,trace_ready[CM_MAX_CPUS],trace_done[CM_MAX_CPUS];
+static unsigned trace_go;
+#endif
+int cm_smp_trace_test(void (*callback)(unsigned),unsigned rounds)
+{
+#ifdef CAPMIX_HOSTED
+    for (unsigned n=0;n<rounds;n++) callback(0);
+    return 1;
+#else
+    if (!callback || !rounds) return -1;
+    trace_callback=callback; trace_rounds=rounds;
+    __atomic_store_n(&trace_go,0,__ATOMIC_RELEASE);
+    unsigned generation=__atomic_add_fetch(&trace_generation,1,__ATOMIC_RELEASE);
+    uint64_t deadline=cm_rdtsc()+cm_tsc_hz()*2;
+    bool ready=false;
+    do {
+        ready=true;
+        for (int i=1;i<cm_cpu_count();i++) if (__atomic_load_n(&trace_ready[i],__ATOMIC_ACQUIRE)!=generation) ready=false;
+        if (ready) break;
+        __asm__ volatile("pause");
+    } while (cm_rdtsc()<deadline);
+    __atomic_store_n(&trace_go,generation,__ATOMIC_RELEASE);
+    if (ready) for (unsigned n=0;n<rounds;n++) callback(0);
+    bool done=false;
+    do {
+        done=true;
+        for (int i=1;i<cm_cpu_count();i++) if (__atomic_load_n(&trace_done[i],__ATOMIC_ACQUIRE)!=generation) done=false;
+        if (done) break;
+        __asm__ volatile("pause");
+    } while (cm_rdtsc()<deadline);
+    return ready && done ? cm_cpu_count() : -1;
+#endif
 }
 
 static uint64_t tsc_freq_cpuid(void)
@@ -258,6 +295,12 @@ void cm_lapic_map_before_cr3(void)
         kinfo("lapic: mapped phys=%llx -> %llx (PCD)",
               (unsigned long)base, (unsigned long)CM_LAPIC_VIRT);
 #endif
+}
+
+int cm_cpu_apic_id(int cpu,uint32_t *id)
+{
+    if (!id || cpu<0 || cpu>=cm_cpu_count()) return -1;
+    *id=g_cpu_lapic_id[cpu]; return 0;
 }
 
 void cm_smp_probe(void)
@@ -395,6 +438,15 @@ void cm_ap_main(int cpu)
      * stress phase flips it on once nothing else is asserting. */
     for (;;) {
         g_ap_loops[cpu]++;
+        unsigned generation=__atomic_load_n(&trace_generation,__ATOMIC_ACQUIRE);
+        if (generation && __atomic_load_n(&trace_done[cpu],__ATOMIC_RELAXED)!=generation) {
+            __atomic_store_n(&trace_ready[cpu],generation,__ATOMIC_RELEASE);
+            while (__atomic_load_n(&trace_go,__ATOMIC_ACQUIRE)!=generation) __asm__ volatile("pause");
+            uint64_t trace_flags=cm_irq_save();
+            for (unsigned n=0;n<trace_rounds;n++) trace_callback((unsigned)cpu);
+            cm_irq_restore(trace_flags);
+            __atomic_store_n(&trace_done[cpu],generation,__ATOMIC_RELEASE);
+        }
         if (__atomic_load_n(&g_ap_sched_enable, __ATOMIC_ACQUIRE) &&
             cm_sched_runnable() > 0) {
             /* Same entry as the BSP, so an AP goes through the identical

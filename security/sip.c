@@ -5,11 +5,25 @@
 
 static uint32_t g_sip = CM_SIP_DEFAULT;
 static uint64_t g_slide = 0;
-static int      g_mitigations = 0;
+
 
 uint32_t cm_sip_mask(void) { return g_sip; }
 uint64_t cm_kaslr_slide(void) { return g_slide; }
-int      cm_mitigations(void) { return g_mitigations; }
+int cm_mitigations(void)
+{
+    uint64_t cr4=cm_read_cr4();
+    return ((cr4&(1ull<<20)) ? CM_MIT_SMEP : 0) |
+           ((cr4&(1ull<<21)) ? CM_MIT_SMAP : 0) |
+           (cm_kpti_active() ? CM_MIT_KPTI : 0);
+}
+void cm_mitigations_dump(void)
+{
+    int bits=cm_mitigations();
+    kinfo("mitigations=%x SMEP=%u SMAP=%u KPTI=%u kpti_configured=%u kaslr=unimplemented kaslr_slide=0",
+          bits,!!(bits&CM_MIT_SMEP),!!(bits&CM_MIT_SMAP),!!(bits&CM_MIT_KPTI),(unsigned)CM_KPTI);
+    if (CM_KPTI && !(bits&CM_MIT_KPTI))
+        kinfo("mitigations: KPTI awaiting actual ring3 shadow/full CR3 verification (hosted has no hardware entry)");
+}
 
 bool cm_sip_protects(cm_vaddr_t addr)
 {
@@ -37,12 +51,6 @@ int cm_sip_allows_kext(const cm_sign_t *s)
 
 void cm_sip_init(void)
 {
-    uint64_t cr4 = cm_read_cr4();
-    g_mitigations = 0;
-    if (cr4 & (1ull << 20)) g_mitigations |= 0x02; /* SMEP */
-    if (cr4 & (1ull << 21)) g_mitigations |= 0x04; /* SMAP */
-    /* CR4 observations and configured KPTI are reported separately. */
-    kinfo("sip: kpti_configured=%u kaslr=not implemented slide=0", (unsigned)CM_KPTI);
-    kinfo("sip: mask=%x cr4=%llx mitigations=%x (only SMEP/SMAP bits that are actually set)",
-          g_sip, (unsigned long)cr4, g_mitigations);
+    kinfo("sip: mask=%x cr4=%llx",g_sip,(unsigned long)cm_read_cr4());
+    cm_mitigations_dump();
 }

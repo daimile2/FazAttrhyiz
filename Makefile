@@ -21,7 +21,7 @@ SRC = \
  	arch/x86_64/ioapic_stub.S \
 	boot/limine.c \
 	mm/wkdm.c \
-	obs/trace.c \
+	obs/trace.c obs/static_trace.c \
 	obs/etw.c \
 	mm/buddy.c mm/numa.c \
 	mm/slab.c \
@@ -51,9 +51,9 @@ SRC = \
 	security/sign.c lib/sha256.c \
 	security/gate.c \
 	virt/job.c \
-	virt/kvm.c \
+	virt/kvm.c virt/hardware.c arch/x86_64/virt_probe.S \
 	boot/kernel.c \
-	boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c \
+	boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c \
 	boot/phase3_test.c \
  
      
@@ -74,7 +74,7 @@ FREE_LDFLAGS = -nostdlib -static -no-pie -Wl,--build-id=none \
 
 all: test
 
-$(HOST_BIN): build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
+$(HOST_BIN): build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
 	$(CC) $(CFLAGS) $(INCLUDES) -DCAPMIX_HOSTED -o $@ $(HOST_SRC)
 
 test: $(HOST_BIN)
@@ -114,7 +114,7 @@ build/net_elf.inc: build/net.elf scripts/embed-elf.py
 
 kernel: $(FREE_BIN)
 
-$(FREE_BIN): build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
+$(FREE_BIN): build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
 	$(CC) $(FREE_CFLAGS) $(INCLUDES) $(FREE_LDFLAGS) -o $@ $(FREE_SRC)
 
 iso: $(FREE_BIN)
@@ -141,3 +141,20 @@ clean:
 	rm -f $(HOST_BIN) $(FREE_BIN) capmix.iso
 	rm -rf iso build
 	find . -name '*.o' -delete
+
+.PHONY: numa-test
+numa-test:
+	mkdir -p build
+	$(CC) $(CFLAGS) -Werror $(INCLUDES) -DCAPMIX_HOSTED -o build/numa-parser-test tests/numa_parser_test.c mm/numa.c
+	./build/numa-parser-test
+
+
+build/trace-elf.o: tests/trace_elf.S
+	mkdir -p build
+	$(CC) -c -nostdlib -fno-pie -o $@ $<
+
+build/trace.elf: build/trace-elf.o tests/hello_elf.ld
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -Wl,-T,tests/hello_elf.ld -o $@ $<
+
+build/trace_elf.inc: build/trace.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_trace_elf

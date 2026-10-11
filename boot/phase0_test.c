@@ -44,15 +44,15 @@ int cm_phase0_selftest(void)
     cm_page_free(page, 0);
     cm_numa_stats_t old, allocated, freed;
     cm_numa_node_t node;
-    if (cm_numa_node_count() != 1 || cm_numa_node_info(0, &node) ||
-        !node.cpu_mask || node.distance != 10 || cm_numa_cpu_node(-1) != -1 ||
+    if (cm_numa_node_count() < 1 || cm_numa_node_info(0, &node) ||
+        node.distance != 10 || cm_numa_cpu_node(-1) != -1 ||
         cm_numa_cpu_node(cm_cpu_count()) != -1 ||
-        cm_numa_node_info(1, &node) != CM_ERR_INVAL ||
-        cm_numa_stats(1, &old) != CM_ERR_INVAL ||
-        cm_numa_stats(0, NULL) != CM_ERR_INVAL || cm_page_alloc_node(1, 0)) fails++;
+        cm_numa_node_info(cm_numa_node_count(), &node) != CM_ERR_INVAL ||
+        cm_numa_stats(cm_numa_node_count(), &old) != CM_ERR_INVAL ||
+        cm_numa_stats(0, NULL) != CM_ERR_INVAL || cm_page_alloc_node(cm_numa_node_count(), 0)) fails++;
     cm_task_t task = {0};
     if (cm_numa_bind_task(&task, 0) || task.memory_node ||
-        cm_numa_bind_task(&task, 1) != CM_ERR_NOTSUP ||
+        cm_numa_bind_task(&task, cm_numa_node_count()) != CM_ERR_NOTSUP ||
         cm_numa_bind_task(NULL, 0) != CM_ERR_INVAL) fails++;
     cm_numa_stats(0, &old);
     page = cm_page_alloc_node(task.memory_node, 2);

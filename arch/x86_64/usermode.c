@@ -60,6 +60,7 @@ void cm_usermode_run_elf(struct cm_proc *p)
     if (th) th->state = CM_TH_DEAD;
     kinfo("exec: hosted ELF execution skipped (no ring3)");
 }
+int cm_kpti_active(void) { return 0; }
 void cm_usermode_init(void) {}
 void cm_land_user(void) {}
 int  cm_usermode_selftest(void)
@@ -74,6 +75,18 @@ uint64_t cm_space_switch_cost(void) { return 0; }
 #else
 
 static int g_um_ready;
+/* Observation only: entry ABI and CR3 transitions remain unchanged. */
+int cm_kpti_active(void)
+{
+#if CM_KPTI
+    return g_um_ready && cm_user_syscalls && g_pcpu[0].user_cr3 &&
+           g_pcpu[0].full_cr3!=g_pcpu[0].user_cr3 && !g_pcpu[0].bad_entries &&
+           g_pcpu[0].incoming_cr3==g_pcpu[0].user_cr3;
+#else
+    return 0;
+#endif
+}
+
 static uint64_t g_home_cr3;
 static uint64_t g_sys_before;
 static uint8_t *g_user_code;

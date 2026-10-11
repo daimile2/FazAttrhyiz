@@ -86,7 +86,11 @@ void       cm_lsm_register(cm_lsm_hook_t h);
 cm_error_t cm_lsm_check(uint32_t op, cm_id_t subject, uint64_t obj);
 
 uint64_t   cm_kaslr_slide(void);
-int        cm_mitigations(void); /* Actual CR4 bits: 0x02 SMEP, 0x04 SMAP; no KASLR claim. */
+#define CM_MIT_KPTI 0x01
+#define CM_MIT_SMEP 0x02
+#define CM_MIT_SMAP 0x04
+void cm_mitigations_dump(void);
+int        cm_mitigations(void); /* 0x01 verified KPTI; 0x02/0x04 actual CR4 SMEP/SMAP. KASLR unimplemented. */
 
 /* Combined gate used by syscall-shaped helpers. */
 cm_error_t cm_sec_gate(cm_task_t *task, int hid, cm_rights_t cap_need,

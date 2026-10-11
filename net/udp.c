@@ -1,3 +1,4 @@
+#include "capmix/trace.h"
 #include "capmix/net.h"
 #include "capmix/arch.h"
 #include "capmix/sched.h"
@@ -134,9 +135,10 @@ cm_error_t cm_udp_inject(int ifid, const uint8_t *frame, uint16_t len)
         rd32(ip + 12) != iface->addr || rd32(ip + 16) != iface->addr ||
         complement(sum_bytes(0, ip, 20)) || !rd16(udp) || !rd16(udp + 2) ||
         rd16(udp + 4) != len - 34 || (rd16(udp + 6) && udp_checksum(ip, udp, (uint16_t)(len - 34)))) {
-        __sync_fetch_and_add(&iface->rx, 1); __sync_fetch_and_add(&iface->drop, 1); return CM_ERR_INVAL;
+        __sync_fetch_and_add(&iface->rx, 1); CM_TRACE(UDP_RX,0,ifid,len,0); __sync_fetch_and_add(&iface->drop, 1); return CM_ERR_INVAL;
     }
     cm_xdp_act_t act = cm_net_rx(ifid, frame, len);
+    CM_TRACE(UDP_RX,0,ifid,len,act);
     if (act != CM_XDP_PASS) return act == CM_XDP_DROP ? CM_ERR_DENIED : CM_ERR_NOTSUP;
     cm_udp_datagram_t datagram = {0};
     datagram.saddr = rd32(ip + 12); datagram.daddr = rd32(ip + 16);
@@ -177,7 +179,7 @@ cm_error_t cm_udp_sendto(cm_task_t *task, int hid, uint16_t dport, const void *d
     else {
         uint8_t frame[CM_UDP_FRAME_MAX]; uint16_t bytes;
         err = cm_udp_frame(iface->addr, sport, dport, data, len, frame, &bytes);
-        if (!err) { __sync_fetch_and_add(&iface->tx, 1); err = cm_udp_inject(ifid, frame, bytes); }
+        if (!err) { __sync_fetch_and_add(&iface->tx, 1); CM_TRACE(UDP_TX,0,ifid,dport,len); err = cm_udp_inject(ifid, frame, bytes); }
     }
     cm_obj_release(obj);
     return err;

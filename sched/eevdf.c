@@ -1,3 +1,4 @@
+#include "capmix/trace.h"
 #include "capmix/sched.h"
 #include "capmix/arch.h"
 #include "capmix/mm.h"
@@ -271,6 +272,7 @@ static void rq_push(cm_thread_t *th)
     g_rq_len[q] = n + 1;
     sched_unlock();
     th->state = CM_TH_RUNNABLE;
+    CM_TRACE(SCHED_ENQUEUE,th->trace_context,th->id,q,0);
 }
 
 static void rq_remove(cm_thread_t *th)
@@ -287,6 +289,7 @@ static void rq_remove(cm_thread_t *th)
     g_rq_len[q]--;
     sched_unlock();
     th->rq_index = -1;
+    CM_TRACE(SCHED_DEQUEUE,th->trace_context,th->id,q,0);
 }
 
 cm_thread_t *cm_thread_create(cm_task_t *task, cm_th_entry_t entry, void *arg, cm_qos_t qos)
@@ -585,8 +588,10 @@ void cm_sched_tick(void)
     if (flags & 0x200) __asm__ volatile("sti");
 #endif
 
-    if (prev && prev != th)
+    if (prev && prev != th) {
+        TRACE_SCHED_SWITCH(th->trace_context,prev->id,th->id,th->qos);
         if (cm_obs_enabled()) cm_obs_emit(cm_trace_new(), CM_EV_SCHED_SWITCH, prev->id, th->id, th->qos);
+    }
 
 #ifndef CAPMIX_HOSTED
     /* Interrupts stay off across g_in_thread=1 AND the swap.
@@ -685,6 +690,7 @@ void cm_sched_preempt_now(void)
     g_in_thread[cpu] = 0;
     g_preempt_count[cpu]++;
 
+    TRACE_SCHED_SWITCH(cur->trace_context,cur->id,0,0x100);
     if (cm_obs_enabled()) cm_obs_emit(cm_trace_new(), CM_EV_SCHED_SWITCH, cur->id, 0, 0x100);
     cm_arch_ctx_swap(cur->ctx_slot, -1);
 }

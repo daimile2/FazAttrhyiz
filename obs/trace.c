@@ -1,12 +1,12 @@
 #include "capmix/obs.h"
+#include "capmix/trace.h"
 #include "capmix/config.h"
 #include "capmix/klog.h"
 #include "capmix/arch.h"
 #include "capmix/sched.h"
 
-static cm_event_t g_ring[CM_TRACE_RING_SIZE];
-static uint32_t   g_head;
-static uint64_t   g_count;
+static struct { uint64_t stamp; cm_event_t event; } g_ring[CM_MAX_CPUS][CM_TRACE_RING_SIZE];
+static uint64_t g_head[CM_MAX_CPUS];
 static uint64_t   g_trace_seq;
 /* Default OFF.
  * Observation is a capability, not a global switch: one emit costs
@@ -21,47 +21,54 @@ extern void cm_obs_etw_init(void);
 
 void cm_obs_init(void)
 {
-    g_head = 0;
-    g_count = 0;
+    for (unsigned cpu=0;cpu<CM_MAX_CPUS;cpu++) g_head[cpu]=0;
     g_trace_seq = 1;
     g_obs_on = 0;
     cm_obs_etw_init();
+    cm_tp_init();
 }
 
-void cm_obs_enable(int on) { g_obs_on = on ? 1 : 0; }
-int  cm_obs_enabled(void) { return g_obs_on; }
+void cm_obs_enable(int on) { __atomic_store_n(&g_obs_on,on ? 1 : 0,__ATOMIC_RELEASE); }
+int  cm_obs_enabled(void) { return __atomic_load_n(&g_obs_on,__ATOMIC_RELAXED) || __atomic_load_n(&cm_tp_enabled_mask,__ATOMIC_RELAXED); }
 
 cm_trace_t cm_trace_new(void)
 {
-    if (!g_obs_on) return 0;
-    return ++g_trace_seq;
+    if (!cm_obs_enabled()) return 0;
+    return (__atomic_add_fetch(&g_trace_seq,1,__ATOMIC_RELAXED)<<16)|1;
 }
 
 cm_trace_t cm_trace_child(cm_trace_t parent)
 {
-    /* Low 16 bits = hop count so a causal chain is greppable. */
-    cm_trace_t hop = (parent & 0xFFFFu) + 1;
-    return (cm_trace_new() << 16) ^ (parent & ~0xFFFFull) ^ hop;
+    if (!parent) return cm_trace_new();
+    if ((parent&0xffff)==0xffff) return cm_trace_new();
+    return parent+1; /* root high bits stay stable; low bits count chain hops */
 }
 
 void cm_obs_emit(cm_trace_t tr, cm_event_kind_t kind,
                  uint64_t a0, uint64_t a1, uint64_t a2)
 {
-    if (!g_obs_on) return;
-    uint32_t i = g_head++ % CM_TRACE_RING_SIZE;
-    cm_thread_t *cur = cm_sched_current();
-    g_ring[i].ts    = cm_ticks_now();
-    g_ring[i].trace = tr;
-    g_ring[i].kind  = kind;
-    g_ring[i].cpu   = 0;
-    g_ring[i].tid   = cur ? (uint32_t)cur->id : 0;
-    g_ring[i].a0    = a0;
-    g_ring[i].a1    = a1;
-    g_ring[i].a2    = a2;
-    g_count++;
+    if (!__atomic_load_n(&g_obs_on,__ATOMIC_RELAXED)) return;
+    uint64_t flags=cm_irq_save(); unsigned cpu=(unsigned)cm_cpu_id();
+    if (cpu>=CM_MAX_CPUS) { cm_irq_restore(flags); return; }
+    uint64_t seq=__atomic_load_n(&g_head[cpu],__ATOMIC_RELAXED)+1;
+    unsigned i=(unsigned)((seq-1)%CM_TRACE_RING_SIZE);
+    cm_thread_t *cur=cm_sched_current();
+    cm_event_t *e=&g_ring[cpu][i].event;
+    __atomic_store_n(&g_ring[cpu][i].stamp,seq*2-1,__ATOMIC_SEQ_CST);
+#define STORE(field,value) __atomic_store_n(&e->field,(value),__ATOMIC_RELAXED)
+    STORE(ts,cm_rdtsc()); STORE(trace,tr); STORE(kind,kind); STORE(cpu,cpu);
+    STORE(tid,cur ? (uint32_t)cur->id : 0); STORE(a0,a0); STORE(a1,a1); STORE(a2,a2);
+#undef STORE
+    __atomic_store_n(&g_ring[cpu][i].stamp,seq*2,__ATOMIC_RELEASE);
+    __atomic_store_n(&g_head[cpu],seq,__ATOMIC_RELEASE);
+    cm_irq_restore(flags);
 }
-
-uint64_t cm_obs_count(void) { return g_count; }
+uint64_t cm_obs_count(void)
+{
+    uint64_t count=0;
+    for (unsigned cpu=0;cpu<CM_MAX_CPUS;cpu++) count+=__atomic_load_n(&g_head[cpu],__ATOMIC_ACQUIRE);
+    return count;
+}
 
 static const char *kind_name(cm_event_kind_t k)
 {
@@ -89,14 +96,24 @@ static const char *kind_name(cm_event_kind_t k)
 
 void cm_obs_dump(int max_events)
 {
-    uint64_t n = g_count < CM_TRACE_RING_SIZE ? g_count : CM_TRACE_RING_SIZE;
-    if (max_events > 0 && (uint64_t)max_events < n) n = (uint64_t)max_events;
-    kinfo("obs: %llu events (showing last %llu)", (unsigned long)g_count, (unsigned long)n);
-    uint32_t start = (g_head - (uint32_t)n) % CM_TRACE_RING_SIZE;
-    for (uint64_t i = 0; i < n; i++) {
-        cm_event_t *e = &g_ring[(start + (uint32_t)i) % CM_TRACE_RING_SIZE];
-        kinfo("  tr=%llx kind=%s tid=%u a0=%llx a1=%llx a2=%llx",
-              (unsigned long)e->trace, kind_name(e->kind), e->tid,
-              (unsigned long)e->a0, (unsigned long)e->a1, (unsigned long)e->a2);
+    kinfo("obs: %llu events (per-CPU legacy snapshots)",(unsigned long)cm_obs_count());
+    for (unsigned cpu=0;cpu<CM_MAX_CPUS;cpu++) {
+        uint64_t head=__atomic_load_n(&g_head[cpu],__ATOMIC_ACQUIRE);
+        uint64_t n=head<CM_TRACE_RING_SIZE ? head : CM_TRACE_RING_SIZE;
+        if (max_events>0 && n>(unsigned)max_events) n=(unsigned)max_events;
+        for (uint64_t seq=head-n+1;seq<=head && n;seq++) {
+            unsigned i=(unsigned)((seq-1)%CM_TRACE_RING_SIZE);
+            uint64_t stamp=__atomic_load_n(&g_ring[cpu][i].stamp,__ATOMIC_ACQUIRE);
+            if (stamp!=seq*2) continue;
+            cm_event_t snapshot,*e=&snapshot,*source=&g_ring[cpu][i].event;
+#define LOAD(field) e->field=__atomic_load_n(&source->field,__ATOMIC_RELAXED)
+            LOAD(ts); LOAD(trace); LOAD(kind); LOAD(cpu); LOAD(tid); LOAD(a0); LOAD(a1); LOAD(a2);
+#undef LOAD
+            __atomic_thread_fence(__ATOMIC_SEQ_CST);
+            if (__atomic_load_n(&g_ring[cpu][i].stamp,__ATOMIC_ACQUIRE)!=stamp) continue;
+            kinfo("  cpu=%u tr=%llx kind=%s tid=%u a0=%llx a1=%llx a2=%llx",e->cpu,
+                  (unsigned long)e->trace,kind_name(e->kind),e->tid,
+                  (unsigned long)e->a0,(unsigned long)e->a1,(unsigned long)e->a2);
+        }
     }
 }

@@ -5,6 +5,7 @@
 #include "capmix/proc.h"
 #include "capmix/syscall.h"
 #include "capmix/arch.h"
+#include "capmix/numa.h"
 
 #include <string.h>
 
@@ -493,6 +494,21 @@ static void t_pressure(void)
         cm_anon_free(id);
     }
 
+    /* Multiple arenas can leave only isolated order-0 pages after ballooning.
+     * Prepare actor kernel stacks before pressure; payload still allocates under
+     * the same pressure and all L1-L4 assertions remain in force. */
+    cm_id_t reserved_idle=0,reserved_fg=0,reserved_fg2=0,reserved_a[4]={0};
+    if (cm_numa_node_count()>1) {
+        reserved_idle=mkproc("idle-hog",CM_QOS_IDLE);
+        reserved_fg=mkproc("foreground",CM_QOS_USER_INTERACTIVE);
+        reserved_fg2=mkproc("foreground-2",CM_QOS_USER_INTERACTIVE);
+        static const char *names[4]={"bg-app","utility-app","default-app","initiated-app"};
+        static const cm_qos_t bands[4]={CM_QOS_BACKGROUND,CM_QOS_UTILITY,CM_QOS_DEFAULT,CM_QOS_USER_INITIATED};
+        for (int i=0;i<4;i++) reserved_a[i]=mkproc(names[i],bands[i]);
+        CHECK(reserved_idle && reserved_fg && reserved_fg2 && reserved_a[0] && reserved_a[1] &&
+              reserved_a[2] && reserved_a[3],"reserve NUMA pressure actors");
+    }
+
     /* Balloon: pin RAM until only `target` pages are free, so the test
      * exercises real exhaustion of THIS machine without needing GBs of data. */
     uint64_t target = wm.high * 3;
@@ -530,7 +546,7 @@ static void t_pressure(void)
     cm_pressure_reset_max();
     uint32_t got_a = 0;
     for (int i = 0; i < 4; i++) {
-        pa[i] = mkproc(na[i], qa[i]);
+        pa[i] = reserved_a[i] ? reserved_a[i] : mkproc(na[i], qa[i]);
         got_a += take(pa[i], want_a / 4, 0, &la);
     }
     cm_pressure_stats_t ps;
@@ -591,8 +607,8 @@ static void t_pressure(void)
         CHECK(p99 < 5000000ull, "p99 alloc latency %llu cycles", (unsigned long)p99);
 
     /* Phase B: incompressible memory nobody can reclaim -> L4 jetsam. */
-    cm_id_t idle = mkproc("idle-hog", CM_QOS_IDLE);
-    cm_id_t fg = mkproc("foreground", CM_QOS_USER_INTERACTIVE);
+    cm_id_t idle = reserved_idle ? reserved_idle : mkproc("idle-hog", CM_QOS_IDLE);
+    cm_id_t fg = reserved_fg ? reserved_fg : mkproc("foreground", CM_QOS_USER_INTERACTIVE);
     uint32_t got_idle = take(idle, (uint32_t)(target / 2), 1, NULL);
     /* Fits once everything else is gone (min reserve is not for users),
      * does not fit next to idle-hog: L4 must make the room. */
@@ -631,7 +647,7 @@ static void t_pressure(void)
     /* Phase C: only foreground left -> Linux OOM killer, by badness. */
     for (int i = 0; i < 4; i++) reap(pa[i]);
     reap(idle);
-    cm_id_t fg2 = mkproc("foreground-2", CM_QOS_USER_INTERACTIVE);
+    cm_id_t fg2 = reserved_fg2 ? reserved_fg2 : mkproc("foreground-2", CM_QOS_USER_INTERACTIVE);
     cm_proc_kill_log_reset();
     uint32_t got2 = take(fg2, (uint32_t)(target * 3 / 4), 1, NULL);
     nk = cm_proc_kill_log(kl, 16);

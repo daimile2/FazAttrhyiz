@@ -1,3 +1,4 @@
+#include "capmix/trace.h"
 #include "capmix/ipc.h"
 #include "capmix/cap_internal.h"
 #include "capmix/sched.h"
@@ -167,6 +168,7 @@ static cm_error_t send_message(cm_task_t *sender, int hid, const cm_ipc_msg_t *m
     cm_id_t channel_id = c->id;
     cm_obj_retain_locked(endpoint); /* keep channel alive across direct handoff */
     cm_cap_unlock(flags);
+    TRACE_IPC_SEND(q.msg.trace,channel_id,q.msg.opcode,q.msg.len);
     cm_obs_emit(q.msg.trace, CM_EV_IPC_SEND, channel_id, q.msg.opcode, q.msg.len);
     if (w) {
         cm_obs_emit(q.msg.trace, CM_EV_IPC_HANDOFF, channel_id, w->id, 0);
@@ -208,6 +210,9 @@ static cm_error_t recv_message(cm_task_t *receiver, int hid, cm_ipc_msg_t *out, 
         cm_id_t channel_id = c->id;
         *out = result;
         cm_cap_unlock(flags);
+        cm_thread_t *trace_current=cm_sched_current();
+        if (trace_current && trace_current->task==receiver) trace_current->trace_context=result.trace;
+        TRACE_IPC_RECV(result.trace,channel_id,result.opcode,result.len);
         cm_obs_emit(result.trace, CM_EV_IPC_RECV, channel_id, result.opcode, result.len);
         return CM_OK;
     }

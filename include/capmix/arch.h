@@ -66,6 +66,9 @@ int      cm_limine_mp(uint64_t *cpu_count, uint32_t *bsp_lapic_id,
                       uint32_t *lapic_ids, int max_ids);
 int      cm_limine_mp_start(uint64_t idx, void *entry);
 uint64_t  cm_limine_rsdp(void);
+int cm_limine_usable(unsigned index, uint64_t *base, uint64_t *length);
+int cm_cpu_apic_id(int cpu, uint32_t *id);
+int cm_kpti_active(void);
 int       cm_ioapic_init(void);
 void      cm_idt_set_gate(int vec, void *fn, uint8_t ist);
 uint64_t cm_hhdm(void);

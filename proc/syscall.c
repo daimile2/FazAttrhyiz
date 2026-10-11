@@ -1,3 +1,4 @@
+#include "capmix/trace.h"
 #include "capmix/syscall.h"
 #include "capmix/cap.h"
 #include "capmix/ipc.h"
@@ -32,6 +33,7 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
         cm_anon_free_owner(p->pid);
         cm_drv_process_exit(p->pid);
         cm_udp_process_exit(p->task);
+        cm_trace_process_exit(p->task);
     }
     if (th) th->state = CM_TH_DEAD;
 #ifndef CAPMIX_HOSTED
@@ -341,6 +343,28 @@ static int64_t sys_udp_recv(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     memcpy((void *)(uintptr_t)a1, &out, sizeof(out));
     return out.len;
 }
+static int64_t sys_trace_read_cap(uint64_t hid,uint64_t cpu,uint64_t address,uint64_t unused)
+{
+    (void)unused; cm_proc_t *p=cm_proc_current();
+    if (!p || !p->elf || p->exited) return CM_ERR_NOTSUP;
+    if (hid>=CM_HANDLES_PER_TASK || cpu>=CM_MAX_CPUS) return CM_ERR_INVAL;
+    /* Authorize before examining the user buffer. No kernel address disclosure. */
+    cm_object_t *o=NULL;
+    cm_error_t e=cm_handle_acquire(p->task,(int)hid,CM_OBJ_TRACE,CM_RIGHT_TRACE_READ,&o);
+    if (e) return e;
+    cm_obj_release(o);
+    if (!cm_elf_user_range(p->elf,address,sizeof(cm_trace_read_t),6)) return CM_ERR_INVAL;
+    cm_trace_read_t out; memcpy(&out,(const void *)(uintptr_t)address,sizeof(out));
+    e=cm_trace_read(p->task,(int)hid,(unsigned)cpu,&out);
+    if (e==CM_OK || e==CM_ERR_AGAIN) memcpy((void *)(uintptr_t)address,&out,sizeof(out));
+    return e;
+}
+static int64_t sys_trace_config_cap(uint64_t hid,uint64_t mask,uint64_t a,uint64_t b)
+{
+    (void)a; (void)b; cm_proc_t *p=cm_proc_current();
+    if (!p || p->exited || hid>=CM_HANDLES_PER_TASK) return CM_ERR_INVAL;
+    return cm_trace_configure(p->task,(int)hid,mask);
+}
 static int64_t sys_udp_close(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
     CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
@@ -377,6 +401,8 @@ static const struct {
     { CM_SYS_UDP_BIND,       "udp_bind",       sys_udp_bind },
     { CM_SYS_UDP_SEND,       "udp_send",       sys_udp_send },
     { CM_SYS_UDP_RECV,       "udp_recv",       sys_udp_recv },
+    { CM_SYS_TRACE_READ, "trace_read", sys_trace_read_cap },
+    { CM_SYS_TRACE_CONFIG, "trace_config", sys_trace_config_cap },
     { CM_SYS_UDP_CLOSE,      "udp_close",      sys_udp_close },
 };
 
@@ -465,7 +491,8 @@ int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t 
         if (nr == CM_SYS_IPC_RECV && cm_drv_has_receiver(elf_proc->pid))
             return sys_ipc_recv(a0, a1, a2, a3);
         int udp_call = nr >= CM_SYS_UDP_OPEN && nr <= CM_SYS_UDP_CLOSE;
-        if (!udp_call && nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)
+        int trace_call = nr == CM_SYS_TRACE_READ || nr == CM_SYS_TRACE_CONFIG;
+        if (!udp_call && !trace_call && nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)
             return CM_ERR_NOTSUP;
     }
     if (cm_obs_enabled()) {

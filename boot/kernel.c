@@ -1,4 +1,5 @@
 #include "capmix/kernel.h"
+#include "capmix/numa.h"
 #include "capmix/fs.h"
 #include "capmix/io.h"
 #include "capmix/security.h"
@@ -245,6 +246,7 @@ void capmix_init(const cm_mem_region_t *regions, int nregions)
 
 void capmix_after_paging(void)
 {
+    cm_numa_init();
     cm_cap_init();
     cm_sched_init();
     cm_proc_init();
@@ -263,6 +265,7 @@ void capmix_after_paging(void)
               (unsigned long)sp, cm_boot_stack_base());
     }
     cm_smp_probe();
+    cm_numa_update_cpus();
         cm_smp_start();
 }
 
@@ -327,6 +330,8 @@ int capmix_selftest(void)
     kinfo("--- selftest: wkdm roundtrip + configurable page walk ---");
     extern int cm_phase0_selftest(void);
     if (cm_phase0_selftest() != 0) fails++;
+    extern int cm_numa_selftest(void);
+    fails += cm_numa_selftest();
     if (cm_wkdm_selftest() != 0) fails++;
     if (cm_paging_tables() == 0) { kerr("no page tables built"); fails++; }
     else cm_paging_dump();
@@ -508,6 +513,9 @@ int capmix_selftest(void)
                   cm_uring_inflight(), (unsigned long)cm_blk_completed());
         }
 
+        /* Trace ELF uses the live ramdisk before phase4 deliberately offlines it. */
+        extern int cm_phase8_selftest(void);
+        fails += cm_phase8_selftest();
         extern int cm_phase4_selftest(void);
         fails += cm_phase4_selftest();
     }
@@ -637,10 +645,11 @@ int capmix_selftest(void)
             kinfo("lsm: task_for_pid extra-denied (optional MAC)");
         }
         cm_lsm_register(NULL);
-        kinfo("mitigations=%x kaslr_slide=%llx sip=%x",
-              cm_mitigations(), (unsigned long)cm_kaslr_slide(), cm_sip_mask());
+        cm_mitigations_dump();
     }
 
+    extern int cm_phase7_selftest(void);
+    fails += cm_phase7_selftest();
     kinfo("--- selftest: job/cgroup + KVM ---");
     {
         cm_job_t *app = cm_job_create("app.bundle", CM_NS_ALL);
@@ -777,6 +786,7 @@ void cm_selftest_finish(void)
     cm_sched_dump();
     cm_ipc_dump();
     cm_obs_dump(12);
+    cm_mitigations_dump();
     kinfo("--- selftest result: %s (%d failures) ---",
           fails ? "FAIL" : "PASS", fails);
 #ifndef CAPMIX_HOSTED

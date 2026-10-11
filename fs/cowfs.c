@@ -1,3 +1,4 @@
+#include "capmix/trace.h"
 #include "capmix/fs.h"
 #include "capmix/io.h"
 #include "capmix/mm.h"
@@ -588,6 +589,7 @@ static int64_t live_write(uint32_t ino, uint64_t off, const void *buf, uint64_t 
         cm_pcache_invalidate(b);
         cm_pcache_fill(b, g_buf_data);
         if (inplace) g_inplace++; else g_cow_writes++;
+        if (!inplace && p->blk) CM_TRACE(COW_SPLIT,0,ino,p->blk,b);
         p->blk = b;
         p->dup = 0;
         p->csum = nocow ? 0 : fs_csum(g_buf_data, FS_BS);

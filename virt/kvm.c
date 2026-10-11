@@ -58,7 +58,7 @@ cm_error_t cm_vcpu_run(cm_vm_t *vm, int vcpu)
 {
     if (!vm || vcpu < 0 || vcpu >= vm->nvcpu || !vm->vcpu[vcpu].used)
         return CM_ERR_INVAL;
-    /* Hosted: one "entry" then a synthetic vmexit (HLT). */
+    /* Both builds: synthetic accounting demo, NOT a hardware guest entry. */
     vm->vcpu[vcpu].running = 1;
     vm->vcpu[vcpu].rip += 2;
     vm->vcpu[vcpu].exits++;
@@ -72,7 +72,7 @@ cm_error_t cm_vfio_attach(cm_vm_t *vm, int pci_bdf)
 {
     if (!vm || vm->nvfio >= CM_MAX_VFIO) return CM_ERR_NOSPC;
     vm->vfio[vm->nvfio++] = pci_bdf;
-    kinfo("vfio: attach bdf=%x → vm '%s' (passthrough)", pci_bdf, vm->name);
+    kinfo("vfio: attach bdf=%x → vm '%s' (accounting stub; no passthrough)", pci_bdf, vm->name);
     return CM_OK;
 }
 

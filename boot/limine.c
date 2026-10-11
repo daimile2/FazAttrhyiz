@@ -4,6 +4,15 @@
 
 #include <stdint.h>
 
+/* Snapshot before replacing Limine page tables; no later response reads. */
+static struct { uint64_t base,length; } usable[128];
+static unsigned usable_count;
+int cm_limine_usable(unsigned index,uint64_t *base,uint64_t *length)
+{
+    if (index>=usable_count || !base || !length) return -1;
+    *base=usable[index].base; *length=usable[index].length; return 0;
+}
+
 static uint64_t g_hhdm;
 static uint64_t g_kphys;
 static uint64_t g_kvirt;
@@ -194,6 +203,7 @@ static int usable_piece(uint64_t b, uint64_t len,
                         uint64_t k0, uint64_t k1,
                         uint64_t *ob, uint64_t *olen)
 {
+    if (len>UINT64_MAX-b) return 0;
     uint64_t e = b + len;
     uint64_t a0 = b, a1 = e, c0 = 0, c1 = 0;
     if (k1 > k0 && !(e <= k0 || b >= k1)) {
@@ -232,12 +242,16 @@ int cm_limine_memory(cm_paddr_t *base, uint64_t *npages, uint64_t *hhdm)
 
     uint64_t k0 = g_kphys, k1 = g_kphys + g_ksize;
 
+    usable_count=0;
     uint64_t best_len = 0, best_base = 0;
     for (uint64_t i = 0; i < mr->entry_count; i++) {
         struct limine_mmap_entry *e = mr->entries[i];
         if (!e || e->type != 0) continue;
         uint64_t pb = 0, pl = 0;
         if (!usable_piece(e->base, e->length, k0, k1, &pb, &pl)) continue;
+        if (usable_count<128 && pl<=UINT64_MAX-pb) {
+            usable[usable_count].base=pb; usable[usable_count++].length=pl;
+        }
         if (pl > best_len) {
             best_len = pl;
             best_base = pb;

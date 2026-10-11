@@ -1,3 +1,4 @@
+#include "capmix/trace.h"
 #include "capmix/io.h"
 #include "capmix/proc.h"
 #include "capmix/mm.h"
@@ -75,6 +76,7 @@ static int deliver_locked(cm_driver_t *d)
     cm_error_t err = cm_ipc_send_deferred(g_broker, d->chan_k, &msg);
     if (err == CM_ERR_AGAIN) { d->backpressure++; return 0; }
     if (err) { offline_locked(d); return 0; }
+    CM_TRACE(IRQ_DELIVER,msg.trace,d->irq,d->pid,msg.opcode);
     d->delivered++; d->ios++; d->pending = 0;
     kinfo("drv irq delivered: %s irq=%d pid=%llu seq=%llu count=%llu (channel, deferred)",
           d->name, d->irq, (unsigned long)d->pid,

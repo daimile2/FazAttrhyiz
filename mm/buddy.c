@@ -14,13 +14,18 @@ typedef struct cm_free_block {
     struct cm_free_block *next;
 } cm_free_block_t;
 
-static cm_free_block_t *g_free[CM_BUDDY_MAX_ORDER + 1];
-static uint64_t         g_free_count[CM_BUDDY_MAX_ORDER + 1];
-static uint64_t         g_total_pages;
-static uint64_t         g_free_pages;
-static uint8_t         *g_heap;
-static uint64_t         g_heap_pages;
-static uint8_t         *g_page_state; /* one byte per page */
+typedef struct {
+    uint8_t *base;
+    uint64_t pages, free_pages;
+    unsigned node;
+    cm_free_block_t *free[CM_BUDDY_MAX_ORDER+1];
+    uint64_t count[CM_BUDDY_MAX_ORDER+1];
+} cm_arena_t;
+static cm_arena_t arenas[CM_NUMA_MAX_RANGES];
+static unsigned arena_count, next_node;
+static uint64_t g_total_pages, g_free_pages;
+static uint8_t *g_heap, *g_page_state;
+static uint64_t g_heap_pages;
 
 #ifdef CAPMIX_HOSTED
 static uint8_t *g_sim_heap;
@@ -89,27 +94,29 @@ const char *cm_page_state_name(cm_page_state_t s)
     return state_names[s];
 }
 
-static void push_free(unsigned order, void *ptr)
+static void push_free(cm_arena_t *a, unsigned order, void *ptr)
 {
     cm_free_block_t *b = (cm_free_block_t *)ptr;
-    b->next = g_free[order];
-    g_free[order] = b;
-    g_free_count[order]++;
+    b->next = a->free[order];
+    a->free[order] = b;
+    a->count[order]++;
 }
 
-static void *pop_free(unsigned order)
+static void *pop_free(cm_arena_t *a, unsigned order)
 {
-    cm_free_block_t *b = g_free[order];
+    cm_free_block_t *b = a->free[order];
     if (!b) return NULL;
-    g_free[order] = b->next;
-    g_free_count[order]--;
+    a->free[order] = b->next;
+    a->count[order]--;
     return b;
 }
 
 static void mark_state(void *ptr, unsigned order, cm_page_state_t st)
 {
     if (!g_page_state || !g_heap) return;
-    uint64_t off = ((uint8_t *)ptr - g_heap) / CM_PAGE_SIZE;
+    uintptr_t address=(uintptr_t)ptr, base=(uintptr_t)g_heap;
+    if (address<base || address-base>=g_heap_pages*CM_PAGE_SIZE) return;
+    uint64_t off = (address-base) / CM_PAGE_SIZE;
     uint64_t n = 1ull << order;
     for (uint64_t i = 0; i < n && off + i < g_heap_pages; i++)
         g_page_state[off + i] = (uint8_t)st;
@@ -117,8 +124,8 @@ static void mark_state(void *ptr, unsigned order, cm_page_state_t st)
 
 void cm_mm_init(const cm_mem_region_t *regions, int nregions)
 {
-    memset(g_free, 0, sizeof(g_free));
-    memset(g_free_count, 0, sizeof(g_free_count));
+    memset(arenas, 0, sizeof(arenas));
+    arena_count=0; next_node=0;
     g_total_pages = 0;
     g_free_pages = 0;
 
@@ -141,22 +148,8 @@ void cm_mm_init(const cm_mem_region_t *regions, int nregions)
     g_page_state = NULL;
 #endif
 
-    g_total_pages = g_heap_pages;
-    uint64_t remaining = g_heap_pages;
-    uint8_t *p = g_heap;
-    /* Greedy split into largest aligned buddies. */
-    while (remaining) {
-        unsigned order = CM_BUDDY_MAX_ORDER;
-        while (order > 0 && ((1ull << order) > remaining ||
-                             (((uintptr_t)p >> CM_PAGE_SHIFT) & ((1ull << order) - 1))))
-            order--;
-        push_free(order, p);
-        mark_state(p, order, CM_PAGE_FREE);
-        uint64_t n = 1ull << order;
-        p += n * CM_PAGE_SIZE;
-        remaining -= n;
-        g_free_pages += n;
-    }
+    if (cm_buddy_add_region(0,(uint64_t)(uintptr_t)g_heap,g_heap_pages)!=CM_OK)
+        cm_panic("invalid primary buddy arena");
 
     extern void cm_slab_init(void);
     extern void cm_commit_init(uint64_t total_pages);
@@ -171,97 +164,114 @@ void cm_mm_init(const cm_mem_region_t *regions, int nregions)
           CM_BUDDY_MAX_ORDER);
 }
 
-void *cm_page_alloc(unsigned order)
+void cm_buddy_primary(uint64_t *base, uint64_t *pages)
 {
-    if (order > CM_BUDDY_MAX_ORDER) return NULL;
-
-    uint64_t flags = buddy_lock();
-
-    unsigned o = order;
-    while (o <= CM_BUDDY_MAX_ORDER && !g_free[o]) o++;
-    if (o > CM_BUDDY_MAX_ORDER) { buddy_unlock(flags); return NULL; }
-
-    /* Checked BEFORE the block is unlinked. The old code popped first and
-     * tested g_free_pages afterwards, so a failing check dropped the block
-     * on the floor: it was already off the free list and never pushed
-     * back, leaking 2^o pages for the rest of the run. */
-    uint64_t n = 1ull << order;
-    if (g_free_pages < n) { buddy_unlock(flags); return NULL; }
-
-    void *blk = pop_free(o);
-    while (o > order) {
-        o--;
-        uint8_t *buddy = (uint8_t *)blk + ((1ull << o) * CM_PAGE_SIZE);
-        push_free(o, buddy);
-        mark_state(buddy, o, CM_PAGE_FREE);
-    }
-    g_free_pages -= n;
-    mark_state(blk, order, CM_PAGE_ACTIVE);
-
-    buddy_unlock(flags);
-
-    /* Outside the lock: cm_obs_emit() touches the trace ring, which is a
-     * different subsystem holding its own state, and the event is
-     * informational — the allocation is already complete. */
-    cm_obs_emit(cm_trace_new(), CM_EV_ALLOC, (uint64_t)(uintptr_t)blk, order, n);
-    return blk;
+    *base=(uint64_t)(uintptr_t)g_heap; *pages=g_heap_pages;
 }
-
-void cm_page_free(void *ptr, unsigned order)
+static int arena_of(const void *ptr)
 {
-    if (!ptr || order > CM_BUDDY_MAX_ORDER) return;
-    uint64_t n = 1ull << order;
-
-    /* The whole coalesce walk must be atomic. Unlocked, another CPU can
-     * pop the buddy we are in the middle of unlinking, or splice the list
-     * while we hold a **pp cursor into it — which turns the list into a
-     * cycle or leaves one block reachable twice. Either way the next
-     * allocation hands these pages out again while they are still in use. */
-    uint64_t flags = buddy_lock();
-
-    g_free_pages += n;
-    mark_state(ptr, order, CM_PAGE_FREE);
-    /* Coalesce: walk up while buddy is sitting on the free list of same order. */
-    void *cur = ptr;
-    unsigned o = order;
-    while (o < CM_BUDDY_MAX_ORDER && g_heap) {
-        uintptr_t off = (uintptr_t)((uint8_t *)cur - g_heap);
-        uintptr_t size = (1ull << o) * CM_PAGE_SIZE;
-        uintptr_t buddy_off = off ^ size;
-        void *buddy = g_heap + buddy_off;
-        cm_free_block_t **pp = &g_free[o];
-        int found = 0;
-        while (*pp) {
-            if (*pp == (cm_free_block_t *)buddy) {
-                *pp = (*pp)->next;
-                g_free_count[o]--;
-                found = 1;
-                break;
-            }
-            pp = &(*pp)->next;
+    uintptr_t p=(uintptr_t)ptr;
+    for (unsigned i=0;i<arena_count;i++) {
+        uintptr_t b=(uintptr_t)arenas[i].base;
+        if (p>=b && p-b<arenas[i].pages*CM_PAGE_SIZE) return (int)i;
+    }
+    return -1;
+}
+int cm_page_node(const void *ptr)
+{
+    uint64_t flags=buddy_lock(); int i=arena_of(ptr);
+    int node=i<0 ? -1 : (int)arenas[i].node; buddy_unlock(flags); return node;
+}
+cm_error_t cm_buddy_add_region(unsigned node,uint64_t virt,uint64_t pages)
+{
+    if (node>=CM_NUMA_MAX_NODES || !pages || (virt&CM_PAGE_MASK) ||
+        pages>(UINT64_MAX-virt)/CM_PAGE_SIZE) return CM_ERR_INVAL;
+    uint64_t flags=buddy_lock();
+    if (arena_count==CM_NUMA_MAX_RANGES) { buddy_unlock(flags); return CM_ERR_NOSPC; }
+    for (unsigned i=0;i<arena_count;i++) {
+        uint64_t b=(uint64_t)(uintptr_t)arenas[i].base, end=b+arenas[i].pages*CM_PAGE_SIZE;
+        if (virt<end && b<virt+pages*CM_PAGE_SIZE) { buddy_unlock(flags); return CM_ERR_EXIST; }
+    }
+    cm_arena_t *a=&arenas[arena_count++];
+    a->base=(uint8_t *)(uintptr_t)virt; a->pages=pages; a->node=node; a->free_pages=pages;
+    uint64_t remaining=pages; uint8_t *p=a->base;
+    while (remaining) {
+        unsigned o=CM_BUDDY_MAX_ORDER;
+        while (o && ((1ull<<o)>remaining || (((uintptr_t)p>>CM_PAGE_SHIFT)&((1ull<<o)-1)))) o--;
+        push_free(a,o,p); mark_state(p,o,CM_PAGE_FREE);
+        p+=(1ull<<o)*CM_PAGE_SIZE; remaining-=1ull<<o;
+    }
+    g_total_pages+=pages; g_free_pages+=pages;
+    buddy_unlock(flags); return CM_OK;
+}
+static void *alloc_node_locked(unsigned node,unsigned order)
+{
+    for (unsigned i=0;i<arena_count;i++) {
+        cm_arena_t *a=&arenas[i]; if (a->node!=node) continue;
+        unsigned o=order; while (o<=CM_BUDDY_MAX_ORDER && !a->free[o]) o++;
+        if (o>CM_BUDDY_MAX_ORDER) continue;
+        void *blk=pop_free(a,o);
+        while (o>order) { o--; void *p=(uint8_t *)blk+(1ull<<o)*CM_PAGE_SIZE;
+            push_free(a,o,p); mark_state(p,o,CM_PAGE_FREE); }
+        a->free_pages-=1ull<<order; g_free_pages-=1ull<<order;
+        mark_state(blk,order,CM_PAGE_ACTIVE); return blk;
+    }
+    return NULL;
+}
+static void *allocate(unsigned node,unsigned order,bool automatic)
+{
+    if (order>CM_BUDDY_MAX_ORDER || node>=cm_numa_node_count()) return NULL;
+    uint64_t flags=buddy_lock(); void *ptr=NULL;
+    unsigned count=cm_numa_node_count();
+    if (automatic) {
+        for (unsigned n=0;n<count;n++) {
+            unsigned selected=(next_node+n)%count;
+            ptr=alloc_node_locked(selected,order);
+            if (ptr) { next_node=(selected+1)%count; break; }
         }
-        if (!found) break;
-        cur = (buddy_off < off) ? buddy : cur;
-        o++;
-    }
-    push_free(o, cur);
-
+    } else ptr=alloc_node_locked(node,order);
     buddy_unlock(flags);
-
-    cm_obs_emit(cm_trace_new(), CM_EV_FREE, (uint64_t)(uintptr_t)ptr, order, n);
+    if (ptr) cm_obs_emit(cm_trace_new(),CM_EV_ALLOC,(uint64_t)(uintptr_t)ptr,order,1ull<<order);
+    return ptr;
 }
-
-/* Snapshot page totals and per-order blocks under the allocator lock.
- * All current free lists belong to node0; future nodes need separate arenas. */
-cm_error_t cm_numa_stats(unsigned node, cm_numa_stats_t *out)
+void *cm_page_alloc(unsigned order) { return allocate(0,order,true); }
+void *cm_page_alloc_node(unsigned node,unsigned order) { return allocate(node,order,false); }
+void cm_page_free(void *ptr,unsigned order)
 {
-    if (node || !out) return CM_ERR_INVAL;
-    uint64_t flags = buddy_lock();
-    out->total_pages = g_total_pages;
-    out->free_pages = g_free_pages;
-    memcpy(out->free_blocks, g_free_count, sizeof(g_free_count));
-    buddy_unlock(flags);
-    return CM_OK;
+    if (!ptr || order>CM_BUDDY_MAX_ORDER) return;
+    uint64_t flags=buddy_lock(); int index=arena_of(ptr);
+    if (index<0) { buddy_unlock(flags); return; }
+    cm_arena_t *a=&arenas[index];
+    uintptr_t begin=(uintptr_t)a->base, cur=(uintptr_t)ptr;
+    uint64_t n=1ull<<order;
+    if ((cur&((n*CM_PAGE_SIZE)-1)) || (cur-begin)/CM_PAGE_SIZE+n>a->pages) {
+        buddy_unlock(flags); return;
+    }
+    a->free_pages+=n; g_free_pages+=n; mark_state(ptr,order,CM_PAGE_FREE);
+    unsigned o=order;
+    /* Absolute alignment matches initialization; never merge across arenas. */
+    while (o<CM_BUDDY_MAX_ORDER) {
+        uintptr_t buddy=cur^((1ull<<o)*CM_PAGE_SIZE);
+        uintptr_t low=buddy<cur ? buddy : cur;
+        if (low<begin || low+(2ull<<o)*CM_PAGE_SIZE>begin+a->pages*CM_PAGE_SIZE) break;
+        cm_free_block_t **pp=&a->free[o];
+        while (*pp && (uintptr_t)*pp!=buddy) pp=&(*pp)->next;
+        if (!*pp) break;
+        *pp=(*pp)->next; a->count[o]--; cur=low; o++;
+    }
+    push_free(a,o,(void *)cur); buddy_unlock(flags);
+    cm_obs_emit(cm_trace_new(),CM_EV_FREE,(uint64_t)(uintptr_t)ptr,order,n);
+}
+cm_error_t cm_numa_stats(unsigned node,cm_numa_stats_t *out)
+{
+    if (node>=cm_numa_node_count() || !out) return CM_ERR_INVAL;
+    uint64_t flags=buddy_lock(); memset(out,0,sizeof(*out));
+    for (unsigned i=0;i<arena_count;i++) {
+        cm_arena_t *a=&arenas[i]; if (a->node!=node) continue;
+        out->total_pages+=a->pages; out->free_pages+=a->free_pages;
+        for (unsigned o=0;o<=CM_BUDDY_MAX_ORDER;o++) out->free_blocks[o]+=a->count[o];
+    }
+    buddy_unlock(flags); return CM_OK;
 }
 
 void cm_mm_stats(cm_mm_stats_t *out)
@@ -302,8 +312,8 @@ void cm_mm_dump(void)
           (unsigned long)s.swapped_pages, (unsigned long)s.swap_slots,
           (unsigned long)s.swap_total, s.jetsam_kills, s.oom_kills,
           cm_pressure_name(s.pressure));
-    for (unsigned o = 0; o <= CM_BUDDY_MAX_ORDER; o++) {
-        if (g_free_count[o])
-            kinfo("  order %u: %llu free blocks", o, (unsigned long)g_free_count[o]);
+    for (unsigned i=0;i<arena_count;i++) {
+        kinfo("  buddy node=%u arena=%u pages=%llu free=%llu",arenas[i].node,i,
+              (unsigned long)arenas[i].pages,(unsigned long)arenas[i].free_pages);
     }
 }

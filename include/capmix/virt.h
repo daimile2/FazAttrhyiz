@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "sched.h"
+#include "virt_hw.h"
 
 /* Phase 7: Type-1 hypervisor (KVM route) + VFIO, and Fuchsia-style
  * job objects that swallow Linux's seven namespaces + cgroup v2.

@@ -50,6 +50,7 @@ struct cm_task {
 };
 
 struct cm_thread {
+    cm_trace_t trace_context; /* metadata only: last received IPC causal chain */
     cm_id_t       id;
     cm_task_t    *task;
     cm_th_state_t state;
