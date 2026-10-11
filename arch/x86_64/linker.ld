@@ -34,6 +34,19 @@ SECTIONS
         __text_end = .;
     }
 
+    .entry.text : AT(ADDR(.entry.text) - KERNEL_VIRT + KERNEL_PHYS) ALIGN(4096) {
+        __entry_text_start = .;
+        *(.entry.text)
+        . = ALIGN(4096);
+        __entry_text_end = .;
+    }
+    .entry.data : AT(ADDR(.entry.data) - KERNEL_VIRT + KERNEL_PHYS) ALIGN(4096) {
+        __entry_data_start = .;
+        *(.entry.data)
+        . = ALIGN(4096);
+        __entry_data_end = .;
+    }
+
     .rodata : AT(ADDR(.rodata) - KERNEL_VIRT + KERNEL_PHYS) ALIGN(4096) {
         *(.rodata .rodata.*)
     }

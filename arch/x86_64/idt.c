@@ -45,11 +45,11 @@ extern void     cm_fault_stub_17(void);
  * get its own RSP0 and its own IST stacks. Sharing one TSS across CPUs
  * means two CPUs can take a #PF at the same instant and land on the same
  * IST stack, which corrupts both. */
-static struct idt_gate g_idt[256];
-static struct tss64    g_tss[CM_MAX_CPUS];
-static uint8_t         g_ist1[CM_MAX_CPUS][16384] __attribute__((aligned(16)));
-static uint8_t         g_ist2[CM_MAX_CPUS][16384] __attribute__((aligned(16)));
-static uint64_t        g_gdt[CM_MAX_CPUS][10];
+static struct idt_gate g_idt[256] __attribute__((section(".entry.data"), aligned(4096)));
+static struct tss64 g_tss[CM_MAX_CPUS] __attribute__((section(".entry.data")));
+static uint8_t         g_ist1[CM_MAX_CPUS][16384] __attribute__((section(".entry.data"), aligned(4096)));
+static uint8_t         g_ist2[CM_MAX_CPUS][16384] __attribute__((section(".entry.data"), aligned(4096)));
+static uint64_t g_gdt[CM_MAX_CPUS][10] __attribute__((section(".entry.data")));
 
 static void set_gate(int vec, void *fn, uint8_t ist)
 {

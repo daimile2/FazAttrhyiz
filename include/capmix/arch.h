@@ -75,9 +75,14 @@ uint64_t cm_kernel_size(void);
 
 uint64_t cm_read_cr4(void);
 
+unsigned cm_paging_levels(void);
+int cm_paging_level_folded(unsigned level);
+uint64_t cm_space_lookup(uint64_t *root, uint64_t virt);
 uint64_t *cm_paging_pml4(void);
 uint64_t  cm_paging_cr3(void);
 uint64_t *cm_space_create(uint64_t *out_phys);
+/* Call after mapping the user low half; shared low subtrees thereafter. */
+uint64_t *cm_space_shadow(uint64_t *full, uint64_t *out_phys);
 int       cm_space_map(uint64_t *pml4, uint64_t virt, uint64_t phys, int user);
 int       cm_space_map_flags(uint64_t *pml4, uint64_t virt, uint64_t phys, int uncached);
 void      cm_space_load(uint64_t cr3);

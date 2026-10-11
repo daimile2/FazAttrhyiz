@@ -10,6 +10,23 @@
 #define CAPMIX_VERSION     "0.8.0-phase8"
 #define CAPMIX_BANNER      "CapMix " CAPMIX_VERSION " — capability hybrid kernel"
 
+/* KPTI defaults on, including hosted structural tests. Override with -DCM_KPTI=0. */
+#ifndef CM_KPTI
+#define CM_KPTI 1
+#endif
+
+/* Five logical levels; unused upper levels fold without allocating a table.
+ * Freestanding follows CR4.LA57 set by the bootloader; never toggles it live. */
+#ifndef CM_PT_MAX_LEVELS
+#define CM_PT_MAX_LEVELS 5
+#endif
+#ifndef CM_PT_LEVELS
+#define CM_PT_LEVELS 4
+#endif
+#if CM_PT_MAX_LEVELS < 4 || CM_PT_MAX_LEVELS > 5 || CM_PT_LEVELS < 4 || CM_PT_LEVELS > CM_PT_MAX_LEVELS
+#error "page table levels must be 4 or 5 and fit CM_PT_MAX_LEVELS"
+#endif
+
 #define CM_BUDDY_MAX_ORDER     11          /* 4 KiB .. 8 MiB */
 #define CM_SLAB_MAX_CLASSES    16
 #define CM_MAX_CPUS            8

@@ -23,7 +23,7 @@ SRC = \
 	mm/wkdm.c \
 	obs/trace.c \
 	obs/etw.c \
-	mm/buddy.c \
+	mm/buddy.c mm/numa.c \
 	mm/slab.c \
 	mm/commit.c \
 	mm/pressure.c \
@@ -53,6 +53,7 @@ SRC = \
 	virt/job.c \
 	virt/kvm.c \
 	boot/kernel.c \
+	boot/phase0_test.c \
 	boot/phase3_test.c \
  
      
@@ -73,7 +74,7 @@ FREE_LDFLAGS = -nostdlib -static -no-pie -Wl,--build-id=none \
 
 all: test
 
-$(HOST_BIN): $(HOST_SRC)
+$(HOST_BIN): $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
 	$(CC) $(CFLAGS) $(INCLUDES) -DCAPMIX_HOSTED -o $@ $(HOST_SRC)
 
 test: $(HOST_BIN)
@@ -83,7 +84,7 @@ test: $(HOST_BIN)
 
 kernel: $(FREE_BIN)
 
-$(FREE_BIN): $(FREE_SRC) arch/x86_64/linker.ld
+$(FREE_BIN): $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
 	$(CC) $(FREE_CFLAGS) $(INCLUDES) $(FREE_LDFLAGS) -o $@ $(FREE_SRC)
 
 iso: $(FREE_BIN)

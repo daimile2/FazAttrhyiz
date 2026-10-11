@@ -1,6 +1,7 @@
 #include "capmix/sched.h"
 #include "capmix/arch.h"
 #include "capmix/mm.h"
+#include "capmix/numa.h"
 #include "capmix/klog.h"
 #include "capmix/obs.h"
 #include "capmix/config.h"
@@ -309,7 +310,7 @@ cm_thread_t *cm_thread_create(cm_task_t *task, cm_th_entry_t entry, void *arg, c
      * Allocating 1 while placing the stack top at +8192 put every thread's
      * first 4 KiB of stack growth inside a page the buddy never handed us
      * — it only survived because the neighbour happened to be unused. */
-    th->kstack = cm_page_alloc(2);
+    th->kstack = cm_page_alloc_node(task ? task->memory_node : 0, 2);
     if (!th->kstack) { th->id = 0; return NULL; }
     if (cm_arch_ctx_init(th->ctx_slot, entry, arg, th->kstack, 2 * CM_PAGE_SIZE) != 0) {
         cm_page_free(th->kstack, 2);

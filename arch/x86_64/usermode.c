@@ -3,10 +3,12 @@
 #include "capmix/mm.h"
 #include "capmix/klog.h"
 #include "capmix/kernel.h"
+#include "capmix/config.h"
 
 #include <string.h>
 
 extern void     cm_syscall_entry(void);
+void cm_land_user(void);
 extern uint64_t cm_kern_rsp;
 extern uint64_t cm_user_syscalls;
 extern uint64_t cm_last_cpl;
@@ -16,8 +18,20 @@ extern uint64_t cm_leave_user;
 #define USER_SS  0x23
 
 #define CM_PCPU_MAX 8
-typedef struct { uint64_t rsp0; uint64_t user_rsp; uint64_t kern_rsp; } cm_pcpu_t;
-static cm_pcpu_t g_pcpu[CM_PCPU_MAX] __attribute__((aligned(64)));
+/* Offsets shared with syscall.S: 0 stack, 8 user rsp, 16 reserved,
+ * 24 full CR3, 32 shadow CR3, 40 scratch rax. */
+typedef struct { uint64_t rsp0, user_rsp, kern_rsp, full_cr3, user_cr3, scratch, incoming_cr3, bad_entries; } cm_pcpu_t;
+_Static_assert(offsetof(cm_pcpu_t, full_cr3) == 24, "entry full CR3 offset");
+_Static_assert(offsetof(cm_pcpu_t, user_cr3) == 32, "entry shadow CR3 offset");
+_Static_assert(offsetof(cm_pcpu_t, scratch) == 40, "entry scratch offset");
+_Static_assert(offsetof(cm_pcpu_t, incoming_cr3) == 48, "entry incoming offset");
+_Static_assert(offsetof(cm_pcpu_t, bad_entries) == 56, "entry counter offset");
+static cm_pcpu_t g_pcpu[CM_PCPU_MAX] __attribute__((section(".entry.data"), aligned(4096)));
+#ifndef CAPMIX_HOSTED
+static uint8_t g_entry_stacks[CM_PCPU_MAX][16384]
+    __attribute__((section(".entry.data"), aligned(4096)));
+extern void cm_enter_user(uint64_t cr3, uint64_t rip, uint64_t rsp, uint64_t entry_top);
+#endif
 
 static inline void pcpu_wrmsr(uint32_t msr, uint64_t v)
 {
@@ -148,6 +162,9 @@ int cm_usermode_selftest(void)
         0x00, 0x00,                                     /* movabs $0x400090,%rdx */
         0x88, 0x02,                                     /* mov %al,(%rdx)  */
 
+        /* Keep ring3 live long enough to exercise timer entry under shadow. */
+        0x41, 0xbd, 0x00, 0xe1, 0xf5, 0x05,             /* mov $100000000,%r13d */
+        0x41, 0xff, 0xcd, 0x75, 0xfb,                   /* dec r13d; jnz */
         0x41, 0xbc, 0x64, 0x00, 0x00, 0x00,             /* mov $100,%r12d */
         0x0f, 0x31,                                     /* rdtsc          */
         0x89, 0xc6,                                     /* mov %eax,%esi  */
@@ -185,14 +202,30 @@ int cm_usermode_selftest(void)
 
     uint64_t before = cm_user_syscalls;
     uint64_t home = cm_paging_cr3();
-    cm_space_load(cr3);
+    uint64_t shadow_cr3 = 0;
+    uint64_t *shadow = cm_space_shadow(pml4, &shadow_cr3);
+    if (!shadow) return -1;
+#if CM_KPTI
+    if (cm_space_lookup(shadow, (uint64_t)(uintptr_t)code) ||
+        cm_space_lookup(shadow, (uint64_t)(uintptr_t)cm_land_user) ||
+        !(cm_space_lookup(shadow, USER_BASE) & 4)) {
+        kerr("KPTI: shadow isolation check failed");
+        return -1;
+    }
+    kinfo("KPTI: shadow excludes heap and kernel C text; user mapping present");
+#endif
 
     uint64_t user_rsp = USER_BASE + 0x2000 - 16;
     uint64_t kstack;
     __asm__ volatile("movq %%rsp, %0" : "=r"(kstack));
     /* iretq pushes 5 and pops 5 — rsp is back at kstack. */
     cm_kern_rsp = kstack;
-    cm_pcpu_init(cm_cpu_id(), kstack);
+    int cpu = cm_cpu_id();
+    cm_pcpu_init(cpu, kstack);
+    g_pcpu[cpu].full_cr3 = cr3;
+    g_pcpu[cpu].user_cr3 = shadow_cr3;
+    uint64_t entry_top = (uint64_t)(uintptr_t)&g_entry_stacks[cpu][16384];
+    cm_tss_set_rsp0(cpu, entry_top);
     cm_leave_user = 0;
 
     kinfo("usermode: iretq → 0x%llx cs=0x2b ss=0x23 cr3=%llx",
@@ -201,23 +234,25 @@ int cm_usermode_selftest(void)
     g_home_cr3 = home;
     g_sys_before = before;
 
-    __asm__ volatile(
-        "pushq %[ss]\n\t"
-        "pushq %[rsp]\n\t"
-        "pushq $0x202\n\t"
-        "pushq %[cs]\n\t"
-        "pushq %[rip]\n\t"
-        "iretq\n\t"
-        :
-        : [ss] "i"(USER_SS), [cs] "i"(USER_CS),
-          [rsp] "r"(user_rsp), [rip] "r"(USER_BASE)
-        : "memory"
-    );
+    cm_space_load(cr3); /* full process view supplies user buffers to C syscalls */
+    cm_enter_user(shadow_cr3, USER_BASE, user_rsp, entry_top);
     return -1; /* not reached after a successful iretq */
 }
 
 void cm_land_user(void)
 {
+#if CM_KPTI
+    int cpu = cm_cpu_id();
+    uint64_t actual;
+    __asm__ volatile("movq %%cr3, %0" : "=r"(actual));
+    if (actual != g_pcpu[cpu].full_cr3 || g_pcpu[cpu].bad_entries ||
+        g_pcpu[cpu].incoming_cr3 != g_pcpu[cpu].user_cr3)
+        cm_panic("KPTI: CR3 entry/exit mismatch");
+    extern uint64_t cm_entry_user_irqs;
+    if (!cm_entry_user_irqs) cm_panic("KPTI: no ring3 timer entry exercised");
+    kinfo("KPTI: verified shadow -> full CR3 on all 102 syscall entries, ring3 timer entries=%llu",
+          (unsigned long)cm_entry_user_irqs);
+#endif
     cm_space_load(g_home_cr3);
     uint64_t real_cpl = 0xff;
     if (g_user_code)

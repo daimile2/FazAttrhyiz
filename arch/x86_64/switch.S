@@ -1,3 +1,4 @@
+#include "entry_asm.h"
 /* Callee-saved + rsp/rip/rflags fiber switch. Works hosted and freestanding. */
 .globl cm_ctx_switch_asm
 .type  cm_ctx_switch_asm, @function
@@ -43,12 +44,15 @@ jmp	*%rax
 1:
 ret
 
+.section .entry.text,"ax",@progbits
 .globl cm_isr_stub
 .type  cm_isr_stub, @function
 cm_isr_stub:
+CM_ENTRY_SAVE
 pushq	%rax
 lock incq cm_isr_count(%rip)
 popq	%rax
+CM_ENTRY_RESTORE
 iretq
 
 /* #DF/#TS/#NP/#SS/#GP/#PF/#AC push a hardware error code BELOW the
@@ -64,6 +68,7 @@ iretq
 .globl cm_fault_stub_\vec
 .type  cm_fault_stub_\vec, @function
 cm_fault_stub_\vec:
+CM_ENTRY_FAULT
 movq	$\vec, %rdi	/* arg0: vector */
 movq	0(%rsp), %rsi	/* arg1: error code */
 movq	8(%rsp), %rdx	/* arg2: faulting RIP */
@@ -84,6 +89,14 @@ FAULT_STUB 17	/* #AC */
 .globl cm_timer_stub
 .type  cm_timer_stub, @function
 cm_timer_stub:
+CM_ENTRY_SAVE
+#if CM_KPTI && !defined(CAPMIX_HOSTED)
+/* Saved RAX/CR3 precede the hardware frame; CS is at +24. */
+testb $3, 24(%rsp)
+jz 990f
+lock incq cm_entry_user_irqs(%rip)
+990:
+#endif
 /* Full C-call path. Entry rsp is 8 (mod 16) after the hardware pushes
 * 5 words; subq $8 then 10 pushes (80 bytes, 80%16==0) leaves rsp 0
 * (mod 16) at the call site, which is what the SysV ABI wants. */
@@ -111,9 +124,12 @@ popq	%rdx
 popq	%rcx
 popq	%rax
 addq	$8, %rsp
+CM_ENTRY_RESTORE
 iretq
 
 .data
 .globl cm_isr_count
 cm_isr_count:
 .quad	0
+
+.section .note.GNU-stack,"",@progbits

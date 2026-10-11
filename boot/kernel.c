@@ -324,7 +324,9 @@ int capmix_selftest(void)
         probe("after-timer-spin");
         kinfo("checkpoint E");
     }
-    kinfo("--- selftest: wkdm roundtrip + 4-level page walk ---");
+    kinfo("--- selftest: wkdm roundtrip + configurable page walk ---");
+    extern int cm_phase0_selftest(void);
+    if (cm_phase0_selftest() != 0) fails++;
     if (cm_wkdm_selftest() != 0) fails++;
     if (cm_paging_tables() == 0) { kerr("no page tables built"); fails++; }
     else cm_paging_dump();

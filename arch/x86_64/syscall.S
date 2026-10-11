@@ -1,11 +1,24 @@
+#include "capmix/config.h"
 	.globl cm_syscall_entry
 	.type  cm_syscall_entry, @function
 	.globl cm_user_rsp, cm_kern_rsp, cm_user_syscalls, cm_last_cpl
 	.globl cm_leave_user, cm_land_user
 
-	.text
+	.section .entry.text,"ax",@progbits
 cm_syscall_entry:
 	swapgs
+#if CM_KPTI
+	movq %rax, %gs:40
+	movq %cr3, %rax
+	movq %rax, %gs:48
+	cmpq %gs:32, %rax
+	je 9f
+	incq %gs:56
+9:
+	movq %gs:24, %rax
+	movq %rax, %cr3
+	movq %gs:40, %rax
+#endif
 	movq	%rsp, %gs:8
 	movq	%gs:0, %rsp
 	pushq	%r11
@@ -37,6 +50,12 @@ cm_syscall_entry:
 	popq	%r9
 	popq	%rcx
 	popq	%r11
+#if CM_KPTI
+	movq %rax, %gs:40
+	movq %gs:32, %rax
+	movq %rax, %cr3
+	movq %gs:40, %rax
+#endif
 	movq	%gs:8, %rsp
 	swapgs
 	sysretq
@@ -47,6 +66,20 @@ cm_syscall_entry:
 2:
 	hlt
 	jmp	2b
+
+/* SysV args: rdi=shadow CR3, rsi=user RIP, rdx=user RSP, rcx=entry top.
+ * Everything after mov CR3, including the iret frame, lives in the window. */
+	.globl cm_enter_user
+cm_enter_user:
+	cli
+	movq %rcx, %rsp
+	pushq $0x23
+	pushq %rdx
+	pushq $0x202
+	pushq $0x2b
+	pushq %rsi
+	movq %rdi, %cr3
+	iretq
 
 	.data
 	.align 8
@@ -59,3 +92,5 @@ cm_user_syscalls: .quad 0
 cm_last_cpl:      .quad 0
 	.globl cm_leave_user
 cm_leave_user:    .quad 0
+
+.section .note.GNU-stack,"",@progbits

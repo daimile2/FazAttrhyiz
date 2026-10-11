@@ -44,6 +44,7 @@ struct cm_task {
     int          handle_cap;
     cm_qos_t     qos;
     int          oom_score_adj;
+    unsigned     memory_node;     /* NUMA binding; stage 0 supports node0 */
     uint32_t     jetsam_band;     /* L4 kill order */
     cm_object_t *self_obj;
 };

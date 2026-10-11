@@ -2,6 +2,7 @@
 #include "capmix/mm.h"
 #include "capmix/klog.h"
 #include "capmix/kernel.h"
+#include "capmix/config.h"
 
 #include <string.h>
 
@@ -22,7 +23,17 @@
 extern char __text_start[] __attribute__((weak));
 extern char __text_end[]   __attribute__((weak));
 
-static uint64_t *g_pml4;
+extern char __entry_text_start[] __attribute__((weak));
+extern char __entry_text_end[] __attribute__((weak));
+extern char __entry_data_start[] __attribute__((weak));
+extern char __entry_data_end[] __attribute__((weak));
+uint64_t cm_entry_user_irqs __attribute__((section(".entry.data")));
+uint64_t cm_entry_kernel_cr3 __attribute__((section(".entry.data"), aligned(4096)));
+
+static uint64_t *g_pml4; /* compatibility name: root at the active level */
+static unsigned g_levels = CM_PT_LEVELS;
+#define PTE_ADDR 0x000ffffffffff000ull
+#define PTE_PS (1ull << 7)
 static uint64_t  g_tables;
 static uint64_t  g_mapped_pages;
 static uint64_t  g_boot_stack[16384] __attribute__((used, aligned(16)));
@@ -41,7 +52,9 @@ static int in_kernel_text(uint64_t virt)
 {
     uint64_t s = (uint64_t)(uintptr_t)__text_start;
     uint64_t e = (uint64_t)(uintptr_t)__text_end;
-    return (e > s) && (virt >= s) && (virt < e);
+    return ((e > s) && (virt >= s) && (virt < e)) ||
+        (virt >= (uint64_t)(uintptr_t)__entry_text_start &&
+         virt < (uint64_t)(uintptr_t)__entry_text_end);
 }
 
 static uint64_t v2p(void *v)
@@ -61,27 +74,6 @@ static void *p2v(uint64_t p)
     return (void *)(uintptr_t)p;
 }
 
-/* Walk to a leaf PTE without allocating. Used by cm_paging_dump() to report
- * whether text actually ended up read-only. */
-static uint64_t *pte_of(uint64_t virt)
-{
-    if (!g_pml4) return NULL;
-    uint64_t *pdpt, *pd, *pt;
-    uint64_t i4 = (virt >> 39) & 0x1ff;
-    uint64_t i3 = (virt >> 30) & 0x1ff;
-    uint64_t i2 = (virt >> 21) & 0x1ff;
-    uint64_t i1 = (virt >> 12) & 0x1ff;
-
-    if (!(g_pml4[i4] & PTE_P)) return NULL;
-    pdpt = (uint64_t *)p2v(g_pml4[i4] & ~0xFFFull);
-    if (!(pdpt[i3] & PTE_P)) return NULL;
-    pd = (uint64_t *)p2v(pdpt[i3] & ~0xFFFull);
-    if (!(pd[i2] & PTE_P)) return NULL;
-    pt = (uint64_t *)p2v(pd[i2] & ~0xFFFull);
-    if (!(pt[i1] & PTE_P)) return NULL;
-    return &pt[i1];
-}
-
 static uint64_t *new_table(void)
 {
     void *p = cm_page_alloc(0);
@@ -91,38 +83,49 @@ static uint64_t *new_table(void)
     return (uint64_t *)p;
 }
 
+/* The same walker handles PML5/PML4/PDPT/PD/PT. Folded levels
+ * return the current table unchanged (no index, no allocation). */
+unsigned cm_paging_levels(void) { return g_levels; }
+int cm_paging_level_folded(unsigned level) { return level > g_levels; }
+
+static uint64_t *walk_leaf(uint64_t *root, uint64_t virt, int create, uint64_t flags)
+{
+    if (!root) return NULL;
+    uint64_t *table = root;
+    for (unsigned level = CM_PT_MAX_LEVELS; level > 1; level--) {
+        if (cm_paging_level_folded(level)) continue;
+        uint64_t *entry = &table[(virt >> (12 + 9 * (level - 1))) & 511];
+        if (!(*entry & PTE_P)) {
+            if (!create) return NULL;
+            uint64_t *next = new_table();
+            if (!next) return NULL;
+            *entry = v2p(next) | PTE_P | PTE_W | (flags & PTE_U);
+        }
+        if (*entry & PTE_PS) return NULL; /* no accidental huge-page descent */
+        if (create) *entry |= flags & PTE_U;
+        table = p2v(*entry & PTE_ADDR);
+    }
+    return &table[(virt >> 12) & 511];
+}
+
+uint64_t cm_space_lookup(uint64_t *root, uint64_t virt)
+{
+    uint64_t *entry = walk_leaf(root, virt, 0, 0);
+    return entry ? *entry : 0;
+}
+
+static uint64_t *pte_of(uint64_t virt) { return walk_leaf(g_pml4, virt, 0, 0); }
+
 static int map_page_in(uint64_t *pml4, uint64_t virt, uint64_t phys, uint64_t flags)
 {
-    if (!pml4) return -1;
+    uint64_t *leaf = walk_leaf(pml4, virt, 1, flags);
+    if (!leaf) return -1;
     virt &= ~0xFFFull;
-    phys &= ~0xFFFull;
-    uint64_t i4 = (virt >> 39) & 0x1ff;
-    uint64_t i3 = (virt >> 30) & 0x1ff;
-    uint64_t i2 = (virt >> 21) & 0x1ff;
-    uint64_t i1 = (virt >> 12) & 0x1ff;
-
-    if (!(pml4[i4] & PTE_P)) {
-        uint64_t *t = new_table();
-        if (!t) return -1;
-        pml4[i4] = v2p(t) | PTE_P | PTE_W | (flags & PTE_U);
-    }
-    uint64_t *pdpt = (uint64_t *)p2v(pml4[i4] & ~0xFFFull);
-    if (!(pdpt[i3] & PTE_P)) {
-        uint64_t *t = new_table();
-        if (!t) return -1;
-        pdpt[i3] = v2p(t) | PTE_P | PTE_W | (flags & PTE_U);
-    }
-    uint64_t *pd = (uint64_t *)p2v(pdpt[i3] & ~0xFFFull);
-    if (!(pd[i2] & PTE_P)) {
-        uint64_t *t = new_table();
-        if (!t) return -1;
-        pd[i2] = v2p(t) | PTE_P | PTE_W | (flags & PTE_U);
-    }
-    uint64_t *pt = (uint64_t *)p2v(pd[i2] & ~0xFFFull);
-    if (!(pt[i1] & PTE_P))
+    phys &= PTE_ADDR;
+    if (!(*leaf & PTE_P))
         g_mapped_pages++;
     /* Global only on kernel, non-user leaves. User pages must not be G. */
-    uint64_t g = (virt >= 0xffff800000000000ull && !(flags & PTE_U)) ? PTE_G : 0;
+    uint64_t g = (!CM_KPTI && virt >= 0xffff800000000000ull && !(flags & PTE_U)) ? PTE_G : 0;
 
     /* Executable text gets no write permission.
      *
@@ -131,7 +134,7 @@ static int map_page_in(uint64_t *pml4, uint64_t virt, uint64_t phys, uint64_t fl
      * table walk itself untouched. */
     uint64_t w = in_kernel_text(virt) ? 0 : PTE_W;
 
-    pt[i1] = phys | PTE_P | w | (flags & (PTE_U | PTE_PCD | PTE_PWT)) | g;
+    *leaf = phys | PTE_P | w | (flags & (PTE_U | PTE_PCD | PTE_PWT)) | g;
     return 0;
 }
 
@@ -192,6 +195,34 @@ uint64_t *cm_space_create(uint64_t *out_phys)
     return p;
 }
 
+/* Build the supervisor-only entry window in an otherwise empty high half.
+ * Low-half user mappings share subtrees with the full process root. */
+uint64_t *cm_space_shadow(uint64_t *full, uint64_t *out_phys)
+{
+    if (!full) return NULL;
+#if !CM_KPTI
+    if (out_phys) *out_phys = v2p(full);
+    return full;
+#else
+    uint64_t *shadow = new_table();
+    if (!shadow) return NULL;
+    for (unsigned i = 0; i < 256; i++) shadow[i] = full[i];
+    uint64_t starts[] = { (uint64_t)(uintptr_t)__entry_text_start,
+                          (uint64_t)(uintptr_t)__entry_data_start };
+    uint64_t ends[] = { (uint64_t)(uintptr_t)__entry_text_end,
+                        (uint64_t)(uintptr_t)__entry_data_end };
+    for (unsigned range = 0; range < 2; range++) {
+        for (uint64_t v = starts[range]; v < ends[range]; v += CM_PAGE_SIZE) {
+            uint64_t leaf = cm_space_lookup(g_pml4, v);
+            if (!(leaf & PTE_P) || map_page_in(shadow, v, leaf & PTE_ADDR, 0))
+                return NULL;
+        }
+    }
+    if (out_phys) *out_phys = v2p(shadow);
+    return shadow;
+#endif
+}
+
 int cm_space_map(uint64_t *pml4, uint64_t virt, uint64_t phys, int user)
 {
     return map_page_in(pml4, virt, phys, user ? PTE_U : 0);
@@ -218,10 +249,17 @@ static int map_range(uint64_t virt, uint64_t phys, uint64_t npages)
 
 int cm_paging_init(cm_paddr_t heap_virt, uint64_t npages)
 {
+#ifndef CAPMIX_HOSTED
+    g_levels = (cm_read_cr4() & (1ull << 12)) ? 5 : 4;
+    if (g_levels > CM_PT_MAX_LEVELS) return -1;
+#endif
+    kinfo("paging: active levels=%u max=%u folded=%u", g_levels,
+          CM_PT_MAX_LEVELS, CM_PT_MAX_LEVELS - g_levels);
     g_tables = 0;
     g_mapped_pages = 0;
     g_pml4 = new_table();
     if (!g_pml4) return -1;
+    cm_entry_kernel_cr3 = v2p(g_pml4);
 
 #ifdef CAPMIX_HOSTED
     /* Hosted: walk a short span so the builder is tested. No CR3. */
@@ -284,31 +322,35 @@ int cm_paging_init(cm_paddr_t heap_virt, uint64_t npages)
 }
 
 #ifndef CAPMIX_HOSTED
+static void mark_global(uint64_t *table, unsigned level)
+{
+    for (unsigned i = 0; i < 512; i++) {
+        if (!(table[i] & PTE_P)) continue;
+        if (level == 1 || (table[i] & PTE_PS)) {
+            if (!(table[i] & PTE_U)) table[i] |= PTE_G;
+        } else mark_global(p2v(table[i] & PTE_ADDR), level - 1);
+    }
+}
+
 static void mark_kernel_global(void)
 {
     if (!g_pml4) return;
-    for (int i4 = 256; i4 < 512; i4++) {
-        if (!(g_pml4[i4] & PTE_P)) continue;
-        uint64_t *pdpt = (uint64_t *)p2v(g_pml4[i4] & ~0xFFFull);
-        for (int i3 = 0; i3 < 512; i3++) {
-            if (!(pdpt[i3] & PTE_P)) continue;
-            uint64_t *pd = (uint64_t *)p2v(pdpt[i3] & ~0xFFFull);
-            for (int i2 = 0; i2 < 512; i2++) {
-                if (!(pd[i2] & PTE_P)) continue;
-                uint64_t *pt = (uint64_t *)p2v(pd[i2] & ~0xFFFull);
-                for (int i1 = 0; i1 < 512; i1++) {
-                    if ((pt[i1] & (PTE_P | PTE_U)) == PTE_P)
-                        pt[i1] |= PTE_G;
-                }
-            }
-        }
-    }
+    for (unsigned i = 256; i < 512; i++)
+        if (g_pml4[i] & PTE_P)
+            mark_global(p2v(g_pml4[i] & PTE_ADDR), g_levels - 1);
 }
 
 void cm_paging_enable_pge(void)
 {
 #ifndef CAPMIX_HOSTED
     uint64_t cr4 = cm_read_cr4();
+#if CM_KPTI
+    /* A shadow must not retain full-kernel global TLB translations. */
+    cr4 &= ~(1ull << 7);
+    __asm__ volatile("movq %0, %%cr4" :: "r"(cr4) : "memory");
+    kinfo("paging: KPTI enabled, PGE disabled");
+    return;
+#endif
     cr4 |= (1ull << 7);
     __asm__ volatile("movq %0, %%cr4" :: "r"(cr4) : "memory");
     mark_kernel_global();

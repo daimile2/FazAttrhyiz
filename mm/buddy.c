@@ -1,4 +1,5 @@
 #include "capmix/mm.h"
+#include "capmix/numa.h"
 #include "capmix/config.h"
 #include "capmix/klog.h"
 #include "capmix/obs.h"
@@ -248,6 +249,19 @@ void cm_page_free(void *ptr, unsigned order)
     buddy_unlock(flags);
 
     cm_obs_emit(cm_trace_new(), CM_EV_FREE, (uint64_t)(uintptr_t)ptr, order, n);
+}
+
+/* Snapshot page totals and per-order blocks under the allocator lock.
+ * All current free lists belong to node0; future nodes need separate arenas. */
+cm_error_t cm_numa_stats(unsigned node, cm_numa_stats_t *out)
+{
+    if (node || !out) return CM_ERR_INVAL;
+    uint64_t flags = buddy_lock();
+    out->total_pages = g_total_pages;
+    out->free_pages = g_free_pages;
+    memcpy(out->free_blocks, g_free_count, sizeof(g_free_count));
+    buddy_unlock(flags);
+    return CM_OK;
 }
 
 void cm_mm_stats(cm_mm_stats_t *out)

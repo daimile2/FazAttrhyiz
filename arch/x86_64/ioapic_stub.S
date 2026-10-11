@@ -1,10 +1,12 @@
-.text
+#include "entry_asm.h"
+.section .entry.text,"ax",@progbits
     .global cm_irq_stub_kbd
 
 /* Minimal ISR stub: save the volatile registers the C handler may clobber,
  * call the C top half, restore, iretq. Mirrors the calling convention used
  * by the existing timer stub. EOI is sent from cm_ioapic_kbd_isr(). */
 cm_irq_stub_kbd:
+    CM_ENTRY_SAVE
     pushq %rax
     pushq %rcx
     pushq %rdx
@@ -24,6 +26,7 @@ cm_irq_stub_kbd:
     popq  %rdx
     popq  %rcx
     popq  %rax
+    CM_ENTRY_RESTORE
     iretq
 /* Silences "missing .note.GNU-stack section implies executable stack" and
  * keeps this object from being marked as requiring an executable stack. */
