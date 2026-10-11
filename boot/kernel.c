@@ -424,6 +424,9 @@ int capmix_selftest(void)
     if (g_ping_count == 0) { kerr("client never sent"); fails++; }
     if (g_pong_count == 0) { kerr("server never received"); fails++; }
 
+    extern int cm_phase1_selftest(void);
+    fails += cm_phase1_selftest();
+
     kinfo("--- selftest: posix_spawn + first user process ---");
     {
         cm_id_t child = 0;

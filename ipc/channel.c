@@ -1,4 +1,5 @@
 #include "capmix/ipc.h"
+#include "capmix/cap_internal.h"
 #include "capmix/sched.h"
 #include "capmix/mm.h"
 #include "capmix/klog.h"
@@ -10,13 +11,18 @@
  * If a peer is already blocked in recv, we hand the message over and
  * conceptually do a direct context switch (no run-queue hop).
  * Small payloads live in the message struct ("registers").
- * Large payloads will be VMO caps (phase 3).
+ * Large payloads use queued object references (e.g. VMO caps), never buffer copies.
  */
 
 #define CM_CHAN_DEPTH 8
 
 typedef struct {
-    cm_ipc_msg_t slots[CM_CHAN_DEPTH];
+    cm_ipc_msg_t msg;
+    cm_handle_t caps[CM_IPC_MAX_HANDLES]; /* each slot owns transferred refs */
+} cm_queued_msg_t;
+
+typedef struct {
+    cm_queued_msg_t slots[CM_CHAN_DEPTH];
     int          head, tail, count;
     cm_thread_t *recv_waiter;
     cm_thread_t *send_waiter;
@@ -29,6 +35,8 @@ struct cm_channel {
     cm_endp_t a;
     cm_endp_t b;
     int       live;
+    unsigned  endpoints;
+    int       closed[2];
 };
 
 static cm_channel_t g_chans[CM_MAX_CHANNELS];
@@ -48,109 +56,174 @@ static cm_channel_t *alloc_chan(void)
     return NULL;
 }
 
-static cm_channel_t *chan_from_handle(cm_task_t *t, int hid, int *side)
+static cm_endp_t *local_end(cm_channel_t *c, int side)  { return side ? &c->b : &c->a; }
+static cm_endp_t *remote_end(cm_channel_t *c, int side) { return side ? &c->a : &c->b; }
+
+static cm_error_t endpoint_locked(cm_task_t *t, int hid, cm_rights_t right,
+                                   cm_channel_t **out, int *side, cm_object_t **obj)
 {
     cm_handle_t *h = cm_handle_lookup(t, hid);
-    if (!h || !h->obj) return NULL;
-    if (h->obj->type != CM_OBJ_CHANNEL && h->obj->type != CM_OBJ_ENDPOINT)
-        return NULL;
-    if ((h->rights & (CM_RIGHT_READ | CM_RIGHT_WRITE)) == 0) return NULL;
+    if (!h || h->obj->type != CM_OBJ_ENDPOINT) return CM_ERR_INVAL;
+    if (!(h->rights & right)) return CM_ERR_DENIED;
     uintptr_t tag = (uintptr_t)h->obj->payload;
-    int s = (int)(tag & 1);
+    *side = (int)(tag & 1);
+    *out = (cm_channel_t *)(tag & ~(uintptr_t)1);
+    if (!(*out)->live || (*out)->closed[*side]) return CM_ERR_DEAD;
+    *obj = h->obj;
+    return CM_OK;
+}
+
+static void endpoint_destroy(void *payload)
+{
+    uintptr_t tag = (uintptr_t)payload;
     cm_channel_t *c = (cm_channel_t *)(tag & ~(uintptr_t)1);
-    if (side) *side = s;
-    return c;
+    int side = (int)(tag & 1);
+    cm_object_t *drops[CM_CHAN_DEPTH * CM_IPC_MAX_HANDLES];
+    unsigned ndrops = 0;
+    uint64_t flags = cm_cap_lock();
+    cm_endp_t *e = local_end(c, side);
+    while (e->count) {
+        cm_queued_msg_t *q = &e->slots[e->head];
+        for (unsigned i = 0; i < q->msg.nhandles; i++) drops[ndrops++] = q->caps[i].obj;
+        memset(q, 0, sizeof(*q));
+        e->head = (e->head + 1) % CM_CHAN_DEPTH;
+        e->count--;
+    }
+    c->closed[side] = 1;
+    cm_thread_t *w = remote_end(c, side)->recv_waiter;
+    remote_end(c, side)->recv_waiter = NULL;
+    if (--c->endpoints == 0) c->live = 0;
+    cm_cap_unlock(flags);
+    for (unsigned i = 0; i < ndrops; i++) cm_obj_release(drops[i]);
+    if (w) cm_thread_wake(w);
 }
 
 cm_error_t cm_channel_create(cm_task_t *owner, int *out_a, int *out_b)
 {
-    if (!owner || !out_a || !out_b) return CM_ERR_INVAL;
+    if (!owner || !out_a || !out_b || out_a == out_b) return CM_ERR_INVAL;
+    uint64_t flags = cm_cap_lock();
     cm_channel_t *c = alloc_chan();
+    if (c) c->endpoints = 2;
+    cm_cap_unlock(flags);
     if (!c) return CM_ERR_NOSPC;
-    /* Two endpoint objects share the channel; low bit selects side. */
-    cm_object_t *ea = cm_obj_mint(CM_OBJ_ENDPOINT, (void *)((uintptr_t)c | 0),
-                                  CM_RIGHT_READ | CM_RIGHT_WRITE | CM_RIGHT_TRANSFER | CM_RIGHT_DUPLICATE);
-    cm_object_t *eb = cm_obj_mint(CM_OBJ_ENDPOINT, (void *)((uintptr_t)c | 1),
-                                  CM_RIGHT_READ | CM_RIGHT_WRITE | CM_RIGHT_TRANSFER | CM_RIGHT_DUPLICATE);
-    if (!ea || !eb) return CM_ERR_NOMEM;
-    int ha = cm_handle_install(owner, ea, ea->default_rights);
-    int hb = cm_handle_install(owner, eb, eb->default_rights);
+    cm_rights_t rights = CM_RIGHT_READ | CM_RIGHT_WRITE | CM_RIGHT_TRANSFER | CM_RIGHT_DUPLICATE;
+    cm_object_t *ea = cm_obj_mint_owned(CM_OBJ_ENDPOINT, (void *)(uintptr_t)c, rights, endpoint_destroy);
+    cm_object_t *eb = cm_obj_mint_owned(CM_OBJ_ENDPOINT, (void *)((uintptr_t)c | 1), rights, endpoint_destroy);
+    if (!ea || !eb) {
+        if (ea) cm_obj_release(ea); else endpoint_destroy((void *)(uintptr_t)c);
+        if (eb) cm_obj_release(eb); else endpoint_destroy((void *)((uintptr_t)c | 1));
+        return CM_ERR_NOSPC;
+    }
+    flags = cm_cap_lock();
+    int ha = cm_handle_install_locked(owner, ea, rights);
+    int hb = ha > 0 ? cm_handle_install_locked(owner, eb, rights) : CM_ERR_NOSPC;
+    if (hb < 0 && ha > 0) memset(&owner->handles[ha], 0, sizeof(cm_handle_t));
+    cm_cap_unlock(flags);
+    if (hb < 0 && ha > 0) cm_obj_release(ea); /* rollback installed handle */
+    cm_obj_release(ea); cm_obj_release(eb); /* drop creator refs */
     if (ha < 0 || hb < 0) return CM_ERR_NOSPC;
-    *out_a = ha;
-    *out_b = hb;
+    *out_a = ha; *out_b = hb;
     return CM_OK;
-}
-
-static cm_endp_t *local_end(cm_channel_t *c, int side)  { return side ? &c->b : &c->a; }
-static cm_endp_t *remote_end(cm_channel_t *c, int side) { return side ? &c->a : &c->b; }
-
-static int enqueue(cm_endp_t *e, const cm_ipc_msg_t *m)
-{
-    if (e->count >= CM_CHAN_DEPTH) return -1;
-    e->slots[e->tail] = *m;
-    e->tail = (e->tail + 1) % CM_CHAN_DEPTH;
-    e->count++;
-    return 0;
-}
-
-static int dequeue(cm_endp_t *e, cm_ipc_msg_t *m)
-{
-    if (e->count == 0) return -1;
-    *m = e->slots[e->head];
-    e->head = (e->head + 1) % CM_CHAN_DEPTH;
-    e->count--;
-    return 0;
 }
 
 cm_error_t cm_ipc_send(cm_task_t *sender, int hid, const cm_ipc_msg_t *msg)
 {
+    if (!msg || msg->nhandles > CM_IPC_MAX_HANDLES || msg->len > CM_IPC_SMALL_BYTES)
+        return CM_ERR_INVAL;
+    cm_queued_msg_t q;
+    memset(&q, 0, sizeof(q));
+    q.msg = *msg;
+    if (!q.msg.trace && cm_obs_enabled()) q.msg.trace = cm_trace_new();
+    uint64_t flags = cm_cap_lock();
+    cm_channel_t *c;
+    cm_object_t *endpoint;
     int side;
-    cm_channel_t *c = chan_from_handle(sender, hid, &side);
-    if (!c || !msg) return CM_ERR_INVAL;
+    cm_error_t err = endpoint_locked(sender, hid, CM_RIGHT_WRITE, &c, &side, &endpoint);
+    if (err) { cm_cap_unlock(flags); return err; }
     cm_endp_t *remote = remote_end(c, side);
-    cm_ipc_msg_t m = *msg;
-    /* cm_trace_new() costs ~458 cycles (ticks + current-thread lookup). Do not pay it when nobody is consuming: observation is a capability, not a global switch. */
-    if (m.trace == 0 && cm_obs_enabled()) m.trace = cm_trace_new();
-    if (m.len > CM_IPC_SMALL_BYTES) m.len = CM_IPC_SMALL_BYTES;
-
-    cm_obs_emit(m.trace, CM_EV_IPC_SEND, c->id, m.opcode, m.len);
-
-    if (remote->recv_waiter) {
-        /* Direct handoff + conceptual process switch (L4). */
-        enqueue(remote, &m);
-        cm_thread_t *w = remote->recv_waiter;
-        remote->recv_waiter = NULL;
-        cm_obs_emit(m.trace, CM_EV_IPC_HANDOFF, c->id, w->id, 0);
-        cm_thread_wake(w);
-        {
-            cm_thread_t *cur = cm_sched_current();
-            if (cur && cur != w)
-                cm_arch_ctx_swap(cur->ctx_slot, w->ctx_slot);
-        }
-        return CM_OK;
+    if (c->closed[side ^ 1]) err = CM_ERR_DEAD;
+    else if (remote->count == CM_CHAN_DEPTH) err = CM_ERR_AGAIN;
+    for (unsigned i = 0; !err && i < msg->nhandles; i++) {
+        cm_handle_t *h = cm_handle_lookup(sender, msg->handles[i]);
+        if (!h) { err = CM_ERR_INVAL; break; }
+        if (!(h->rights & CM_RIGHT_TRANSFER)) { err = CM_ERR_DENIED; break; }
+        for (unsigned j = 0; j < i; j++)
+            if (msg->handles[i] == msg->handles[j]) err = CM_ERR_INVAL;
+        /* Avoid a channel retaining its own endpoints in an undeliverable cycle. */
+        if (h->obj->type == CM_OBJ_ENDPOINT &&
+            ((uintptr_t)h->obj->payload & ~(uintptr_t)1) == (uintptr_t)c) err = CM_ERR_INVAL;
+        q.caps[i] = *h;
+        q.msg.handles[i] = 0; /* receiver-local IDs are assigned only at recv */
     }
-    if (enqueue(remote, &m) != 0) return CM_ERR_AGAIN;
+    if (err) { cm_cap_unlock(flags); return err; }
+    /* Queue + sender removal is one transaction: refs move, no retain/drop. */
+    remote->slots[remote->tail] = q;
+    remote->tail = (remote->tail + 1) % CM_CHAN_DEPTH;
+    remote->count++;
+    for (unsigned i = 0; i < msg->nhandles; i++)
+        memset(&sender->handles[msg->handles[i]], 0, sizeof(cm_handle_t));
+    cm_thread_t *w = remote->recv_waiter;
+    remote->recv_waiter = NULL;
+    cm_id_t channel_id = c->id;
+    cm_obj_retain_locked(endpoint); /* keep channel alive across direct handoff */
+    cm_cap_unlock(flags);
+    cm_obs_emit(q.msg.trace, CM_EV_IPC_SEND, channel_id, q.msg.opcode, q.msg.len);
+    if (w) {
+        cm_obs_emit(q.msg.trace, CM_EV_IPC_HANDOFF, channel_id, w->id, 0);
+        cm_thread_wake(w);
+        cm_thread_t *cur = cm_sched_current();
+        if (cur && cur != w) cm_arch_ctx_swap(cur->ctx_slot, w->ctx_slot);
+    }
+    cm_obj_release(endpoint);
     return CM_OK;
 }
 
 cm_error_t cm_ipc_recv(cm_task_t *receiver, int hid, cm_ipc_msg_t *out)
 {
+    if (!out) return CM_ERR_INVAL;
+    uint64_t flags = cm_cap_lock();
+    cm_channel_t *c;
+    cm_object_t *endpoint;
     int side;
-    cm_channel_t *c = chan_from_handle(receiver, hid, &side);
-    if (!c || !out) return CM_ERR_INVAL;
+    cm_error_t err = endpoint_locked(receiver, hid, CM_RIGHT_READ, &c, &side, &endpoint);
+    if (err) { cm_cap_unlock(flags); return err; }
     cm_endp_t *local = local_end(c, side);
-
-    if (dequeue(local, out) == 0) {
-        cm_obs_emit(out->trace, CM_EV_IPC_RECV, c->id, out->opcode, out->len);
+    if (local->count) {
+        cm_queued_msg_t *q = &local->slots[local->head];
+        int ids[CM_IPC_MAX_HANDLES];
+        unsigned available = 0;
+        for (int i = 1; i < CM_HANDLES_PER_TASK && available < q->msg.nhandles; i++)
+            if (!receiver->handles[i].obj) ids[available++] = i;
+        if (available < q->msg.nhandles) { cm_cap_unlock(flags); return CM_ERR_NOSPC; }
+        cm_ipc_msg_t result = q->msg;
+        for (unsigned i = 0; i < q->msg.nhandles; i++) {
+            receiver->handles[ids[i]] = q->caps[i]; /* adopt queue reference */
+            result.handles[i] = ids[i];
+            if (ids[i] + 1 > receiver->handle_cap) receiver->handle_cap = ids[i] + 1;
+        }
+        memset(q, 0, sizeof(*q));
+        local->head = (local->head + 1) % CM_CHAN_DEPTH;
+        local->count--;
+        cm_id_t channel_id = c->id;
+        *out = result;
+        cm_cap_unlock(flags);
+        cm_obs_emit(result.trace, CM_EV_IPC_RECV, channel_id, result.opcode, result.len);
         return CM_OK;
     }
-    /* Would block: park current thread. Hosted cooperative loop treats
-     * CM_ERR_AGAIN as "try after peers run". */
+    if (c->closed[side ^ 1]) { cm_cap_unlock(flags); return CM_ERR_DEAD; }
     cm_thread_t *cur = cm_sched_current();
     if (cur) {
+        if (local->recv_waiter && local->recv_waiter != cur) {
+            cm_cap_unlock(flags); return CM_ERR_BUSY;
+        }
         local->recv_waiter = cur;
-        cm_thread_block(cur, NULL);
+        cm_thread_block_prepare(cur, NULL);
     }
+    /* No queue/cap lock crosses a context switch. Keep local IRQs masked
+     * until the prepared wait has yielded; a remote wake remains runnable. */
+    cm_cap_unlock(0);
+    if (cur) cm_arch_ctx_swap(cur->ctx_slot, -1);
+    cm_irq_restore(flags);
     return CM_ERR_AGAIN;
 }
 

@@ -330,15 +330,20 @@ void cm_sched_yield(void)
     cm_arch_ctx_swap(th->ctx_slot, -1);
 }
 
-void cm_thread_block(cm_thread_t *th, cm_thread_t *on)
+void cm_thread_block_prepare(cm_thread_t *th, cm_thread_t *on)
 {
     if (!th) return;
     rq_remove(th);
     th->state = CM_TH_BLOCKED;
     th->blocked_on = on;
     if (on) cm_turnstile_propagate(th);
-    if (th == cm_sched_current())
-        cm_arch_ctx_swap(th->ctx_slot, -1);
+}
+
+void cm_thread_block(cm_thread_t *th, cm_thread_t *on)
+{
+    if (!th) return;
+    cm_thread_block_prepare(th, on);
+    if (th == cm_sched_current()) cm_arch_ctx_swap(th->ctx_slot, -1);
 }
 
 /* Caller must NOT hold the BKL (this calls rq_remove, which takes it). */

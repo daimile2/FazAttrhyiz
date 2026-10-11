@@ -46,6 +46,7 @@ struct cm_object {
     uint32_t      refs;
     cm_rights_t   default_rights;
     void         *payload;
+    void        (*destroy)(void *payload); /* NULL for legacy/bootstrap objects */
 };
 
 typedef struct {
@@ -55,11 +56,16 @@ typedef struct {
 
 void        cm_cap_init(void);
 cm_object_t *cm_obj_mint(cm_obj_type_t type, void *payload, cm_rights_t rights);
+cm_object_t *cm_obj_mint_owned(cm_obj_type_t type, void *payload, cm_rights_t rights,
+                               void (*destroy)(void *));
 void         cm_obj_retain(cm_object_t *o);
 void         cm_obj_release(cm_object_t *o);
 
 int          cm_handle_install(cm_task_t *task, cm_object_t *obj, cm_rights_t rights);
 cm_handle_t *cm_handle_lookup(cm_task_t *task, int hid);
+/* Acquire a stable ref with an exact type and required rights. Caller releases it. */
+cm_error_t cm_handle_acquire(cm_task_t *task, int hid, cm_obj_type_t type,
+                             cm_rights_t required, cm_object_t **out);
 cm_error_t   cm_handle_drop(cm_task_t *task, int hid);
 cm_error_t   cm_handle_duplicate(cm_task_t *src, int hid, cm_task_t *dst, int *out_hid,
                                 cm_rights_t mask);

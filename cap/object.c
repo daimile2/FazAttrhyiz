@@ -1,4 +1,6 @@
 #include "capmix/cap.h"
+#include "capmix/cap_internal.h"
+#include "capmix/arch.h"
 #include "capmix/mm.h"
 #include "capmix/klog.h"
 #include "capmix/obs.h"
@@ -8,6 +10,20 @@
 static cm_object_t g_objs[CM_MAX_CAPS];
 static uint32_t    g_used;
 static cm_id_t     g_next_id = 1;
+static volatile unsigned g_cap_lock;
+
+uint64_t cm_cap_lock(void)
+{
+    uint64_t flags = cm_irq_save();
+    while (__sync_lock_test_and_set(&g_cap_lock, 1u))
+        __asm__ volatile("pause" ::: "memory");
+    return flags;
+}
+void cm_cap_unlock(uint64_t flags)
+{
+    __sync_lock_release(&g_cap_lock);
+    cm_irq_restore(flags);
+}
 
 void cm_cap_init(void)
 {
@@ -27,38 +43,63 @@ const char *cm_obj_type_name(cm_obj_type_t t)
     return names[t];
 }
 
-cm_object_t *cm_obj_mint(cm_obj_type_t type, void *payload, cm_rights_t rights)
+cm_object_t *cm_obj_mint_owned(cm_obj_type_t type, void *payload, cm_rights_t rights,
+                               void (*destroy)(void *))
 {
-    if (g_used >= CM_MAX_CAPS) return NULL;
+    if (type <= CM_OBJ_INVALID || type >= CM_OBJ_NTYPES) return NULL;
+    uint64_t flags = cm_cap_lock();
     cm_object_t *o = NULL;
-    for (uint32_t i = 0; i < CM_MAX_CAPS; i++) {
-        if (g_objs[i].type == CM_OBJ_INVALID) { o = &g_objs[i]; break; }
+    if (g_used < CM_MAX_CAPS) {
+        for (uint32_t i = 0; i < CM_MAX_CAPS; i++)
+            if (g_objs[i].type == CM_OBJ_INVALID) { o = &g_objs[i]; break; }
     }
-    if (!o) return NULL;
-    o->id = g_next_id++;
-    o->type = type;
-    o->refs = 1;
-    o->default_rights = rights ? rights : CM_RIGHT_ALL;
-    o->payload = payload;
-    g_used++;
-    cm_obs_emit(cm_trace_new(), CM_EV_CAP_MINT, o->id, (uint64_t)type, o->default_rights);
+    if (o) {
+        memset(o, 0, sizeof(*o));
+        o->id = g_next_id++;
+        o->type = type;
+        o->refs = 1;
+        o->default_rights = rights ? rights : CM_RIGHT_ALL;
+        o->payload = payload;
+        o->destroy = destroy;
+        g_used++;
+    }
+    cm_cap_unlock(flags);
+    if (o) cm_obs_emit(cm_trace_new(), CM_EV_CAP_MINT, o->id, type, o->default_rights);
     return o;
 }
 
+cm_object_t *cm_obj_mint(cm_obj_type_t type, void *payload, cm_rights_t rights)
+{
+    return cm_obj_mint_owned(type, payload, rights, NULL);
+}
+
+void cm_obj_retain_locked(cm_object_t *o)
+{
+    if (o && o->refs && o->type != CM_OBJ_INVALID) o->refs++;
+}
 void cm_obj_retain(cm_object_t *o)
 {
-    if (o) o->refs++;
+    uint64_t flags = cm_cap_lock();
+    cm_obj_retain_locked(o);
+    cm_cap_unlock(flags);
 }
 
 void cm_obj_release(cm_object_t *o)
 {
-    if (!o || o->refs == 0) return;
-    if (--o->refs == 0) {
-        cm_obs_emit(cm_trace_new(), CM_EV_CAP_DROP, o->id, (uint64_t)o->type, 0);
-        o->type = CM_OBJ_INVALID;
-        o->payload = NULL;
-        g_used--;
-    }
+    if (!o) return;
+    uint64_t flags = cm_cap_lock();
+    if (!o->refs) { cm_cap_unlock(flags); return; }
+    int last = --o->refs == 0;
+    cm_cap_unlock(flags);
+    if (!last) return;
+    /* Keep the slot occupied until its destructor completes. Destructors may
+     * release other capabilities, allocate/free pages, and emit observations. */
+    cm_obs_emit(cm_trace_new(), CM_EV_CAP_DROP, o->id, o->type, 0);
+    if (o->destroy) o->destroy(o->payload);
+    flags = cm_cap_lock();
+    memset(o, 0, sizeof(*o));
+    g_used--;
+    cm_cap_unlock(flags);
 }
 
 void cm_cap_dump(void)

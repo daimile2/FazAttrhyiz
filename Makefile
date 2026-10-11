@@ -28,7 +28,7 @@ SRC = \
 	mm/commit.c \
 	mm/pressure.c \
 	mm/cache.c \
-	mm/anon.c \
+	mm/anon.c mm/vm.c \
 	cap/object.c \
 	cap/handle.c \
 	sched/eevdf.c \
@@ -53,7 +53,7 @@ SRC = \
 	virt/job.c \
 	virt/kvm.c \
 	boot/kernel.c \
-	boot/phase0_test.c \
+	boot/phase0_test.c boot/phase1_test.c \
 	boot/phase3_test.c \
  
      

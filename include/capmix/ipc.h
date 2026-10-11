@@ -25,6 +25,9 @@ typedef struct {
     uint16_t   len;
     uint16_t   nhandles;
     uint8_t    data[CM_IPC_SMALL_BYTES];
+    /* send: sender-local IDs moved on success; recv: receiver-local IDs.
+     * Failed send leaves handles intact; failed recv leaves the queue intact.
+     * Duplicate before send to keep a local handle. Rights never increase. */
     int        handles[CM_IPC_MAX_HANDLES];
 } cm_ipc_msg_t;
 
