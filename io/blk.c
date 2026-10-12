@@ -1,4 +1,5 @@
 #include "capmix/io.h"
+#include "capmix/ahci.h"
 #include "capmix/virtio_blk.h"
 #include "capmix/mm.h"
 #include "capmix/klog.h"
@@ -20,7 +21,7 @@ static cm_bio_t g_done[CM_BLK_QD];
 static int      g_dh, g_dt, g_dn;
 static uint64_t g_done_total;
 static uint64_t g_tag_next = 1;
-static int      g_backend, g_offline[2]; /* independently offline-able devices */
+static int      g_backend, g_offline[3]; /* independently offline-able devices */
 
 cm_error_t cm_blk_init(void)
 {
@@ -43,8 +44,11 @@ cm_error_t cm_blk_init(void)
     memset(g_qn, 0, sizeof(g_qn));
     g_dh = g_dt = g_dn = 0;
     g_done_total = 0;
-    g_offline[0] = g_offline[1] = 0;
-    g_backend = cm_virtio_blk_init() == CM_OK;
+    memset(g_offline,0,sizeof(g_offline));
+    int virtio = cm_virtio_blk_init() == CM_OK;
+    int ahci = cm_ahci_init() == CM_OK;
+    g_backend = virtio?CM_BLK_VIRTIO:ahci?CM_BLK_AHCI:CM_BLK_RAM;
+    kinfo("blk root backend: %s", cm_blk_backend_name());
     kinfo("blk: mq %d queues x qd %d, ramdisk %u sectors "
           "(raw %u / swap %u / fs %u)",
           CM_BLK_QUEUES, CM_BLK_QD, CM_BLK_DISK_SECT,
@@ -53,7 +57,7 @@ cm_error_t cm_blk_init(void)
 }
 
 void cm_blk_set_offline(int off) { g_offline[g_backend] = off; }
-int  cm_blk_online(void)         { return !g_offline[g_backend] && (g_backend ? cm_virtio_blk_available() : g_disk != NULL); }
+int  cm_blk_online(void)         { return !g_offline[g_backend] && (g_backend==CM_BLK_VIRTIO ? cm_virtio_blk_available() : g_backend==CM_BLK_AHCI ? cm_ahci_available() : g_disk != NULL); }
 
 uint8_t *cm_blk_raw_sector(uint64_t lba)
 {
@@ -84,7 +88,7 @@ static void service(cm_bio_t *b)
         return;
     }
     if (g_backend) {
-        cm_error_t err=cm_virtio_blk_rw(b->op,b->lba,b->nsect,b->buf);
+        cm_error_t err=g_backend==CM_BLK_AHCI ? cm_ahci_rw(b->op,b->lba,b->nsect,b->buf) : cm_virtio_blk_rw(b->op,b->lba,b->nsect,b->buf);
         b->status=err ? err : (int32_t)(b->nsect*CM_BLK_SECTOR);
         complete_one(b); return;
     }
@@ -165,20 +169,28 @@ cm_error_t cm_blk_rw(uint32_t op, uint64_t lba, uint32_t nsect, void *buf)
 }
 
 /* Selection is boot/test-controller only, with VFS unmounted and no I/O pending. */
-int cm_blk_is_virtio(void) { return g_backend; }
+int cm_blk_is_virtio(void) { return g_backend==CM_BLK_VIRTIO; }
+int cm_blk_is_disk(void) { return g_backend!=CM_BLK_RAM; }
+int cm_blk_backend(void) { return g_backend; }
+const char *cm_blk_backend_name(void)
+{ return g_backend==CM_BLK_VIRTIO?"virtio-blk":g_backend==CM_BLK_AHCI?"ahci":"ramdisk"; }
 cm_error_t cm_blk_select(int virtio)
+{ return cm_blk_select_backend(virtio?CM_BLK_VIRTIO:CM_BLK_RAM); }
+cm_error_t cm_blk_select_backend(int backend)
 {
+    if(backend<CM_BLK_RAM || backend>CM_BLK_AHCI)return CM_ERR_INVAL;
     if (g_dn) return CM_ERR_BUSY;
     for (unsigned q=0;q<CM_BLK_QUEUES;q++) if(g_qn[q])return CM_ERR_BUSY;
-    if (virtio && !cm_virtio_blk_available())return CM_ERR_DEAD;
-    g_backend=!!virtio;
-    kinfo("blk backend: %s offline=%d",g_backend?"virtio-blk":"ramdisk",g_offline[g_backend]);
+    if (backend==CM_BLK_VIRTIO && !cm_virtio_blk_available())return CM_ERR_DEAD;
+    if (backend==CM_BLK_AHCI && !cm_ahci_available())return CM_ERR_DEAD;
+    g_backend=backend;
+    kinfo("blk backend: %s offline=%d",cm_blk_backend_name(),g_offline[g_backend]);
     return CM_OK;
 }
 cm_error_t cm_blk_flush(void)
 {
     if(!cm_blk_online())return CM_ERR_DEAD;
-    return g_backend?cm_virtio_blk_flush():CM_OK;
+    return g_backend==CM_BLK_AHCI?cm_ahci_flush():g_backend==CM_BLK_VIRTIO?cm_virtio_blk_flush():CM_OK;
 }
 cm_error_t cm_blk_volume_blank(int *blank)
 {

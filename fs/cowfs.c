@@ -1142,12 +1142,12 @@ cm_error_t cm_cowfs_init(void)
     g_crashed = 0;
     cm_error_t mounted = cm_cow_mount_locked();
     if (mounted == CM_OK) return CM_OK;
-    if (cm_blk_is_virtio()) {
+    if (cm_blk_is_disk()) {
         int blank=0;
         cm_error_t e=cm_blk_volume_blank(&blank);
         if(e)return e;
-        if(!blank) { kinfo("cowfs mount refused: nonempty virtio volume, no auto-format");return mounted; }
-        kinfo("cowfs: blank virtio-blk volume — formatting");
+        if(!blank) { kinfo("cowfs mount refused: nonempty disk volume, no auto-format");return mounted; }
+        kinfo("cowfs: blank disk volume — formatting");
     } else kinfo("cowfs: no valid superblock — formatting");
     return cm_cow_mkfs_locked();
 }

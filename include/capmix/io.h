@@ -128,7 +128,12 @@ uint64_t   cm_blk_completed(void);
  * completion. Returns CM_OK or the bio's negative status. */
 cm_error_t cm_blk_rw(uint32_t op, uint64_t lba, uint32_t nsect, void *buf);
 cm_error_t cm_blk_flush(void);
+enum { CM_BLK_RAM=0, CM_BLK_VIRTIO=1, CM_BLK_AHCI=2 };
 int cm_blk_is_virtio(void);
+int cm_blk_is_disk(void);
+int cm_blk_backend(void);
+const char *cm_blk_backend_name(void);
+cm_error_t cm_blk_select_backend(int backend);
 cm_error_t cm_blk_select(int virtio);
 cm_error_t cm_blk_volume_blank(int *blank);
 int        cm_blk_online(void);

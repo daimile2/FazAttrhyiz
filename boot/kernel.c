@@ -1,3 +1,4 @@
+#include "capmix/ahci.h"
 #include "capmix/power.h"
 #include "capmix/boot.h"
 #include "capmix/shell.h"
@@ -302,6 +303,7 @@ int capmix_selftest(void)
     int fails = cm_console_selftest();
     fails += cm_shell_selftest();
     fails += cm_power_selftest();
+    fails += cm_ahci_selftest();
     {
         uint64_t t0 = cm_rdtsc();
         for (int i = 0; i < 1000; i++)

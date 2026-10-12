@@ -30,10 +30,10 @@ PID1/shell 本身仍是内核 C-entry 任务。`exit` 同步根并进入控制�
    VM Options → Boot Options，具体菜单随版本变化。
 2. CD/DVD 挂载默认产品 `capmix.iso`，勾选开机连接，从虚拟光驱启动。
    保留普通虚拟显示器以获取 GOP；不需要 GPU 加速。
-3. 存储/网卡可选。**当前仅支持 legacy/transitional virtio PCI，未实现 VMware
-   常用的 SATA/SCSI/NVMe、e1000 或 vmxnet3 驱动。** VMware 配置若不能提供
-   受支持的 virtio 设备，直接使用 RAM 根、网卡 unavailable 进入 shell；
-   挂一个普通 VMware 虚拟盘不会自动得到持久根。QEMU 的 raw 盘也不能
+3. 存储/网卡可选。**M7 增加了 SATA/AHCI 支持（见 [M7](M7_AHCI.md)）；virtio 仍仅支持
+   legacy/transitional PCI。尚未实现 SCSI/NVMe、e1000 或 vmxnet3 驱动。** VMware 配置若不能提供
+   受支持的 virtio 或 AHCI 设备，直接使用 RAM 根、网卡 unavailable 进入 shell；
+   需明确选择受支持的控制器；其他 VMware 虚拟盘不会自动得到持久根。QEMU 的 raw 盘也不能
    直接当 VMware 可用的 virtio 盘承诺支持。
 4. 在 VM 控制台捕获键盘，需固件/平台暴露 i8042/PS2；仅 USB 输入不受支持。
    看到 `shell ready` 和 `capmix>` 后，输入 `help`、`ls /bin`、

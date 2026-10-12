@@ -40,7 +40,7 @@ SRC = \
 	fs/vfs.c \
 	fs/cowfs.c \
 	io/irq.c \
-	io/blk.c io/virtio_blk.c \
+	io/blk.c io/virtio_blk.c io/ahci.c \
 	io/uring.c \
 	io/driverkit.c \
 	net/if.c net/virtio_net.c net/virtio_ip.c \

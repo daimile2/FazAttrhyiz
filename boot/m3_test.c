@@ -30,16 +30,16 @@ static cm_error_t write_file(void)
 }
 void cm_m3_prepare(cm_error_t mount_result)
 {
-    persistent=cm_blk_is_virtio();
+    persistent=cm_blk_backend();
     if(!persistent) {
-        kinfo("m3 persist skipped: no supported virtio-blk; ramdisk root unchanged");return;
+        kinfo("m3 persist skipped: no supported disk; ramdisk root unchanged");return;
     }
     for(unsigned i=0;i<sizeof(expected);i++)expected[i]=(uint8_t)(37*i+11);
     static const char marker[]="CapMix M3 persistent root v1";
     memcpy(expected,marker,sizeof(marker)-1);
     cm_error_t e=mount_result;
     if(!e) {
-        kinfo("m3 mount: '/' on virtio-blk, destructive legacy tests will use scratch ramdisk");
+        kinfo("m3 mount: '/' on %s, destructive legacy tests will use scratch ramdisk",cm_blk_backend_name());
         e=verify();
         if(!e)kinfo("m3 persist previous boot verified: %s bytes=%u",path,(unsigned)sizeof(expected));
         else if(e==CM_ERR_NOENT) {kinfo("m3 persist first boot: creating marker");e=CM_OK;}
@@ -47,7 +47,7 @@ void cm_m3_prepare(cm_error_t mount_result)
         if(!e)e=cm_vfs_sync();
         if(!e)e=cm_cow_mount(); /* drops inode/indirect/page-cache state, reloads real sectors */
         if(!e)e=verify();
-        if(!e)kinfo("m3 persist: write -> sync/FLUSH -> remount -> read verified bytes=%u requests=%llu flushes=%llu",
+        if(!e)kinfo("m3 persist: write -> sync/FLUSH -> remount -> read verified bytes=%u virtio_requests=%llu virtio_flushes=%llu",
                     (unsigned)sizeof(expected),(unsigned long)cm_virtio_blk_requests(),(unsigned long)cm_virtio_blk_flushes());
     }
     if(e) {kerr("m3 persist prepare failed: %d (no unknown-volume format)",e);failures++;}
@@ -62,11 +62,11 @@ int cm_m3_finish(void)
 {
     if(!persistent)return 0;
     cm_error_t e=cm_vfs_open_files()?CM_ERR_BUSY:cm_vfs_umount("/");
-    if(!e)e=cm_blk_select(1);
+    if(!e)e=cm_blk_select_backend(persistent);
     if(!e)e=cm_vfs_init();
     if(!e)e=verify();
     if(e) {kerr("m3 persist root restore failed: %d",e);failures++;}
-    else kinfo("m3 mount restored: '/' virtio-blk persist verified; scratch offline state isolated requests=%llu flushes=%llu",
+    else kinfo("m3 mount restored: '/' %s persist verified; scratch offline state isolated virtio_requests=%llu virtio_flushes=%llu",cm_blk_backend_name(),
                (unsigned long)cm_virtio_blk_requests(),(unsigned long)cm_virtio_blk_flushes());
     kinfo("m3 persist selftest: %s (%d failures)",failures?"FAIL":"PASS",failures);
     return failures;
