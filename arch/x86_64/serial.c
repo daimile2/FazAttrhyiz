@@ -1,4 +1,5 @@
 #include "capmix/arch.h"
+#include "capmix/console.h"
 #include "capmix/klog.h"
 #include "capmix/config.h"
 
@@ -179,7 +180,7 @@ void cm_arch_early_init(void)
 
 void cm_klog_init(void) { g_level = CM_LOG_TRACE; }
 
-void cm_putchar(char c) { cm_serial_putchar(c); }
+void cm_putchar(char c) { cm_serial_putchar(c); cm_console_putchar(c); }
 
 void cm_puts(const char *s)
 {

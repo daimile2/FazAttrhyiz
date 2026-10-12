@@ -42,6 +42,7 @@ typedef struct cm_proc {
     cm_id_t       elf_thread_id;
     int           elf_started, elf_cpl, elf_write_calls;
     uint64_t      elf_written_bytes, elf_timer_entries, elf_timer_before;
+    uint64_t      elf_preempts, elf_run_ticks;
     int           elf_cpu;
 } cm_proc_t;
 
@@ -54,8 +55,9 @@ cm_error_t cm_posix_spawn(const cm_spawn_attr_t *attr, cm_id_t *out_pid);
 
 /* Release an exited ELF image only after its thread has left the CPU. */
 cm_error_t cm_proc_reap_elf(cm_id_t pid);
-/* Stage-2 serial runner: timer stays live, but no kernel-thread TSS restore. */
+/* Single pending ELF remains pinned to BSP, including blocked/exit cleanup. */
 int cm_proc_elf_serial_task(const cm_task_t *task);
+int cm_proc_task_cpu_allowed(const cm_task_t *task, int cpu);
 
 /* Compat only. Hosted: returns -CM_ERR_NOTSUP and logs the reason. */
 cm_error_t cm_fork_compat(cm_id_t *out_pid);

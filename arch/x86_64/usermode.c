@@ -34,6 +34,18 @@ static uint8_t g_entry_stacks[CM_PCPU_MAX][16384]
 extern void cm_enter_user(uint64_t cr3, uint64_t rip, uint64_t rsp, uint64_t entry_top);
 #endif
 
+void cm_usermode_resume_entry(void)
+{
+#ifndef CAPMIX_HOSTED
+    int cpu = cm_cpu_id();
+    if (cpu >= 0 && cpu < CM_PCPU_MAX) {
+        cm_tss_set_rsp0(cpu, (uint64_t)(uintptr_t)&g_entry_stacks[cpu][16384]);
+        cm_proc_t *p = cm_proc_current();
+        if (p && p->elf && !p->exited) cm_leave_user = 0;
+    }
+#endif
+}
+
 static inline void pcpu_wrmsr(uint32_t msr, uint64_t v)
 {
     __asm__ volatile("wrmsr" :: "c"(msr), "a"((uint32_t)v), "d"((uint32_t)(v >> 32)));
@@ -286,6 +298,7 @@ void cm_usermode_run_elf(struct cm_proc *p)
     kinfo("exec ring3: pid=%llu entry=%llx rsp=%llx cpu=%d",
           (unsigned long)p->pid, (unsigned long)p->elf->entry,
           (unsigned long)p->elf->stack, cpu);
+    cm_arch_ctx_set_cr3(th->ctx_slot, p->elf->cr3);
     cm_space_load(p->elf->cr3);
     cm_enter_user(p->elf->shadow_cr3, p->elf->entry, p->elf->stack, entry_top);
     cm_panic("exec: unexpected return from IRET");
@@ -307,11 +320,15 @@ void cm_land_user(void)
         CM_UNUSED(cpu);
 #endif
         extern uint64_t cm_entry_user_irqs;
+        elf_proc->elf_run_ticks = elf_proc->main->run_ticks;
         elf_proc->elf_timer_entries = cm_entry_user_irqs - elf_proc->elf_timer_before;
         kinfo("exec exit: pid=%llu code=%lld writes=%d bytes=%llu timer_entries=%llu",
               (unsigned long)elf_proc->pid, (long)elf_proc->exit_code,
               elf_proc->elf_write_calls, (unsigned long)elf_proc->elf_written_bytes,
               (unsigned long)elf_proc->elf_timer_entries);
+        kinfo("elf preempt: pid=%llu preempts=%llu run_ticks=%llu cpu=%d",
+              (unsigned long)elf_proc->pid, (unsigned long)elf_proc->elf_preempts,
+              (unsigned long)elf_proc->elf_run_ticks, cpu);
         cm_space_load(cm_paging_cr3());
         cm_arch_ctx_swap(elf_proc->main->ctx_slot, -1);
         cm_panic("exec: exited ELF thread resumed");

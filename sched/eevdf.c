@@ -471,6 +471,7 @@ cm_thread_t *cm_eevdf_pick(void)
         for (int i = 0; i < g_rq_len[q] && nc < CM_MAX_THREADS; i++)
             if (g_rq[q][i]->state != CM_TH_RUNNING &&
                 g_rq[q][i]->state != CM_TH_DEAD &&
+                cm_proc_task_cpu_allowed(g_rq[q][i]->task, cm_cpu_id()) &&
                 thread_slot_sane(g_rq[q][i])) cand[nc++] = g_rq[q][i];
 
         for (int q2 = q + 1; q2 < CM_QOS_NBANDS; q2++) {
@@ -478,6 +479,7 @@ cm_thread_t *cm_eevdf_pick(void)
             for (int i = 0; i < g_rq_len[q2] && nc < CM_MAX_THREADS; i++)
                 if (g_rq[q2][i]->state != CM_TH_RUNNING &&
                     g_rq[q2][i]->state != CM_TH_DEAD &&
+                    cm_proc_task_cpu_allowed(g_rq[q2][i]->task, cm_cpu_id()) &&
                     thread_slot_sane(g_rq[q2][i])) cand[nc++] = g_rq[q2][i];
         }
         if (nc == 0) continue;
@@ -663,9 +665,6 @@ void cm_sched_preempt_now(void)
     if (!cm_need_resched()) return;
 
     cm_need_resched_clear();
-    /* Only the bounded ELF runner executes to exit. Normal kernel threads
-     * keep their existing preemption behavior; timer/EOI still run for ELF. */
-    if (cm_proc_elf_serial_task(cur->task)) return;
 
     /* The outgoing thread must still be the owner of its ctx slot.
      *
@@ -689,10 +688,13 @@ void cm_sched_preempt_now(void)
 
     g_in_thread[cpu] = 0;
     g_preempt_count[cpu]++;
+    cm_proc_t *p = cm_proc_current();
+    if (p && p->elf && p->elf_started && !p->exited) p->elf_preempts++;
 
     TRACE_SCHED_SWITCH(cur->trace_context,cur->id,0,0x100);
     if (cm_obs_enabled()) cm_obs_emit(cm_trace_new(), CM_EV_SCHED_SWITCH, cur->id, 0, 0x100);
     cm_arch_ctx_swap(cur->ctx_slot, -1);
+    if (cm_proc_elf_serial_task(cur->task)) cm_usermode_resume_entry();
 }
 
 void cm_sched_maybe_preempt(void)

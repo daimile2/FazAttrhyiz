@@ -1,4 +1,5 @@
 #include "capmix/kernel.h"
+#include "capmix/console.h"
 
 #ifndef CAPMIX_HOSTED
 
@@ -44,6 +45,8 @@ void kmain(void)
         kinfo("limine: mmap/hhdm unusable — buddy on %llu-page BSS arena",
               (unsigned long)r.npages);
     }
+
+    cm_limine_fb_snapshot();
 
     /* paging_init loads CR3 and does not return here. */
     capmix_init(&r, 1);

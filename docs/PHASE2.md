@@ -24,13 +24,18 @@ cm_error_t err = cm_posix_spawn(&attr, &pid);
 未提供参数字符串、auxv、动态链接、PT_INTERP、PT_DYNAMIC、TLS 或 ET_DYN。
 跨段共享同一虚拟页、W+X 段及入口位于非可执行/非文件内容处会被拒绝。
 
-本轮 runner 限启动 CPU（CPU0）串行执行，最多一个未回收 ELF 进程。调用方须
-保持 AP 调度停用；当前 boot selftest 正是在 SMP stress 启用 AP 调度前运行。
-执行期间定时器/EOI 保持开启，但暂不抢占该 ELF 线程；否则既有内核线程恢复路径
-会把 TSS.RSP0 设为 shadow 中不可见的普通线程栈。退出后恢复正常抢占。
-没有添加用户线程 affinity、跨 CPU 迁移或通用多用户进程调度支持。
+runner 仍限启动 CPU（CPU0），最多一个未回收 ELF 进程；EEVDF 的候选选择
+对该 ELF 明确实施 CPU0 affinity，包含尚未进入、阻塞及退出清理阶段。
+用户态 IF=1，LAPIC tick 现在会实际抢占 ELF，并由同一 EEVDF 路径选择下一线程。
+ELF 可与普通内核线程交替运行；尚不支持多 ELF 并发或用户线程跨 CPU 迁移。
 第二次 spawn 在前一个镜像回收前返回 BUSY；在其他 CPU 调用 spawn 返回 INVAL。
 
+ELF runner 把自己的 full CR3 绑定到现有 context slot。抢占的 timer frame 仍由
+现有汇编保存在入口栈上，恢复时使用该 full CR3；timer 返回前重新设置现有
+shadow-mapped TSS.RSP0，随后由原有入口汇编恢复进入前的 CR3 并 IRET。
+当前 CPU 只有一个 ELF 使用入口窗口，普通内核线程使用各自栈，不覆盖该 frame。
+恢复也清除普通 C-entry 进程 EXIT 可能留下的全局 leave-user 标志。
+没有修改 VMX/EPT、TRACE 环、页表映射或 KPTI 的入口汇编。
 ELF 文件必须使用 CapMix 的原生 syscall ABI，不能直接运行 Linux 用户程序。
 首版 ELF syscall 允许 NOP、CLOCK、stdout/stderr WRITE、EXIT；FORK 返回 NOTSUP，
 其他调用也返回 NOTSUP，避免未经 copyin/out 校验的旧 syscall 接口暴露给 ELF。
@@ -85,7 +90,7 @@ readelf -h -l build/hello.elf
 
 它有两个 PT_LOAD：RX code at 0x400000，RW data+BSS at 0x401000。
 用户代码读 CS 并在 BSS 记录 CPL，检查 BSS 初始为零，确认无效 WRITE buffer
-返回 INVAL、fork 返回 NOTSUP，随后运行跨越多个 tick 的循环，验证 ring3 定时器入口，再通过 native WRITE=2 打印 `hello from elf`，
+返回 INVAL、fork 返回 NOTSUP，随后记录 IF=1，运行跨越多个 tick 的循环，校验用户寄存器/栈保存，再通过 native WRITE=2 打印 `hello from elf`，
 通过 EXIT=1 退出 0。任何检查失败则 exit 1。
 
 ## 验收日志与实际验证
@@ -101,6 +106,8 @@ exec spawn
 exec ring3
 user[10]: hello from elf
 exec exit: pid=10 code=0
+elf preempt: pid=10 preempts=N run_ticks=M cpu=0
+elf user preempt verified: CPL=3 IF=1 ... competitor_runs=K registers/stack ok exit=0
 elf exec ok
 exec reap
 elf lifecycle ok
@@ -112,6 +119,9 @@ PID 是运行时分配的，检查字符串时不应固定为 10。
 hosted 验证 ELF 校验、段权限、BSS、地址边界、commit 拒绝回滚、串行 spawn 和
 镜像回收；明确跳过 ring3 执行。freestanding 真实执行 ELF，校验 CPL=3、exit 0、
 一次 WRITE/15 字节，以及最终页数/commit 回到基线。
+新增同 QoS 内核竞争线程：只有在 ELF 被真实抢占且尚未退出时才增加
+competitor_runs；测试要求 elf_preempts>0、elf_run_ticks>1、competitor_runs>0。
+最多执行 512 次调度步，失败时终止并回收两个测试线程及镜像。
 
 默认 hosted、四核 KVM 日志实际出现 `phase2 selftest: PASS (0 failures)` 与
 `selftest result: PASS (0 failures)`。四核日志实际包含 `hello from elf`、CPL=3、
@@ -128,6 +138,6 @@ timeout 30 qemu-system-x86_64 -enable-kvm -m 512 -cpu host -smp 4 \
 ```
 
 内核 selftest 后 HLT，QEMU 的 timeout 124 状态是预期停止；以串口 PASS 为验收。
-涉及新增 ring3 接续的 `usermode.c` 应人工审查。`paging.c`、`syscall.S`、`switch.S`、
-IDT/IST、LAPIC timer 与 VMO 实现没有改动。`sched/eevdf.c` 只增加串行 ELF 的
-抢占保护分支，原有内核线程和原内嵌 ring3 测试的抢占行为保留。
+涉及用户态抢占恢复的 `usermode.c` 与 EEVDF 路径应人工审查。
+`paging.c`、`syscall.S`、`switch.S`、IDT/IST、LAPIC timer 与 VMO 实现未修改。
+真实 ELF 抢占验收使用 KVM；hosted 继续明确跳过 ring3 执行，验证加载、拒绝与回收。

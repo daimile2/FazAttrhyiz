@@ -297,6 +297,21 @@ static int64_t sys_ipc_recv(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     return 0;
 }
 
+static int64_t sys_drv_recv_wait(uint64_t hid,uint64_t address,uint64_t a,uint64_t b)
+{
+    if (a || b || hid>=CM_HANDLES_PER_TASK) return CM_ERR_INVAL;
+    cm_proc_t *p=cm_proc_current();
+    if (!p || !p->elf || p->exited) return CM_ERR_NOTSUP;
+    if (!cm_elf_user_range(p->elf,address,sizeof(cm_ipc_msg_t),6)) return CM_ERR_INVAL;
+    cm_ipc_msg_t message;
+    cm_error_t err=cm_drv_receive_wait(p->pid,(int)hid,&message);
+    cm_usermode_resume_entry(); /* context resume reset TSS.rsp0 to the native stack */
+    if (err) return err;
+    if (p->exited || !p->elf || !cm_elf_user_range(p->elf,address,sizeof(message),6)) return CM_ERR_DEAD;
+    memcpy((void *)(uintptr_t)address,&message,sizeof(message));
+    return CM_OK;
+}
+
 static cm_proc_t *udp_caller(void)
 {
     cm_proc_t *p = cm_proc_current();
@@ -401,6 +416,7 @@ static const struct {
     { CM_SYS_UDP_BIND,       "udp_bind",       sys_udp_bind },
     { CM_SYS_UDP_SEND,       "udp_send",       sys_udp_send },
     { CM_SYS_UDP_RECV,       "udp_recv",       sys_udp_recv },
+    { CM_SYS_DRV_RECV_WAIT, "drv_recv_wait", sys_drv_recv_wait },
     { CM_SYS_TRACE_READ, "trace_read", sys_trace_read_cap },
     { CM_SYS_TRACE_CONFIG, "trace_config", sys_trace_config_cap },
     { CM_SYS_UDP_CLOSE,      "udp_close",      sys_udp_close },
@@ -491,6 +507,7 @@ int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t 
         if (nr == CM_SYS_IPC_RECV && cm_drv_has_receiver(elf_proc->pid))
             return sys_ipc_recv(a0, a1, a2, a3);
         int udp_call = nr >= CM_SYS_UDP_OPEN && nr <= CM_SYS_UDP_CLOSE;
+        if (nr == CM_SYS_DRV_RECV_WAIT) return sys_drv_recv_wait(a0,a1,a2,a3);
         int trace_call = nr == CM_SYS_TRACE_READ || nr == CM_SYS_TRACE_CONFIG;
         if (!udp_call && !trace_call && nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)
             return CM_ERR_NOTSUP;

@@ -9,6 +9,7 @@ CFLAGS  ?= -std=c11 -Wall -Wextra -Wshadow -O2 -g
 INCLUDES = -Iinclude
 
 SRC = \
+	console/fb.c console/ps2.c \
 	arch/x86_64/serial.c \
 	arch/x86_64/paging.c \
 	arch/x86_64/idt.c \
@@ -74,7 +75,7 @@ FREE_LDFLAGS = -nostdlib -static -no-pie -Wl,--build-id=none \
 
 all: test
 
-$(HOST_BIN): build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
+$(HOST_BIN): build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc build/blockd_wait_elf.inc $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
 	$(CC) $(CFLAGS) $(INCLUDES) -DCAPMIX_HOSTED -o $@ $(HOST_SRC)
 
 test: $(HOST_BIN)
@@ -114,7 +115,7 @@ build/net_elf.inc: build/net.elf scripts/embed-elf.py
 
 kernel: $(FREE_BIN)
 
-$(FREE_BIN): build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
+$(FREE_BIN): build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc build/blockd_wait_elf.inc $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
 	$(CC) $(FREE_CFLAGS) $(INCLUDES) $(FREE_LDFLAGS) -o $@ $(FREE_SRC)
 
 iso: $(FREE_BIN)
@@ -131,6 +132,7 @@ iso: $(FREE_BIN)
 	xorriso -as mkisofs -R -r -J \
 		-b boot/limine/limine-bios-cd.bin -no-emul-boot \
 		-boot-load-size 4 -boot-info-table \
+		-eltorito-alt-boot -e EFI/BOOT/limine-uefi-cd.bin -no-emul-boot \
 		--protective-msdos-label \
 		iso -o capmix.iso
 	@if [ -x third_party/limine/limine ]; then \
@@ -158,3 +160,14 @@ build/trace.elf: build/trace-elf.o tests/hello_elf.ld
 
 build/trace_elf.inc: build/trace.elf scripts/embed-elf.py
 	python3 scripts/embed-elf.py $< $@ cm_trace_elf
+
+
+build/blockd-wait-elf.o: tests/blockd_wait_elf.S
+	mkdir -p build
+	$(CC) -c -nostdlib -fno-pie -o $@ $<
+
+build/blockd-wait.elf: build/blockd-wait-elf.o tests/hello_elf.ld
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -Wl,-T,tests/hello_elf.ld -o $@ $<
+
+build/blockd_wait_elf.inc: build/blockd-wait.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_blockd_wait_elf

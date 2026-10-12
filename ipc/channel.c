@@ -477,3 +477,37 @@ void cm_ipc_dump(void)
     for (int i = 0; i < CM_MAX_CHANNELS; i++) if (g_chans[i].live) live++;
     kinfo("ipc: %d live channels, rtt_samples=%llu", live, (unsigned long)g_rtt_samples);
 }
+
+cm_error_t cm_ipc_wait_prepare(cm_task_t *task,int hid,cm_id_t expected,
+                              cm_thread_t *thread,cm_object_t **held,bool *parked)
+{
+    if (!task || !thread || thread->task!=task || !held || !parked) return CM_ERR_INVAL;
+    *held=NULL; *parked=false;
+    uint64_t flags=cm_cap_lock(); cm_channel_t *c; cm_object_t *endpoint; int side;
+    cm_error_t err=endpoint_locked(task,hid,CM_RIGHT_READ,&c,&side,&endpoint);
+    if (!err && endpoint->id!=expected) err=CM_ERR_DENIED;
+    if (!err) {
+        cm_endp_t *local=local_end(c,side);
+        if (local->count) { /* caller retries dequeue without sleeping */ }
+        else if (c->closed[side^1]) err=CM_ERR_DEAD;
+        else if (local->recv_waiter && local->recv_waiter!=thread) err=CM_ERR_BUSY;
+        else {
+            cm_obj_retain_locked(endpoint); *held=endpoint;
+            local->recv_waiter=thread;
+            cm_thread_block_prepare(thread,NULL); *parked=true;
+        }
+    }
+    cm_cap_unlock(flags); return err;
+}
+void cm_ipc_wait_cancel(cm_object_t *held,cm_thread_t *thread,cm_id_t thread_id,bool wake)
+{
+    if (!held || !thread) return;
+    uint64_t flags=cm_cap_lock();
+    uintptr_t tag=(uintptr_t)held->payload;
+    cm_channel_t *c=(cm_channel_t *)(tag&~(uintptr_t)1);
+    cm_endp_t *local=local_end(c,(int)(tag&1));
+    if (local->recv_waiter==thread) local->recv_waiter=NULL;
+    bool live=thread->id==thread_id && thread->state!=CM_TH_DEAD;
+    cm_cap_unlock(flags);
+    if (wake && live && thread->state==CM_TH_BLOCKED) cm_thread_wake(thread);
+}

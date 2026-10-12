@@ -44,6 +44,11 @@ cm_error_t cm_ipc_try_recv_object(cm_task_t *receiver, int hid, cm_id_t object, 
 /* Export a WRITE-only sender for a validated opposite-endpoint pair. */
 cm_error_t cm_ipc_export_sender(cm_task_t *owner, int send_hid, int recv_hid,
                                 cm_task_t *broker, int *out_hid, cm_id_t *recv_object);
+struct cm_thread;
+/* Prepare under caller lifecycle lock; never switches. Stable ref only if parked. */
+cm_error_t cm_ipc_wait_prepare(cm_task_t *task,int hid,cm_id_t expected,
+                              struct cm_thread *thread,cm_object_t **held,bool *parked);
+void cm_ipc_wait_cancel(cm_object_t *held,struct cm_thread *thread,cm_id_t thread_id,bool wake);
 cm_error_t cm_ipc_call(cm_task_t *sender, int hid,
                        const cm_ipc_msg_t *req, cm_ipc_msg_t *reply);
 

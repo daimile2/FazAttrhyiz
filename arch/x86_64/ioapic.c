@@ -1,3 +1,4 @@
+#include "capmix/console.h"
 #include "capmix/arch.h"
 #include "capmix/klog.h"
 #include "capmix/io.h"
@@ -60,12 +61,8 @@ static volatile uint64_t g_kbd_irqs;
 
 void cm_ioapic_kbd_isr(void)
 {
-    /* First interrupt that ever arrives from real hardware. Log the first
-     * few, then only every 10th, so holding a key down cannot flood the
-     * console. */
-    uint64_t n = __sync_add_and_fetch(&g_kbd_irqs, 1);
-    if (n == 1 || (n % 100) == 0)
-        kinfo("kbd: IRQ1 n=%llu", (unsigned long)n);
+    cm_ps2_irq();
+    __sync_add_and_fetch(&g_kbd_irqs, 1);
 
     cm_irq_inject(1);
     cm_lapic_eoi();
@@ -171,6 +168,7 @@ int cm_ioapic_init(void)
 
     extern void cm_irq_stub_kbd(void);
     cm_idt_set_gate(IOAPIC_VEC_KBD, (void *)cm_irq_stub_kbd, 0);
+    (void)cm_ps2_init();
     return 0;
 #endif
 }

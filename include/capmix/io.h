@@ -83,6 +83,10 @@ typedef struct {
     cm_id_t       recv_object, thread_id;
     uint64_t      delivered, received, pending, pending_sequence;
     uint64_t      backpressure, dropped;
+    cm_object_t *wait_endpoint; /* driver-owned reference while a recv sleeps */
+    struct cm_thread *wait_thread;
+    cm_error_t wait_error;
+    uint64_t waits, wakes, cancels;
     char          name_storage[64];
     uint32_t      crashes;
     uint64_t      irqs;
@@ -133,6 +137,8 @@ int          cm_drv_bind(const char *name, int irq, cm_id_t pid);
 int          cm_drv_bind_channel(const char *name, int irq, cm_id_t pid, int send_hid, int recv_hid);
 uint64_t     cm_drv_irq_retry(void);
 cm_error_t   cm_drv_receive(cm_id_t pid, int recv_hid, cm_ipc_msg_t *out);
+cm_error_t cm_drv_receive_wait(cm_id_t pid,int recv_hid,cm_ipc_msg_t *out);
+cm_error_t cm_drv_wait_cancel(cm_id_t pid);
 int          cm_drv_has_receiver(cm_id_t pid);
 void         cm_drv_process_exit(cm_id_t pid);
 cm_error_t   cm_drv_crash(int id);          /* isolate: offline device, keep kernel */

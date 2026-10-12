@@ -1,4 +1,5 @@
 #include "capmix/arch.h"
+#include "capmix/console.h"
 #include "capmix/klog.h"
 #include "capmix/types.h"
 
@@ -23,7 +24,15 @@ uint64_t cm_kernel_phys(void) { return g_kphys; }
 uint64_t cm_kernel_virt(void) { return g_kvirt; }
 uint64_t cm_kernel_size(void) { return g_ksize; }
 
+static cm_fb_info_t fb_info;
+int cm_limine_fb_info(cm_fb_info_t *out)
+{
+    if (!out || !fb_info.physical) return -1;
+    *out = fb_info; return 0;
+}
+
 #ifdef CAPMIX_HOSTED
+void cm_limine_fb_snapshot(void) {}
 
 int cm_limine_memory(cm_paddr_t *base, uint64_t *npages, uint64_t *hhdm)
 {
@@ -156,6 +165,29 @@ static volatile struct limine_req rsdp_req = {
     .revision = 0,
     .response = 0,
 };
+
+struct fb_desc {
+    void *address;
+    uint64_t width, height, pitch;
+    uint16_t bpp;
+    uint8_t model, rs, rp, gs, gp, bs, bp;
+};
+struct fb_response { uint64_t revision, count; struct fb_desc **framebuffers; };
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_req fb_req = {
+    .id = { LIMINE_COMMON_MAGIC, 0x9d5827dcd881dd75ull, 0xa3148604f6fab11bull }
+};
+void cm_limine_fb_snapshot(void)
+{
+    /* Called on Limine's original page tables, before any response is unmapped. */
+    struct fb_response *r = fb_req.response;
+    if (!r || !r->count || !r->framebuffers || !r->framebuffers[0]) return;
+    struct fb_desc *f = r->framebuffers[0];
+    uint64_t address = (uint64_t)(uintptr_t)f->address;
+    if (!g_hhdm || address < g_hhdm) return;
+    fb_info = (cm_fb_info_t){ address-g_hhdm, f->width,f->height,f->pitch,
+        f->bpp,f->model,f->rs,f->rp,f->gs,f->gp,f->bs,f->bp };
+}
 
 static uint64_t *g_pml4_cached;
 static uint64_t  g_hhdm_cached;

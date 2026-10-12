@@ -1,3 +1,4 @@
+#include "capmix/console.h"
 #include "capmix/kernel.h"
 #include "capmix/numa.h"
 #include "capmix/fs.h"
@@ -246,6 +247,7 @@ void capmix_init(const cm_mem_region_t *regions, int nregions)
 
 void capmix_after_paging(void)
 {
+    cm_console_init();
     cm_numa_init();
     cm_cap_init();
     cm_sched_init();
@@ -289,7 +291,7 @@ int capmix_selftest(void)
     }
     kinfo("smp: selftest on cpu %d of %d", cm_cpu_id(), cm_cpu_count());
     kinfo("checkpoint A");
-    int fails = 0;
+    int fails = cm_console_selftest();
     {
         uint64_t t0 = cm_rdtsc();
         for (int i = 0; i < 1000; i++)
@@ -793,7 +795,6 @@ void cm_selftest_finish(void)
           fails ? "FAIL" : "PASS", fails);
 #ifndef CAPMIX_HOSTED
     kinfo("freestanding selftest rc=%d — hlt", fails);
-    for (;;)
-        __asm__ volatile("hlt");
+    cm_console_idle();
 #endif
 }

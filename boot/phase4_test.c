@@ -3,7 +3,7 @@
 #include "capmix/elf.h"
 #include "capmix/fs.h"
 #include <string.h>
-#include "../build/blockd_elf.inc"
+#include "../build/blockd_wait_elf.inc"
 
 #define CHECK(expr) do { if (!(expr)) { \
     kerr("phase4: %s line %d: %s", __func__, __LINE__, #expr); failed++; goto cleanup; \
@@ -24,8 +24,8 @@ static int write_fixture(void)
     cm_file_t *file;
     cm_error_t err = cm_vfs_open("/bin/blockd.elf", CM_O_WRONLY | CM_O_CREAT | CM_O_TRUNC, &file);
     if (err) return err;
-    int64_t n = cm_vfs_write(file, cm_blockd_elf, sizeof(cm_blockd_elf));
-    err = n == (int64_t)sizeof(cm_blockd_elf) ? cm_vfs_fsync(file) : CM_ERR_IO;
+    int64_t n = cm_vfs_write(file, cm_blockd_wait_elf, sizeof(cm_blockd_wait_elf));
+    err = n == (int64_t)sizeof(cm_blockd_wait_elf) ? cm_vfs_fsync(file) : CM_ERR_IO;
     cm_vfs_close(file);
     return err;
 }
@@ -47,11 +47,11 @@ static int user_receive_test(void)
     uint32_t *config = cm_elf_pointer(p->elf, 0x401000);
     CHECK(config);
     config[0] = (uint32_t)recv; config[1] = (uint32_t)did;
+#ifdef CAPMIX_HOSTED
     cm_irq_inject(12);
     CHECK(cm_drv_get(did)->delivered == 0); /* top half did not IPC */
     CHECK(cm_irq_softirq_flush() == 1);
     CHECK(cm_drv_get(did)->delivered == 1 && cm_drv_get(did)->received == 0);
-#ifdef CAPMIX_HOSTED
     cm_ipc_msg_t message;
     CHECK(cm_drv_receive(pid, recv, &message) == CM_OK);
     cm_drv_irq_packet_t packet;
@@ -64,12 +64,23 @@ static int user_receive_test(void)
     cm_drv_process_exit(pid); /* hosted ELF skip does not execute EXIT syscall */
     kinfo("driver irq hosted: channel receive verified; CPL=3 execution skipped");
 #else
-    (void)cm_sched_run_until_idle(64);
+    for (unsigned step = 0; step < 64 && p->main->state != CM_TH_BLOCKED && !p->exited; step++)
+        (void)cm_sched_run_until_idle(1);
+    CHECK(p->main->state == CM_TH_BLOCKED && cm_drv_get(did)->wait_endpoint);
+    CHECK(cm_drv_get(did)->waits == 1 && cm_drv_get(did)->received == 0);
+    kinfo("driver wait verified: sleeping CPL=3 before IRQ");
+    cm_irq_inject(12);
+    CHECK(cm_drv_get(did)->delivered == 0 && p->main->state == CM_TH_BLOCKED);
+    CHECK(cm_irq_softirq_flush() == 1);
+    CHECK(p->main->state == CM_TH_RUNNABLE && cm_drv_get(did)->delivered == 1);
+    kinfo("driver wait verified: IRQ -> wake RUNNABLE");
+    for (unsigned step = 0; step < 64 && (!p->exited || (p->main && p->main->id)); step++)
+        (void)cm_sched_run_until_idle(1);
     CHECK(p->exited && p->exit_code == 0 && p->elf_started);
-    uint64_t *report = cm_elf_pointer(p->elf, 0x401008);
+    uint64_t *report = cm_elf_pointer(p->elf, 0x401010);
     CHECK(report && report[0] == 1 && report[1] == 3);
-    CHECK(p->elf_write_calls == 1 && p->elf_written_bytes == 16);
-    CHECK(cm_drv_get(did)->received == 1);
+    CHECK(p->elf_write_calls == 1 && p->elf_written_bytes == 19);
+    CHECK(cm_drv_get(did)->received == 1 && cm_drv_get(did)->wakes == 1);
     kinfo("driver irq user ok: com.capmix.blockd CPL=3 recv_count=1 exit=0");
 #endif
     CHECK(cm_drv_get(did)->state == CM_DRV_OFFLINE && !cm_blk_online());
@@ -83,6 +94,75 @@ cleanup:
     if (p && !p->exited && did >= 0) cm_drv_crash(did);
     if (p && p->main && p->main->id && p->main->state == CM_TH_DEAD) cm_thread_reap(p->main);
     if (pid) (void)cm_proc_reap_elf(pid);
+    return failed;
+}
+/* One live native test thread at a time; no helper races the serial ELF stack. */
+static cm_id_t wait_pid;
+static int wait_handle;
+static cm_error_t wait_result;
+static void native_wait_driver(void)
+{
+    cm_ipc_msg_t message;
+    wait_result = cm_drv_receive_wait(wait_pid, wait_handle, &message);
+    cm_syscall(CM_SYS_EXIT, 0, 0, 0, 0);
+}
+static int wait_lifecycle_test(unsigned mode)
+{
+    int failed = 0, did = -1, send, recv;
+    cm_id_t pid = 0;
+    cm_proc_t *p = NULL;
+    cm_spawn_attr_t attr = { .path = "blockd-wait-lifecycle", .entry = native_wait_driver,
+                             .qos = CM_QOS_USER_INTERACTIVE };
+    CHECK(cm_posix_spawn(&attr, &pid) == CM_OK);
+    p = cm_proc_lookup(pid);
+    CHECK(p && cm_channel_create(p->task, &send, &recv) == CM_OK);
+    did = cm_drv_bind_channel("blockd-wait-lifecycle", 12, pid, send, recv);
+    CHECK(did >= 0);
+    CHECK(cm_handle_drop(p->task, send) == CM_OK);
+    wait_pid = pid; wait_handle = recv; wait_result = CM_ERR_BUSY;
+    for (unsigned step = 0; step < 64 && p->main->state != CM_TH_BLOCKED && !p->exited; step++)
+        (void)cm_sched_run_until_idle(1);
+    cm_driver_t *d = cm_drv_get(did);
+    CHECK(p->main->state == CM_TH_BLOCKED && d->wait_endpoint && d->waits == 1);
+    CHECK(wait_result == CM_ERR_BUSY);
+    if (mode == 0) {
+        cm_irq_inject(12);
+        CHECK(p->main->state == CM_TH_BLOCKED && !d->delivered);
+        CHECK(cm_irq_softirq_flush() == 1 && p->main->state == CM_TH_RUNNABLE);
+    } else if (mode == 1) {
+        CHECK(cm_drv_wait_cancel(pid) == CM_OK && p->main->state == CM_TH_RUNNABLE);
+    } else if (mode == 2) {
+        CHECK(cm_handle_drop(p->task, recv) == CM_OK);
+        (void)cm_irq_softirq_flush(); /* lifecycle retry detects receiver close and wakes */
+        cm_ipc_msg_t message;
+        CHECK(cm_drv_receive(pid, recv, &message) == CM_ERR_DEAD);
+        CHECK(p->main->state == CM_TH_RUNNABLE && !d->wait_endpoint);
+    } else {
+        cm_irq_inject(12); /* stale pending top half must be discarded after crash */
+        CHECK(cm_drv_crash(did) == CM_OK);
+        CHECK(p->main->state == CM_TH_DEAD && !d->wait_endpoint);
+        (void)cm_irq_softirq_flush();
+        CHECK(!d->delivered && !d->pending && wait_result == CM_ERR_BUSY);
+        static uint8_t buffer[CM_BLK_SECTOR];
+        CHECK(cm_blk_rw(CM_OP_READ, CM_BLK_RAW_LBA, 1, buffer) == CM_ERR_DEAD);
+        CHECK(!cm_blk_online() && cm_drv_kernel_alive());
+        kinfo("driver blocked crash isolation ok: pending discarded buddy usable kernel_alive=1");
+    }
+    if (mode < 3) {
+        for (unsigned step = 0; step < 64 && (!p->exited || (p->main && p->main->id)); step++)
+            (void)cm_sched_run_until_idle(1);
+        CHECK(p->exited && !p->exit_code && !d->wait_endpoint);
+        CHECK(wait_result == (mode == 0 ? CM_OK : mode == 1 ? CM_ERR_AGAIN : CM_ERR_DEAD));
+        CHECK(d->wakes == 1 && d->received == (mode == 0 ? 1u : 0u));
+        kinfo("driver wait lifecycle verified: %s result=%d recv_count=%llu",
+              mode == 0 ? "sleep -> IRQ -> wake -> recv" : mode == 1 ? "cancel" : "peer-close",
+              wait_result, (unsigned long)d->received);
+    }
+    CHECK(d->state == CM_DRV_OFFLINE && !cm_blk_online());
+cleanup:
+    if (p && !p->exited && did >= 0) cm_drv_crash(did);
+    if (p && p->main && p->main->id && p->main->state == CM_TH_DEAD) cm_thread_reap(p->main);
+    if (p) close_handles(p->task);
     return failed;
 }
 static void other_irq(int irq, void *arg) { CM_UNUSED(irq); (*(unsigned *)arg)++; }
@@ -177,7 +257,9 @@ cleanup:
 int cm_phase4_selftest(void)
 {
     kinfo("--- selftest: phase4 IRQ channel -> user driver ---");
-    int failed = user_receive_test() + backpressure_and_crash_test();
+    int failed = user_receive_test();
+    for (unsigned mode = 0; mode < 4; mode++) failed += wait_lifecycle_test(mode);
+    failed += backpressure_and_crash_test();
     kinfo("phase4 selftest: %s (%d failures)", failed ? "FAIL" : "PASS", failed);
     return failed;
 }

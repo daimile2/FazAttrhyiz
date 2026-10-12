@@ -62,11 +62,24 @@ cleanup:
     cm_elf_destroy(im);
     return failed;
 }
+#ifndef CAPMIX_HOSTED
+static unsigned competitor_runs;
+static void elf_competitor(void *arg)
+{
+    cm_proc_t *p = arg;
+    while (!p->exited) {
+        if (p->elf_started && p->elf_preempts > 0) competitor_runs++;
+        cm_sched_yield();
+    }
+    cm_sched_current()->state = CM_TH_DEAD;
+}
+#endif
 int cm_phase2_selftest(void)
 {
     int failed = 0;
     cm_elf_image_t *im = NULL;
     cm_id_t pid = 0;
+    cm_thread_t *competitor = NULL;
     kinfo("--- selftest: phase2 ELF loader + exec spawn ---");
     CHECK(cm_vfs_mkdir("/bin") == CM_OK || cm_vfs_stat("/bin", &(cm_stat_t){0}) == CM_OK);
     CHECK(put_elf("/bin/hello.elf", cm_test_elf, sizeof(cm_test_elf)) == CM_OK);
@@ -104,13 +117,28 @@ int cm_phase2_selftest(void)
     CHECK(cm_posix_spawn(&attr, &another) == CM_ERR_BUSY && !another);
     cm_proc_t *p = cm_proc_lookup(pid);
     CHECK(p && p->elf && !p->exited);
+    CHECK(cm_proc_task_cpu_allowed(p->task, 0) && !cm_proc_task_cpu_allowed(p->task, 1));
     CHECK(cm_proc_reap_elf(pid) == CM_ERR_BUSY);
-    (void)cm_sched_run_until_idle(64);
+#ifndef CAPMIX_HOSTED
+    cm_task_t *competition = cm_task_create("elf-preempt-competitor", CM_QOS_USER_INTERACTIVE);
+    CHECK(competition);
+    competitor_runs = 0;
+    competitor = cm_thread_create(competition, elf_competitor, p, CM_QOS_USER_INTERACTIVE);
+    CHECK(competitor);
+#endif
+    for (unsigned step = 0; step < 512 &&
+         (!p->exited || (p->main && p->main->id) || (competitor && competitor->id)); step++)
+        (void)cm_sched_run_until_idle(1);
     CHECK(p->exited);
 #ifndef CAPMIX_HOSTED
     CHECK(p->elf_started && p->exit_code == 0);
     CHECK(*(uint8_t *)cm_elf_pointer(p->elf, TEST_CPL_VA) == 3);
     p->elf_cpl = 3;
+    CHECK(*(uint64_t *)cm_elf_pointer(p->elf, TEST_CPL_VA + 16) & 0x200);
+    CHECK(p->elf_preempts > 0 && p->elf_run_ticks > 1 && competitor_runs > 0);
+    CHECK(!competitor->id);
+    kinfo("elf user preempt verified: CPL=3 IF=1 preempts=%llu run_ticks=%llu competitor_runs=%u registers/stack ok exit=0",
+          (unsigned long)p->elf_preempts, (unsigned long)p->elf_run_ticks, competitor_runs);
     CHECK(p->elf_write_calls == 1 && p->elf_written_bytes == 15);
 #if CM_KPTI
     CHECK(p->elf_timer_entries > 0);
@@ -118,7 +146,7 @@ int cm_phase2_selftest(void)
     kinfo("elf exec ok: hello from elf, CPL=3, BSS/invalid-buffer/fork checks, exit 0");
 #else
     CHECK(!p->elf_started && p->exit_code == CM_ERR_NOTSUP);
-    kinfo("elf hosted: loader/BSS/permissions/lifetime verified; ring3 execution skipped");
+    kinfo("elf hosted: loader/BSS/permissions/lifetime/CPU affinity verified; ring3 preempt execution skipped");
 #endif
     CHECK(cm_proc_reap_elf(pid) == CM_OK);
     uint64_t after;
@@ -126,7 +154,19 @@ int cm_phase2_selftest(void)
     CHECK(before == after && free_before == cm_mm_free_pages());
     kinfo("elf lifecycle ok: image pages/page tables/commit reclaimed");
 cleanup:
+    if (competitor && competitor->id) {
+        competitor->state = CM_TH_DEAD;
+        cm_thread_reap(competitor);
+    }
     cm_elf_destroy(im);
+    if (pid) {
+        cm_proc_t *unfinished = cm_proc_lookup(pid);
+        if (unfinished && unfinished->main && unfinished->main->id) {
+            unfinished->exited = 1; unfinished->exit_code = CM_ERR_AGAIN;
+            unfinished->main->state = CM_TH_DEAD;
+            cm_thread_reap(unfinished->main);
+        }
+    }
     if (pid) (void)cm_proc_reap_elf(pid);
     kinfo("phase2 selftest: %s (%d failures)", failed ? "FAIL" : "PASS", failed);
     return failed;

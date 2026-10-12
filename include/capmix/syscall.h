@@ -38,6 +38,7 @@
 #define CM_SYS_UDP_CLOSE     21
 #define CM_SYS_TRACE_READ    22
 #define CM_SYS_TRACE_CONFIG  23
+#define CM_SYS_DRV_RECV_WAIT 24
 
 /* POSIX compat band — routed, not native. */
 #define CM_SYS_FORK         128

@@ -126,3 +126,36 @@ timeout 30 qemu-system-x86_64 -enable-kvm -m 512 -cpu host -smp 4 \
   -cdrom capmix.iso -serial stdio -display none \
   -no-reboot -d cpu_reset 2>&1 | tee /tmp/capmix_run.log
 ```
+
+## Blocking IRQ receive (phase4 continuation)
+
+`CM_SYS_DRV_RECV_WAIT` (24) takes `(recv_handle, writable cm_ipc_msg_t*, 0, 0)`.
+It is limited to the registered driver's main thread on BSP, retaining the
+existing serial ELF execution model. Syscall 7 remains a nonblocking driver
+receive. The wait registers a receiver and marks the thread BLOCKED atomically
+under the channel lock, then drops all capability/driver locks before yielding.
+Deferred channel delivery wakes the thread; on resume the driver lifecycle and
+endpoint identity are rechecked before dequeuing and incrementing recv_count.
+An owned endpoint reference protects cancellation and close from stale pointers.
+
+There is no automatic timeout or POSIX signal interruption in this first version.
+The kernel/controller may call `cm_drv_wait_cancel(pid)` to wake with `AGAIN`;
+receiver close detected by the bottom-half retry/lifecycle check returns `DEAD`.
+Offline/crash cancels the waiter, releases its reference and discards pending IRQs.
+A crashed blocked thread is marked DEAD before cancellation and is never resumed.
+
+`tests/blockd_wait_elf.S` is linked with the existing hello linker script and
+embedded by Makefile as `build/blockd_wait_elf.inc`. The selftest writes this
+fixture to COWFS `/bin/blockd.elf`, starts it through the existing ELF spawn path,
+then observes BLOCKED before injecting IRQ 12. It verifies top-half does not wake,
+bottom-half wakes, CPL=3 receives the expected packet, and exit remains isolated.
+Hosted execution checks the same sleep/wake lifecycle with native test threads;
+ring3 execution is explicitly skipped there. Cancellation, receiver close and
+crash while blocked are tested separately. Each scheduling phase has at most 64
+steps; failures crash/reap the driver rather than leaving a sleeping test behind.
+
+Expected log sequence: `drv wait sleeping` -> `drv irq delivered` ->
+`drv wait awakened` -> `drv blocking recv`; ring3 also prints
+`driver irq wake ok`. Additional checks report `driver wait lifecycle verified`
+(cancel/peer-close) and `driver blocked crash isolation ok`, followed by the
+existing `driver crash isolation ok` and `kernel_alive=1`.

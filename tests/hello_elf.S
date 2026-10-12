@@ -21,10 +21,43 @@ _start:
     syscall
     cmpq $-7, %rax
     jne failed
-    /* Cover ring3 timer entry without entering the kernel-thread restore path. */
+    /* Observe IF and verify registers/stack survive actual timer scheduling. */
+    pushfq
+    popq %rax
+    movq %rax, flags_report(%rip)
+    testq $0x200,%rax
+    jz failed
+    movl $0x13579,%ebx
+    movl $0x24680,%ebp
+    movl $0x12345,%r13d
+    movl $0x23456,%r14d
+    movl $0x34567,%r15d
+    movl $0x45678,%r8d
+    movl $0x56789,%r9d
+    movl $0x67890,%r10d
+    pushq %rbx
     movl $100000000, %r12d
 1:  decl %r12d
     jnz 1b
+    popq %rax
+    cmpq $0x13579,%rax
+    jne failed
+    cmpq $0x13579,%rbx
+    jne failed
+    cmpq $0x24680,%rbp
+    jne failed
+    cmpq $0x12345,%r13
+    jne failed
+    cmpq $0x23456,%r14
+    jne failed
+    cmpq $0x34567,%r15
+    jne failed
+    cmpq $0x45678,%r8
+    jne failed
+    cmpq $0x56789,%r9
+    jne failed
+    cmpq $0x67890,%r10
+    jne failed
     movl $2, %eax
     movl $1, %edi
     leaq hello(%rip), %rsi
@@ -48,4 +81,5 @@ hello: .ascii "hello from elf\n"
 cpl_report: .skip 1
 .balign 8
 bss_probe: .skip 8
+flags_report: .skip 8
 .section .note.GNU-stack,"",@progbits

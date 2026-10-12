@@ -124,7 +124,12 @@ static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
 int cm_proc_elf_serial_task(const cm_task_t *task)
 {
     return g_elf_pending && g_elf_pending->task == task &&
-           g_elf_pending->elf_started && !g_elf_pending->exited;
+           g_elf_pending->elf != NULL;
+}
+
+int cm_proc_task_cpu_allowed(const cm_task_t *task, int cpu)
+{
+    return !cm_proc_elf_serial_task(task) || cpu == g_elf_pending->elf_cpu;
 }
 
 cm_error_t cm_proc_reap_elf(cm_id_t pid)

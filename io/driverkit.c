@@ -41,10 +41,21 @@ cm_driver_t *cm_drv_get(int id)
     if (id < 0 || id >= CM_MAX_DRIVERS || g_drv[id].state == CM_DRV_EMPTY) return NULL;
     return &g_drv[id];
 }
+static void end_wait_locked(cm_driver_t *d,cm_error_t error,bool wake)
+{
+    cm_object_t *obj=d->wait_endpoint;
+    cm_thread_t *thread=d->wait_thread;
+    d->wait_error=error;
+    if (!obj) return;
+    d->wait_endpoint=NULL; d->wait_thread=NULL;
+    cm_ipc_wait_cancel(obj,thread,d->thread_id,wake);
+    cm_obj_release(obj);
+}
 static void offline_locked(cm_driver_t *d)
 {
     if (d->state != CM_DRV_ONLINE) return;
     d->state = CM_DRV_OFFLINE;
+    end_wait_locked(d,CM_ERR_DEAD,true);
     d->dropped += d->pending; d->pending = 0;
     (void)cm_irq_release(d->irq, drv_bottom, (void *)(uintptr_t)d->id);
     if (d->chan_k > 0) cm_handle_drop(g_broker, d->chan_k);
@@ -185,6 +196,57 @@ cm_error_t cm_drv_receive(cm_id_t pid, int recv_hid, cm_ipc_msg_t *out)
     drv_unlock(f);
     return err;
 }
+cm_error_t cm_drv_wait_cancel(cm_id_t pid)
+{
+    uint64_t flags=drv_lock(); cm_error_t result=CM_ERR_AGAIN;
+    for (unsigned i=0;i<CM_MAX_DRIVERS;i++) if (g_drv[i].pid==pid && g_drv[i].wait_endpoint) {
+        cm_driver_t *d=&g_drv[i]; d->cancels++;
+        end_wait_locked(d,CM_ERR_AGAIN,true);
+        kinfo("drv wait cancelled: %s pid=%llu",d->name,(unsigned long)pid);
+        result=CM_OK; break;
+    }
+    drv_unlock(flags); return result;
+}
+cm_error_t cm_drv_receive_wait(cm_id_t pid,int recv_hid,cm_ipc_msg_t *out)
+{
+    if (!out) return CM_ERR_INVAL;
+    uint64_t irq=cm_irq_save(); cm_thread_t *thread=cm_sched_current();
+    cm_proc_t *p=cm_proc_lookup(pid);
+    if (!thread || !p || p->main!=thread || thread->task!=p->task || cm_cpu_id()!=0) {
+        cm_irq_restore(irq); return CM_ERR_DENIED;
+    }
+    for (;;) {
+        uint64_t flags=drv_lock(); cm_driver_t *d=NULL;
+        for (unsigned i=0;i<CM_MAX_DRIVERS;i++)
+            if (g_drv[i].pid==pid && g_drv[i].state!=CM_DRV_EMPTY && g_drv[i].chan_u==recv_hid) d=&g_drv[i];
+        cm_error_t err=CM_ERR_DENIED;
+        if (!d) { drv_unlock(flags); cm_irq_restore(irq); return err; }
+        if (d->state!=CM_DRV_ONLINE || !live_receiver_locked(d)) {
+            offline_locked(d); drv_unlock(flags); cm_irq_restore(irq); return CM_ERR_DEAD;
+        }
+        err=cm_ipc_try_recv_object(p->task,recv_hid,d->recv_object,out);
+        if (err!=CM_ERR_AGAIN) {
+            if (!err) { d->received++; kinfo("drv blocking recv: %s recv_count=%llu",d->name,(unsigned long)d->received); }
+            drv_unlock(flags); cm_irq_restore(irq); return err;
+        }
+        bool parked=false; cm_object_t *held=NULL;
+        err=cm_ipc_wait_prepare(p->task,recv_hid,d->recv_object,thread,&held,&parked);
+        if (err) { drv_unlock(flags); cm_irq_restore(irq); return err; }
+        if (!parked) { drv_unlock(flags); continue; }
+        d->wait_endpoint=held; d->wait_thread=thread; d->wait_error=CM_OK; d->waits++;
+        kinfo("drv wait sleeping: %s pid=%llu thread=%llu state=BLOCKED waits=%llu",d->name,
+              (unsigned long)pid,(unsigned long)thread->id,(unsigned long)d->waits);
+        drv_unlock(flags); /* irq remains off until the prepared context yields */
+        cm_arch_ctx_swap(thread->ctx_slot,-1);
+        flags=drv_lock(); d->wakes++;
+        err=d->wait_error;
+        end_wait_locked(d,err,false);
+        kinfo("drv wait awakened: %s pid=%llu wakes=%llu result=%d",d->name,(unsigned long)pid,(unsigned long)d->wakes,err);
+        drv_unlock(flags);
+        if (err) { cm_irq_restore(irq); return err; }
+        /* Retry under the lifecycle lock; wake itself never fabricates a packet. */
+    }
+}
 void cm_drv_process_exit(cm_id_t pid)
 {
     uint64_t f = drv_lock();
@@ -208,13 +270,13 @@ cm_error_t cm_drv_crash(int id)
     if (!d) { drv_unlock(f); return CM_ERR_INVAL; }
     d->crashes++;
     cm_id_t pid = d->pid;
-    offline_locked(d);
     cm_proc_t *p = cm_proc_lookup(pid);
     if (p && !p->exited) {
         p->exited = 1; p->exit_code = 11; /* simulated driver crash */
         if (p->main) p->main->state = CM_TH_DEAD;
         if (p->aspace_pages && !p->elf) { cm_commit_uncharge(p->aspace_pages); p->aspace_pages = 0; }
     }
+    offline_locked(d); /* DEAD is set before clearing/waking a sleeping receiver. */
     kinfo("drv crash isolated: %s pid=%llu task dead, device offline", d->name, (unsigned long)pid);
     drv_unlock(f);
     cm_drv_process_exit(pid);
