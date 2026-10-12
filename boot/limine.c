@@ -1,5 +1,7 @@
 #include "capmix/arch.h"
 #include "capmix/console.h"
+#include "capmix/boot.h"
+#include <string.h>
 #include "capmix/klog.h"
 #include "capmix/types.h"
 
@@ -31,7 +33,33 @@ int cm_limine_fb_info(cm_fb_info_t *out)
     *out = fb_info; return 0;
 }
 
+static char boot_cmdline[256];
+int cm_boot_parse_selftest(const char *line)
+{
+    static const char debug[]="capmix.mode=selftest", product[]="capmix.mode=product";
+    int selftest=0;
+    if(!line)return 0;
+    while(*line) {
+        while(*line==' ' || *line=='\t')line++;
+        const char *begin=line;
+        while(*line && *line!=' ' && *line!='\t')line++;
+        size_t n=(size_t)(line-begin);
+        if(n==sizeof(debug)-1 && !memcmp(begin,debug,n))selftest=1;
+        if(n==sizeof(product)-1 && !memcmp(begin,product,n))selftest=0;
+    }
+    return selftest;
+}
+int cm_boot_is_selftest(void)
+{
 #ifdef CAPMIX_HOSTED
+    return 1; /* host executable remains the regression runner */
+#else
+    return cm_boot_parse_selftest(boot_cmdline);
+#endif
+}
+
+#ifdef CAPMIX_HOSTED
+void cm_boot_cmdline_snapshot(void) { memcpy(boot_cmdline,"capmix.mode=selftest",20); }
 void cm_limine_fb_snapshot(void) {}
 
 int cm_limine_memory(cm_paddr_t *base, uint64_t *npages, uint64_t *hhdm)
@@ -165,6 +193,31 @@ static volatile struct limine_req rsdp_req = {
     .revision = 0,
     .response = 0,
 };
+
+struct cmdline_response { uint64_t revision; const char *cmdline; };
+struct kernel_file_prefix { uint64_t revision; void *address; uint64_t size; const char *path,*cmdline; };
+struct kernel_file_response { uint64_t revision; struct kernel_file_prefix *file; };
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_req cmdline_req = {
+    .id = { LIMINE_COMMON_MAGIC, 0x4b161536e598651eull, 0xb390ad4a2f1f303aull }
+};
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_req kernel_file_req = {
+    .id = { LIMINE_COMMON_MAGIC, 0xad97e90e83f1ed67ull, 0x31eb5d1c5ff23b69ull }
+};
+void cm_boot_cmdline_snapshot(void)
+{
+    struct cmdline_response *r=cmdline_req.response;
+    const char *line=r?r->cmdline:NULL;
+    if(!line) {
+        struct kernel_file_response *f=kernel_file_req.response;
+        if(f && f->file)line=f->file->cmdline;
+    }
+    unsigned n=0;
+    if(line)while(n+1<sizeof(boot_cmdline) && line[n]) {boot_cmdline[n]=line[n];n++;}
+    boot_cmdline[n]=0;
+    kinfo("boot mode: %s (Limine cmdline snapshot)",cm_boot_is_selftest()?"selftest":"product");
+}
 
 struct fb_desc {
     void *address;

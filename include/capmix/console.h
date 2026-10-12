@@ -17,4 +17,6 @@ int cm_ps2_init(void);
 int cm_ps2_selftest(void);
 void cm_ps2_irq(void);
 void cm_ps2_poll(void);
+/* Product shell consumes decoded characters; old echo polling stays unchanged. */
+cm_error_t cm_ps2_read_char(char *out);
 #endif

@@ -90,6 +90,18 @@ void cm_ps2_poll(void)
         }
     }
 }
+cm_error_t cm_ps2_read_char(char *out)
+{
+    if(!out)return CM_ERR_INVAL;
+    uint64_t flags=cm_irq_save();
+    while(tail!=__atomic_load_n(&head,__ATOMIC_ACQUIRE)) {
+        char c=decode(queue[tail]);
+        __atomic_store_n(&tail,(tail+1)%sizeof(queue),__ATOMIC_RELEASE);
+        if(c){*out=c;cm_irq_restore(flags);return CM_OK;}
+    }
+    cm_irq_restore(flags);return CM_ERR_AGAIN;
+}
+
 int cm_ps2_selftest(void)
 {
     unsigned oldshift=shift,oldcaps=caps,oldextended=extended; shift=caps=extended=0;

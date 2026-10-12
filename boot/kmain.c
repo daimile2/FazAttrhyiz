@@ -1,5 +1,6 @@
 #include "capmix/kernel.h"
 #include "capmix/console.h"
+#include "capmix/boot.h"
 
 #ifndef CAPMIX_HOSTED
 
@@ -20,6 +21,7 @@ void kmain(void)
 {
     bss_zero();
     cm_serial_init();
+    cm_boot_cmdline_snapshot();
 
     cm_mem_region_t r = {
         .base = (cm_paddr_t)(uintptr_t)g_arena,

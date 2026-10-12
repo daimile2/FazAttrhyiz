@@ -1,3 +1,5 @@
+#include "capmix/boot.h"
+#include "capmix/shell.h"
 #include "capmix/virtio_net.h"
 #include "capmix/console.h"
 #include "capmix/persist.h"
@@ -257,7 +259,8 @@ void capmix_after_paging(void)
     cm_syscall_init();
     cm_io_init();      /* blk first: the VFS mounts the COW volume from it */
     cm_error_t root_mount = cm_vfs_init();
-    cm_m3_prepare(root_mount);
+    cm_product_record_root(root_mount);
+    if (cm_boot_is_selftest()) cm_m3_prepare(root_mount);
     cm_net_init();
     cm_security_init();
     cm_virt_init();
@@ -295,6 +298,7 @@ int capmix_selftest(void)
     kinfo("smp: selftest on cpu %d of %d", cm_cpu_id(), cm_cpu_count());
     kinfo("checkpoint A");
     int fails = cm_console_selftest();
+    fails += cm_shell_selftest();
     {
         uint64_t t0 = cm_rdtsc();
         for (int i = 0; i < 1000; i++)

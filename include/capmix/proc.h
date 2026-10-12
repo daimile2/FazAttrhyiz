@@ -55,6 +55,8 @@ cm_error_t cm_posix_spawn(const cm_spawn_attr_t *attr, cm_id_t *out_pid);
 
 /* Release an exited ELF image only after its thread has left the CPU. */
 cm_error_t cm_proc_reap_elf(cm_id_t pid);
+/* Product PID1 only: release an off-CPU ELF exit record/task after image reap. */
+cm_error_t cm_proc_release_product_elf(cm_id_t pid);
 /* Single pending ELF remains pinned to BSP, including blocked/exit cleanup. */
 int cm_proc_elf_serial_task(const cm_task_t *task);
 int cm_proc_task_cpu_allowed(const cm_task_t *task, int cpu);

@@ -1,3 +1,4 @@
+LIMINE_CONFIG ?= boot/limine.conf
 # CapMix — capability hybrid kernel
 #   make test     hosted selftest (recommended)
 #   make kernel   freestanding ELF
@@ -35,7 +36,7 @@ SRC = \
 	sched/eevdf.c \
 	ipc/channel.c \
 	proc/syscall.c \
-	proc/spawn.c proc/elf.c \
+	proc/spawn.c proc/elf.c proc/init.c user/shell.c \
 	fs/vfs.c \
 	fs/cowfs.c \
 	io/irq.c \
@@ -124,7 +125,7 @@ iso: $(FREE_BIN)
 	rm -rf iso
 	mkdir -p iso/boot/limine iso/EFI/BOOT
 	cp $(FREE_BIN) iso/boot/capmix.elf
-	cp boot/limine.conf iso/boot/limine/limine.conf
+	cp $(LIMINE_CONFIG) iso/boot/limine/limine.conf
 	cp third_party/limine/limine-bios.sys iso/boot/limine/ 2>/dev/null || true
 	cp third_party/limine/limine-bios-cd.bin iso/boot/limine/
 	cp third_party/limine/limine-uefi-cd.bin iso/EFI/BOOT/ 2>/dev/null || true

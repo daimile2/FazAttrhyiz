@@ -1,4 +1,6 @@
 #include "capmix/proc.h"
+#include "capmix/boot.h"
+#include "capmix/cap_internal.h"
 #include "capmix/io.h"
 #include "capmix/syscall.h"
 #include "capmix/kernel.h"
@@ -143,6 +145,24 @@ cm_error_t cm_proc_reap_elf(cm_id_t pid)
     if (g_elf_pending == p) g_elf_pending = NULL;
     cm_elf_destroy(im);
     kinfo("exec reap: pid=%llu image/pages/commit reclaimed", (unsigned long)pid);
+    return CM_OK;
+}
+
+cm_error_t cm_proc_release_product_elf(cm_id_t pid)
+{
+    cm_proc_t *parent=cm_proc_current(), *p=cm_proc_lookup(pid);
+    if(cm_boot_is_selftest() || !parent || parent->pid!=1 || p==parent)return CM_ERR_DENIED;
+    if(!p || !p->exited || !p->elf_thread_id)return CM_ERR_INVAL;
+    if(p->elf) {cm_error_t e=cm_proc_reap_elf(pid);if(e)return e;}
+    if(p->main)return CM_ERR_BUSY;
+    cm_task_t *task=p->task;
+    for(int h=1;h<CM_HANDLES_PER_TASK;h++)if(cm_handle_lookup(task,h))cm_handle_drop(task,h);
+    uint64_t flags=cm_cap_lock();
+    int exclusive=task->self_obj && task->self_obj->refs==1;
+    cm_cap_unlock(flags);
+    if(!exclusive)return CM_ERR_BUSY; /* do not invalidate an externally held task */
+    cm_obj_release(task->self_obj);
+    memset(task,0,sizeof(*task));memset(p,0,sizeof(*p));
     return CM_OK;
 }
 

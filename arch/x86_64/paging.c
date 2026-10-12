@@ -1,3 +1,4 @@
+#include "capmix/boot.h"
 #include "capmix/arch.h"
 #include "capmix/mm.h"
 #include "capmix/klog.h"
@@ -374,6 +375,7 @@ void paging_land(void)
     cm_paging_enable_pge();
     capmix_after_paging();
     cm_irq_enable();
+    if (!cm_boot_is_selftest()) cm_product_start(CM_OK);
     kinfo("freestanding: paging live — selftest");
     int rc = capmix_selftest();
     kinfo("freestanding selftest rc=%d — hlt", rc);
