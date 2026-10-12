@@ -127,6 +127,10 @@ uint64_t   cm_blk_completed(void);
 /* Synchronous helper: submit one bio through blk-mq and reap exactly its own
  * completion. Returns CM_OK or the bio's negative status. */
 cm_error_t cm_blk_rw(uint32_t op, uint64_t lba, uint32_t nsect, void *buf);
+cm_error_t cm_blk_flush(void);
+int cm_blk_is_virtio(void);
+cm_error_t cm_blk_select(int virtio);
+cm_error_t cm_blk_volume_blank(int *blank);
 int        cm_blk_online(void);
 /* Test hook: raw sector access that bypasses the queue, so a selftest can
  * corrupt media the way a failing disk would (bit rot under the FS). */

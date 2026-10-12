@@ -1,4 +1,5 @@
 #include "capmix/io.h"
+#include "capmix/virtio_blk.h"
 #include "capmix/mm.h"
 #include "capmix/klog.h"
 #include "capmix/obs.h"
@@ -19,7 +20,7 @@ static cm_bio_t g_done[CM_BLK_QD];
 static int      g_dh, g_dt, g_dn;
 static uint64_t g_done_total;
 static uint64_t g_tag_next = 1;
-static int      g_offline; /* set when bound user driver crashes */
+static int      g_backend, g_offline[2]; /* independently offline-able devices */
 
 cm_error_t cm_blk_init(void)
 {
@@ -42,7 +43,8 @@ cm_error_t cm_blk_init(void)
     memset(g_qn, 0, sizeof(g_qn));
     g_dh = g_dt = g_dn = 0;
     g_done_total = 0;
-    g_offline = 0;
+    g_offline[0] = g_offline[1] = 0;
+    g_backend = cm_virtio_blk_init() == CM_OK;
     kinfo("blk: mq %d queues x qd %d, ramdisk %u sectors "
           "(raw %u / swap %u / fs %u)",
           CM_BLK_QUEUES, CM_BLK_QD, CM_BLK_DISK_SECT,
@@ -50,12 +52,12 @@ cm_error_t cm_blk_init(void)
     return CM_OK;
 }
 
-void cm_blk_set_offline(int off) { g_offline = off; }
-int  cm_blk_online(void)         { return g_disk && !g_offline; }
+void cm_blk_set_offline(int off) { g_offline[g_backend] = off; }
+int  cm_blk_online(void)         { return !g_offline[g_backend] && (g_backend ? cm_virtio_blk_available() : g_disk != NULL); }
 
 uint8_t *cm_blk_raw_sector(uint64_t lba)
 {
-    if (!g_disk || lba >= CM_BLK_DISK_SECT) return NULL;
+    if (g_backend || !g_disk || lba >= CM_BLK_DISK_SECT) return NULL;
     return g_disk + lba * CM_BLK_SECTOR;
 }
 
@@ -70,15 +72,21 @@ static void complete_one(cm_bio_t *b)
 
 static void service(cm_bio_t *b)
 {
-    if (g_offline || !g_disk) {
+    if (!cm_blk_online()) {
         b->status = CM_ERR_DEAD;
         complete_one(b);
         return;
     }
-    if (b->lba + b->nsect > CM_BLK_DISK_SECT) {
+    if (!b->buf || !b->nsect || b->lba >= CM_BLK_DISK_SECT || b->nsect > CM_BLK_DISK_SECT-b->lba ||
+        (b->op != CM_OP_READ && b->op != CM_OP_WRITE)) {
         b->status = CM_ERR_INVAL;
         complete_one(b);
         return;
+    }
+    if (g_backend) {
+        cm_error_t err=cm_virtio_blk_rw(b->op,b->lba,b->nsect,b->buf);
+        b->status=err ? err : (int32_t)(b->nsect*CM_BLK_SECTOR);
+        complete_one(b); return;
     }
     uint8_t *sec = g_disk + b->lba * CM_BLK_SECTOR;
     size_t   n   = (size_t)b->nsect * CM_BLK_SECTOR;
@@ -154,4 +162,34 @@ cm_error_t cm_blk_rw(uint32_t op, uint64_t lba, uint32_t nsect, void *buf)
     cm_bio_t done;
     if (!reap_tag(bio.tag, &done)) return CM_ERR_AGAIN;
     return done.status < 0 ? (cm_error_t)done.status : CM_OK;
+}
+
+/* Selection is boot/test-controller only, with VFS unmounted and no I/O pending. */
+int cm_blk_is_virtio(void) { return g_backend; }
+cm_error_t cm_blk_select(int virtio)
+{
+    if (g_dn) return CM_ERR_BUSY;
+    for (unsigned q=0;q<CM_BLK_QUEUES;q++) if(g_qn[q])return CM_ERR_BUSY;
+    if (virtio && !cm_virtio_blk_available())return CM_ERR_DEAD;
+    g_backend=!!virtio;
+    kinfo("blk backend: %s offline=%d",g_backend?"virtio-blk":"ramdisk",g_offline[g_backend]);
+    return CM_OK;
+}
+cm_error_t cm_blk_flush(void)
+{
+    if(!cm_blk_online())return CM_ERR_DEAD;
+    return g_backend?cm_virtio_blk_flush():CM_OK;
+}
+cm_error_t cm_blk_volume_blank(int *blank)
+{
+    if(!blank)return CM_ERR_INVAL;
+    *blank=0;
+    /* Refuse auto-format if any byte of the reserved 8 MiB volume is nonzero. */
+    static uint8_t sector[4096];
+    for(uint32_t lba=0;lba<CM_BLK_DISK_SECT;lba+=8) {
+        cm_error_t err=cm_blk_rw(CM_OP_READ,lba,8,sector);
+        if(err)return err;
+        for(unsigned i=0;i<sizeof(sector);i++)if(sector[i])return CM_OK;
+    }
+    *blank=1;return CM_OK;
 }

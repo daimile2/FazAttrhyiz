@@ -383,6 +383,8 @@ static cm_error_t commit(void)
     if ((e = write_meta(g_buf_omap, 0, &ns.omap)) != CM_OK) return e;
     if ((e = crash_here(CM_CRASH_AFTER_OMAP)) != CM_OK) return e;
 
+    if ((e = cm_blk_flush()) != CM_OK) return e; /* persist tree before publishing root */
+
     /* 4. the flip: one sector, into the slot the current super is NOT in */
     ns.gen = g_sb.gen + 1;
     ns.csum = sb_csum(&ns);
@@ -401,6 +403,7 @@ static cm_error_t commit(void)
     }
     if ((e = cm_blk_rw(CM_OP_WRITE, lba, 1, sec)) != CM_OK) return e;
 
+    if ((e = cm_blk_flush()) != CM_OK) return e; /* durable superblock */
     g_sb = ns;
     g_sb_dirty = 0;
     memset(g_itab_dirty, 0, sizeof(g_itab_dirty));
@@ -839,7 +842,9 @@ static int op_sync(void *inst)
 {
     if (inst) return CM_OK;
     if (live_ok() != CM_OK) return CM_ERR_DEAD;
-    return g_txn_depth ? CM_OK : commit();
+    if (g_txn_depth) return CM_OK;
+    cm_error_t e = commit();
+    return e ? e : cm_blk_flush();
 }
 
 static const cm_fs_ops_t g_cowfs_ops = {
@@ -948,8 +953,10 @@ static cm_error_t cm_cow_mkfs_locked(void)
     /* Kill both superblock slots first so a half-done mkfs never mounts. */
     uint8_t z[CM_BLK_SECTOR];
     memset(z, 0, sizeof(z));
-    cm_blk_rw(CM_OP_WRITE, cm_cow_fs_lba(0), 1, z);
-    cm_blk_rw(CM_OP_WRITE, cm_cow_fs_lba(1), 1, z);
+    cm_error_t clear = cm_blk_rw(CM_OP_WRITE, cm_cow_fs_lba(0), 1, z);
+    if (!clear) clear = cm_blk_rw(CM_OP_WRITE, cm_cow_fs_lba(1), 1, z);
+    if (!clear) clear = cm_blk_flush();
+    if (clear) return clear;
 
     memset(&g_sb, 0, sizeof(g_sb));
     g_sb.magic = FS_MAGIC;
@@ -1133,8 +1140,15 @@ cm_error_t cm_cowfs_init(void)
 {
     g_mounted = 0;
     g_crashed = 0;
-    if (cm_cow_mount_locked() == CM_OK) return CM_OK;
-    kinfo("cowfs: no valid superblock — formatting");
+    cm_error_t mounted = cm_cow_mount_locked();
+    if (mounted == CM_OK) return CM_OK;
+    if (cm_blk_is_virtio()) {
+        int blank=0;
+        cm_error_t e=cm_blk_volume_blank(&blank);
+        if(e)return e;
+        if(!blank) { kinfo("cowfs mount refused: nonempty virtio volume, no auto-format");return mounted; }
+        kinfo("cowfs: blank virtio-blk volume — formatting");
+    } else kinfo("cowfs: no valid superblock — formatting");
     return cm_cow_mkfs_locked();
 }
 

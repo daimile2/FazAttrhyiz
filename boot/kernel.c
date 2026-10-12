@@ -1,4 +1,5 @@
 #include "capmix/console.h"
+#include "capmix/persist.h"
 #include "capmix/kernel.h"
 #include "capmix/numa.h"
 #include "capmix/fs.h"
@@ -254,7 +255,8 @@ void capmix_after_paging(void)
     cm_proc_init();
     cm_syscall_init();
     cm_io_init();      /* blk first: the VFS mounts the COW volume from it */
-    cm_vfs_init();
+    cm_error_t root_mount = cm_vfs_init();
+    cm_m3_prepare(root_mount);
     cm_net_init();
     cm_security_init();
     cm_virt_init();
@@ -791,6 +793,7 @@ void cm_selftest_finish(void)
     cm_ipc_dump();
     cm_obs_dump(12);
     cm_mitigations_dump();
+    fails += cm_m3_finish();
     kinfo("--- selftest result: %s (%d failures) ---",
           fails ? "FAIL" : "PASS", fails);
 #ifndef CAPMIX_HOSTED
