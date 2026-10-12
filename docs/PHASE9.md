@@ -1,9 +1,10 @@
 # Phase 9: one VMLAUNCH and a VMCALL exit
 
-This is a BSP-only, synchronous, trusted guest stub. It uses a normal 64-bit
-paged guest with the current complete kernel CR3. EPT/NPT and unrestricted
-real-mode guest support are not enabled. The guest therefore shares host
-memory; this is not an isolation boundary or a general guest execution API.
+The original phase9 milestone used a trusted 64-bit VMCALL stub sharing host
+CR3. The current runtime replaces that guest address space with **private guest
+paging plus a seven-page EPT allowlist**. See [EPT.md](EPT.md) for the current
+GPA layout, permissions, INVEPT lifecycle and reason=48 tests. This file records
+the initial launch mechanism and retained host-state/rollback behavior.
 
 `cm_virt_guest_once(mode)` adds an optional VMCS helper inside the accepted
 VMXON lifecycle. `cm_virt_hw_probe()` keeps its phase7 probe-only behavior.
@@ -43,7 +44,7 @@ whose **first instruction is VMCALL** (0F 01 C1). The following UD2 is a fallbac
 all guest exceptions are intercepted. VM exit loads the programmed host RIP/RSP
 and returns through the saved host frame. No VMRESUME loop exists.
 
-The helper reads EXIT_REASON, EXIT_QUALIFICATION and GUEST_RIP. A normal Intel
+The helper reads EXIT_REASON, EXIT_QUALIFICATION and GUEST_RIP (and GPA for current EPT violations). A normal Intel
 VMCALL exit has basic reason **18**. Reason bit 31 distinguishes late VM-entry
 failure and is never counted as a real guest exit. `cm_virt_real_vmexits()` is
 an independent real-hardware counter; existing per-VM `cm_vcpu_run()` counters
@@ -89,6 +90,6 @@ Original implementation references:
 (VMCS encodings, VM-entry/exit checks and state loading), and
 [Intel SDM changes/exit-reason table](https://cdrdv2-public.intel.com/774475/252046-sdm-change-document.pdf).
 
-Not implemented: EPT/NPT, arbitrary/untrusted guest code, guest memory isolation,
+Not implemented: NPT, arbitrary guest execution API, guest devices,
 VMRESUME, multiple vCPUs, hardware VFIO, Linux guest boot, preemption timer or
 verified boot.

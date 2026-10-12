@@ -20,13 +20,22 @@ typedef struct {
     bool vmcs_ready, entered, real_exit, vmcs_cleared;
     int instruction_status;
     uint64_t instruction_error, failed_field, exit_reason, qualification, guest_rip;
+    bool ept_ready,ept_invalidated;
+    uint64_t eptp,guest_gpa,guest_cr3,guest_entry;
+    unsigned invept_type;
+    void *ept_tables[4],*guest_pages[7];
     const char *stage;
     void *vmcs_region,*guest_stack; /* retained only if rollback cannot release hardware ownership */
 } cm_guest_result_t;
-/* Modes: 0 normal, 1 abort after VMPTRLD, 2 invalid guest state launch. */
+/* Modes: 0 VMCALL, 1 abort after VMPTRLD, 2 invalid guest state,
+ * 3 unmapped GPA read, 4 execute permission violation,
+ * 5 partial allocation abort, 6 injected unavailable INVEPT capability. */
 cm_guest_result_t cm_virt_guest_once(unsigned mode);
 #ifndef CAPMIX_HOSTED
 bool cm_vmcs_guest_once(uint64_t basic,unsigned mode,cm_guest_result_t *result);
+bool cm_ept_prepare(cm_guest_result_t *result,unsigned mode);
+int cm_ept_invalidate(cm_guest_result_t *result);
+int cm_hw_invept(uint64_t type,const void *descriptor);
 int cm_hw_vmclear(const uint64_t *phys);
 int cm_hw_vmptrld(const uint64_t *phys);
 int cm_hw_vmwrite(uint64_t field,uint64_t value);

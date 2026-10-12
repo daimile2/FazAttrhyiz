@@ -113,6 +113,14 @@ movq %rcx,(%rsi)
 22: ret
 23: movl $-1,%eax
 ret
+
+.globl cm_hw_invept
+cm_hw_invept:
+24: invept (%rsi),%rdi
+STATUS
+ret
+25: movl $-1,%eax
+ret
 .section .rodata
 .globl cm_hw_fixups_begin,cm_hw_fixups_end
 cm_hw_fixups_begin:
@@ -127,6 +135,7 @@ PAIR 15b,16b
 PAIR 17b,18b
 PAIR 19b,20b
 PAIR 21b,23b
+PAIR 24b,25b
 cm_hw_fixups_end:
 .section .entry.text,"ax",@progbits
 .macro PROBE_FAULT vec, noerr

@@ -158,10 +158,12 @@ cleanup:
     }
     if (!r.rolled_back) r.status=CM_VIRT_HW_ROLLBACK;
     if (page && r.rolled_back) cm_page_free(page,0);
-    if (guest && r.rolled_back) {
+    if (guest && r.rolled_back && guest->hardware.rolled_back) {
         if (guest->vmcs_region) cm_page_free(guest->vmcs_region,0);
         if (guest->guest_stack) cm_page_free(guest->guest_stack,0);
         guest->vmcs_region=guest->guest_stack=NULL;
+        for (unsigned i=0;i<4;i++) if (guest->ept_tables[i]) { cm_page_free(guest->ept_tables[i],0); guest->ept_tables[i]=NULL; }
+        for (unsigned i=0;i<7;i++) if (guest->guest_pages[i]) { cm_page_free(guest->guest_pages[i],0); guest->guest_pages[i]=NULL; }
     }
     r.fault_vector=fault_vector;
     armed=false;
