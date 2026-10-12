@@ -1,3 +1,4 @@
+#include "capmix/virtio_net.h"
 #include "capmix/console.h"
 #include "capmix/persist.h"
 #include "capmix/kernel.h"
@@ -479,6 +480,7 @@ int capmix_selftest(void)
     extern int cm_phase2_selftest(void);
     fails += cm_phase2_selftest();
 
+    fails += cm_m4_selftest();
     extern int cm_phase5_selftest(void);
     fails += cm_phase5_selftest();
 

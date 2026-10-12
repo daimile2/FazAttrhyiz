@@ -1,3 +1,4 @@
+#include "capmix/virtio_net.h"
 #include "capmix/net.h"
 #include "capmix/klog.h"
 
@@ -53,6 +54,7 @@ cm_error_t cm_net_init(void)
     cm_ebpf_init();
     cm_nft_init();
     cm_udp_init();
+    (void)cm_virtio_net_init();
     kinfo("net: in-kernel stack (XNU lesson), XDP + nft");
     return CM_OK;
 }

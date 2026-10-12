@@ -84,6 +84,8 @@ typedef struct {
     int      up;
     const char *name;
     uint32_t addr;
+    uint32_t netmask, gateway;
+    uint8_t mac[6];
     int      xdp_prog;   /* -1 none */
     uint64_t rx, tx, drop;
 } cm_iface_t;
