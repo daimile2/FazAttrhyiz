@@ -15,4 +15,24 @@ typedef struct {
 } cm_virt_hw_result_t;
 /* BSP synchronous probe only; no guest launch. abort_prepare tests cleanup. */
 cm_virt_hw_result_t cm_virt_hw_probe(bool abort_prepare);
+typedef struct {
+    cm_virt_hw_result_t hardware;
+    bool vmcs_ready, entered, real_exit, vmcs_cleared;
+    int instruction_status;
+    uint64_t instruction_error, failed_field, exit_reason, qualification, guest_rip;
+    const char *stage;
+    void *vmcs_region,*guest_stack; /* retained only if rollback cannot release hardware ownership */
+} cm_guest_result_t;
+/* Modes: 0 normal, 1 abort after VMPTRLD, 2 invalid guest state launch. */
+cm_guest_result_t cm_virt_guest_once(unsigned mode);
+#ifndef CAPMIX_HOSTED
+bool cm_vmcs_guest_once(uint64_t basic,unsigned mode,cm_guest_result_t *result);
+int cm_hw_vmclear(const uint64_t *phys);
+int cm_hw_vmptrld(const uint64_t *phys);
+int cm_hw_vmwrite(uint64_t field,uint64_t value);
+int cm_hw_vmread(uint64_t field,uint64_t *out);
+int cm_hw_vmlaunch_once(void);
+extern char cm_guest_vmcall[],cm_vmexit_return[];
+extern const uint64_t cm_vmcs_fixups_begin[],cm_vmcs_fixups_end[];
+#endif
 #endif

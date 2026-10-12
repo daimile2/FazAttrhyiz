@@ -78,6 +78,8 @@ cm_vm_t   *cm_vm_create(const char *name, cm_job_t *job, uint64_t mem_pages, int
 cm_error_t cm_vcpu_run(cm_vm_t *vm, int vcpu);
 cm_error_t cm_vfio_attach(cm_vm_t *vm, int pci_bdf);
 void       cm_virt_dump(void);
+uint64_t cm_virt_real_vmexits(void);
+void cm_virt_record_real_exit(void);
 
 uint64_t   cm_continuous_time(void);          /* does not jump across "sleep" */
 

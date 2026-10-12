@@ -51,9 +51,9 @@ SRC = \
 	security/sign.c lib/sha256.c \
 	security/gate.c \
 	virt/job.c \
-	virt/kvm.c virt/hardware.c arch/x86_64/virt_probe.S \
+	virt/kvm.c virt/hardware.c virt/vmcs.c arch/x86_64/virt_probe.S arch/x86_64/vmcs.S \
 	boot/kernel.c \
-	boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c \
+	boot/phase9_test.c boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c \
 	boot/phase3_test.c \
  
      

@@ -29,6 +29,9 @@ void cm_hw_fault_recover(uint64_t vec, uint64_t *frame)
             if (frame[1]==p[0]) { frame[1]=p[1]; fault_vector=(unsigned)vec; return; }
         }
     }
+    if (armed && cm_cpu_id()==0 && frame[2]==0x08 && !frame[0] && (vec==6 || vec==13))
+        for (const uint64_t *p=cm_vmcs_fixups_begin;p<cm_vmcs_fixups_end;p+=2)
+            if (frame[1]==p[0]) { frame[1]=p[1]; fault_vector=(unsigned)vec; return; }
     cm_fault_isr(vec,frame[0],frame[1],(uint64_t)(uintptr_t)frame);
 }
 struct idtr { uint16_t limit; uint64_t base; } __attribute__((packed));
@@ -43,7 +46,7 @@ static void probe_gate(unsigned vec, void (*fn)(void))
 }
 static uint64_t read_cr0(void) { uint64_t v; __asm__ volatile("mov %%cr0,%0":"=r"(v)); return v; }
 #endif
-cm_virt_hw_result_t cm_virt_hw_probe(bool abort_prepare)
+static cm_virt_hw_result_t probe(bool abort_prepare,cm_guest_result_t *guest,unsigned mode)
 {
     cm_virt_hw_result_t r={.rolled_back=true,.status=CM_VIRT_HW_UNSUPPORTED,.stage="cpuid"};
     uint32_t a,b,c,d,max;
@@ -53,7 +56,7 @@ cm_virt_hw_result_t cm_virt_hw_probe(bool abort_prepare)
     if (max>=0x80000001) { cpuid(0x80000001,&a,&b,&c,&d); r.svm=(c&(1u<<2))!=0; }
     if (!r.vmx && !r.svm) return r;
 #ifdef CAPMIX_HOSTED
-    (void)abort_prepare;
+    (void)abort_prepare; (void)guest; (void)mode;
     r.status=CM_VIRT_HW_HOSTED;
     return r;
 #else
@@ -113,6 +116,7 @@ cm_virt_hw_result_t cm_virt_hw_probe(bool abort_prepare)
         int code=cm_hw_vmxon(&phys);
         if (code) { r.instruction_status=(unsigned)code; r.status=code<0 ? CM_VIRT_HW_FAULT : CM_VIRT_HW_INSTRUCTION; goto cleanup; }
         vmx_active=true; r.initialized=true; r.status=CM_VIRT_HW_OK;
+        if (guest) (void)cm_vmcs_guest_once(basic,mode,guest);
     } else {
         r.stage="SVM MSRs/firmware policy";
         uint64_t vmcr;
@@ -154,10 +158,29 @@ cleanup:
     }
     if (!r.rolled_back) r.status=CM_VIRT_HW_ROLLBACK;
     if (page && r.rolled_back) cm_page_free(page,0);
+    if (guest && r.rolled_back) {
+        if (guest->vmcs_region) cm_page_free(guest->vmcs_region,0);
+        if (guest->guest_stack) cm_page_free(guest->guest_stack,0);
+        guest->vmcs_region=guest->guest_stack=NULL;
+    }
     r.fault_vector=fault_vector;
     armed=false;
     __asm__ volatile("lidt %0"::"m"(idt):"memory");
     cm_irq_restore(flags);
     return r;
 #endif
+}
+
+cm_virt_hw_result_t cm_virt_hw_probe(bool abort_prepare) { return probe(abort_prepare,NULL,0); }
+cm_guest_result_t cm_virt_guest_once(unsigned mode)
+{
+    cm_guest_result_t result={.stage="guest launch unavailable"};
+    result.hardware.rolled_back=true;
+    bool inner_ok=true;
+    cm_virt_hw_result_t hardware=probe(false,&result,mode);
+    inner_ok=result.hardware.rolled_back;
+    result.hardware=hardware;
+    if (!inner_ok) { result.hardware.rolled_back=false; result.hardware.status=CM_VIRT_HW_ROLLBACK; }
+    if (result.real_exit) { extern void cm_virt_record_real_exit(void); cm_virt_record_real_exit(); }
+    return result;
 }

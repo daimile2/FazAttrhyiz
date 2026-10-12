@@ -650,6 +650,8 @@ int capmix_selftest(void)
 
     extern int cm_phase7_selftest(void);
     fails += cm_phase7_selftest();
+    extern int cm_phase9_selftest(void);
+    fails += cm_phase9_selftest();
     kinfo("--- selftest: job/cgroup + KVM ---");
     {
         cm_job_t *app = cm_job_create("app.bundle", CM_NS_ALL);

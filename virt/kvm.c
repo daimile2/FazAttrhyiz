@@ -9,6 +9,9 @@
 static cm_vm_t g_vm[CM_MAX_VMS];
 static cm_id_t g_vid = 1;
 static uint64_t g_sleep_bias;
+static uint64_t g_real_vmexits;
+uint64_t cm_virt_real_vmexits(void) { return __atomic_load_n(&g_real_vmexits,__ATOMIC_RELAXED); }
+void cm_virt_record_real_exit(void) { __atomic_add_fetch(&g_real_vmexits,1,__ATOMIC_RELAXED); }
 
 cm_error_t cm_virt_init(void)
 {
@@ -17,6 +20,7 @@ cm_error_t cm_virt_init(void)
     memset(g_vm, 0, sizeof(g_vm));
     g_vid = 1;
     g_sleep_bias = 0;
+    g_real_vmexits = 0;
     kinfo("virt: Type-1 KVM + VFIO/SR-IOV stubs, job/cgroup v2 ready");
     return CM_OK;
 }
@@ -87,6 +91,7 @@ extern void cm_job_dump(void);
 void cm_virt_dump(void)
 {
     cm_job_dump();
+    kinfo("virt: real hardware vmexits=%llu (separate from per-VM synthetic demo)",(unsigned long)cm_virt_real_vmexits());
     for (int i = 0; i < CM_MAX_VMS; i++) {
         if (!g_vm[i].used) continue;
         kinfo("  vm %llu '%s' mem=%llu vcpu=%d exits=%llu vfio=%d",

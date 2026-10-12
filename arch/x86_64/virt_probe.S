@@ -73,6 +73,46 @@ xorl %eax,%eax
 ret
 12: movl $-1,%eax
 ret
+
+/* Incremental VMCS instruction wrappers; return CF|ZF<<1 or -1 on fault. */
+.macro STATUS
+setc %al
+setz %dl
+movzbl %al,%eax
+movzbl %dl,%edx
+leal (%eax,%edx,2),%eax
+.endm
+.globl cm_hw_vmclear
+cm_hw_vmclear:
+15: vmclear (%rdi)
+STATUS
+ret
+16: movl $-1,%eax
+ret
+.globl cm_hw_vmptrld
+cm_hw_vmptrld:
+17: vmptrld (%rdi)
+STATUS
+ret
+18: movl $-1,%eax
+ret
+.globl cm_hw_vmwrite
+cm_hw_vmwrite:
+19: vmwrite %rsi,%rdi
+STATUS
+ret
+20: movl $-1,%eax
+ret
+.globl cm_hw_vmread
+cm_hw_vmread:
+21: vmread %rdi,%rcx
+STATUS
+testl %eax,%eax
+jnz 22f
+movq %rcx,(%rsi)
+22: ret
+23: movl $-1,%eax
+ret
 .section .rodata
 .globl cm_hw_fixups_begin,cm_hw_fixups_end
 cm_hw_fixups_begin:
@@ -83,6 +123,10 @@ PAIR 7b,8b
 PAIR 9b,10b
 PAIR 11b,12b
 PAIR 13b,14b
+PAIR 15b,16b
+PAIR 17b,18b
+PAIR 19b,20b
+PAIR 21b,23b
 cm_hw_fixups_end:
 .section .entry.text,"ax",@progbits
 .macro PROBE_FAULT vec, noerr

@@ -44,7 +44,7 @@ int cm_phase7_selftest(void)
         kinfo("phase7: %s minimum init ok; state restored, buddy pages recovered",
               r.vmx ? "VMXON/VMXOFF" : "SVM EFER.SVME/VM_HSAVE_PA");
     else kinfo("phase7: hardware init skipped: %s",status_name(r.status));
-    kinfo("phase7: guest launch skipped: VMCS/VMCB guest state and EPT/NPT not implemented; existing vmexits synthetic");
+    kinfo("phase7: guest launch skipped: probe-only test; phase9 owns single VMLAUNCH; existing per-VM counters synthetic");
     kinfo("phase7 selftest: %s (%d failures)",fails ? "FAIL" : "PASS",fails);
     return fails;
 }
