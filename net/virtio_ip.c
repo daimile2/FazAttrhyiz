@@ -1,4 +1,5 @@
 #include "capmix/virtio_net.h"
+#include "capmix/net_probe.h"
 #include "capmix/net.h"
 #include "capmix/klog.h"
 #include <string.h>
@@ -8,8 +9,12 @@
 #define ECHO_ID 0x434du
 #define ECHO_SEQ 1u
 static const uint8_t payload[]="CapMix virtio-net off-lo payload!";
-static uint8_t peer_mac[6];
-static int peer_valid,echo_seen;
+struct probe {
+    int ifid;const char *label;
+    cm_error_t (*send)(const uint8_t *,uint16_t);
+    cm_error_t (*recv)(uint8_t *,uint16_t *);
+    uint8_t peer_mac[6];int peer_valid,echo_seen;
+};
 static uint16_t rd16(const uint8_t *p) {return (uint16_t)((p[0]<<8)|p[1]);}
 static uint32_t rd32(const uint8_t *p) {return ((uint32_t)p[0]<<24)|((uint32_t)p[1]<<16)|((uint32_t)p[2]<<8)|p[3];}
 static void wr16(uint8_t *p,uint16_t v) {p[0]=(uint8_t)(v>>8);p[1]=(uint8_t)v;}
@@ -62,9 +67,9 @@ static int valid_reply(const uint8_t *frame,uint16_t len)
            rd16(icmp+4)==ECHO_ID && rd16(icmp+6)==ECHO_SEQ &&
            !memcmp(icmp+8,payload,sizeof(payload)-1);
 }
-static cm_error_t ingress(uint8_t *frame,uint16_t len)
+static cm_error_t ingress(struct probe *p,uint8_t *frame,uint16_t len)
 {
-    int id=cm_virtio_net_ifid();cm_iface_t *iface=cm_if_get(id);
+    int id=p->ifid;cm_iface_t *iface=cm_if_get(id);
     if(!iface || len<14)return CM_ERR_INVAL;
     if(cm_net_rx(id,frame,len)!=CM_XDP_PASS)return CM_ERR_DENIED;
     if(rd16(frame+12)==0x806) {
@@ -80,65 +85,72 @@ static cm_error_t ingress(uint8_t *frame,uint16_t len)
             static const uint8_t broadcast[6]={255,255,255,255,255,255};
             if(memcmp(frame,broadcast,6) && memcmp(frame,iface->mac,6))return CM_ERR_INVAL;
             uint8_t reply[60];arp(reply,iface->mac,a+8,2);
-            cm_error_t err=cm_virtio_net_transmit(reply,sizeof(reply));if(err)return err;
+            cm_error_t err=p->send(reply,sizeof(reply));if(err)return err;
         }
-        memcpy(peer_mac,a+8,6);peer_valid=1;return CM_OK;
+        memcpy(p->peer_mac,a+8,6);p->peer_valid=1;return CM_OK;
     }
     if(rd16(frame+12)!=CM_ETH_IP)return CM_ERR_NOTSUP;
-    if(!peer_valid || memcmp(frame,iface->mac,6) || memcmp(frame+6,peer_mac,6) ||
+    if(!p->peer_valid || memcmp(frame,iface->mac,6) || memcmp(frame+6,p->peer_mac,6) ||
        !valid_ip(frame,len,iface->gateway,iface->addr))return CM_ERR_INVAL;
-    if(valid_reply(frame,len)) {echo_seen=1;return CM_OK;}
+    if(valid_reply(frame,len)) {p->echo_seen=1;return CM_OK;}
     if(frame[34]==8 && !frame[35]) {
         unsigned n=rd16(frame+16)+14;
         uint8_t reply[CM_PKT_MAX];memcpy(reply,frame,n);
-        memcpy(reply,peer_mac,6);memcpy(reply+6,iface->mac,6);
+        memcpy(reply,p->peer_mac,6);memcpy(reply+6,iface->mac,6);
         wr32(reply+26,iface->addr);wr32(reply+30,iface->gateway);
         wr16(reply+24,0);wr16(reply+24,checksum(reply+14,20));
         reply[34]=0;wr16(reply+36,0);wr16(reply+36,checksum(reply+34,n-34));
-        return cm_virtio_net_transmit(reply,(uint16_t)n);
+        return p->send(reply,(uint16_t)n);
     }
     return CM_ERR_NOTSUP;
 }
-static cm_error_t wait_for(int *condition)
+static cm_error_t wait_for(struct probe *p,int *condition)
 {
     uint8_t frame[CM_PKT_MAX];uint16_t length=0;
     for(unsigned i=0;i<2000000;i++) {
         if(*condition)return CM_OK;
-        cm_error_t e=cm_virtio_net_receive(frame,&length);
+        cm_error_t e=p->recv(frame,&length);
         if(e==CM_ERR_AGAIN) {__asm__ volatile("pause");continue;}
         if(e)return e;
-        e=ingress(frame,length);
+        e=ingress(p,frame,length);
         if(e==CM_ERR_DEAD || e==CM_ERR_IO)return e;
-        if(e) __sync_fetch_and_add(&cm_if_get(cm_virtio_net_ifid())->drop,1);
+        if(e) __sync_fetch_and_add(&cm_if_get(p->ifid)->drop,1);
     }
     return *condition?CM_OK:CM_ERR_AGAIN;
 }
-cm_error_t cm_vnet_probe(void)
+cm_error_t cm_net_probe(int ifid,const char *label,
+    cm_error_t (*send)(const uint8_t *,uint16_t),cm_error_t (*recv)(uint8_t *,uint16_t *))
 {
-    cm_iface_t *iface=cm_if_get(cm_virtio_net_ifid());
+    if(!label || !send || !recv)return CM_ERR_INVAL;
+    struct probe state={.ifid=ifid,.label=label,.send=send,.recv=recv};
+    struct probe *p=&state;
+    cm_iface_t *iface=cm_if_get(p->ifid);
     if(!iface || !iface->up)return CM_ERR_DEAD;
     uint64_t tx=iface->tx,rx=iface->rx;
-    uint8_t request[CM_PKT_MAX];peer_valid=echo_seen=0;
+    uint8_t request[CM_PKT_MAX];p->peer_valid=p->echo_seen=0;
     cm_error_t e=CM_ERR_AGAIN;
-    for(unsigned attempt=0;attempt<3 && !peer_valid;attempt++) {
-        arp(request,iface->mac,NULL,1);e=cm_virtio_net_transmit(request,60);
+    for(unsigned attempt=0;attempt<3 && !p->peer_valid;attempt++) {
+        arp(request,iface->mac,NULL,1);e=p->send(request,60);
         if(e)return e;
-        e=wait_for(&peer_valid);
+        e=wait_for(p,&p->peer_valid);
         if(e!=CM_OK && e!=CM_ERR_AGAIN)return e;
     }
-    if(!peer_valid){kerr("virtio-net ARP timeout: peer 10.0.2.2");return e;}
-    kinfo("virtio-net ARP rx: 10.0.2.2 neighbor verified");
-    for(unsigned attempt=0;attempt<3 && !echo_seen;attempt++) {
-        uint16_t n=echo(request,iface->mac,peer_mac);
-        e=cm_virtio_net_transmit(request,n);if(e)return e;
-        e=wait_for(&echo_seen);
+    if(!p->peer_valid){kerr("%s ARP timeout: peer 10.0.2.2",p->label);return e;}
+    kinfo("%s ARP rx: 10.0.2.2 neighbor verified",p->label);
+    for(unsigned attempt=0;attempt<3 && !p->echo_seen;attempt++) {
+        uint16_t n=echo(request,iface->mac,p->peer_mac);
+        e=p->send(request,n);if(e)return e;
+        e=wait_for(p,&p->echo_seen);
         if(e!=CM_OK && e!=CM_ERR_AGAIN)return e;
     }
-    if(!echo_seen || iface->tx<=tx || iface->rx<=rx)return CM_ERR_IO;
-    kinfo("virtio-net tx/rx payload verified: ip=10.0.2.15 peer=10.0.2.2 ICMP id=%x seq=%u bytes=%u tx_delta=%llu rx_delta=%llu (off-lo)",
-          ECHO_ID,ECHO_SEQ,(unsigned)sizeof(payload)-1,(unsigned long)(iface->tx-tx),(unsigned long)(iface->rx-rx));
+    if(!p->echo_seen || iface->tx<=tx || iface->rx<=rx)return CM_ERR_IO;
+    kinfo("%s tx/rx payload verified: ip=10.0.2.15 peer=10.0.2.2 ICMP id=%x seq=%u bytes=%u tx_delta=%llu rx_delta=%llu (off-lo)",
+          p->label,ECHO_ID,ECHO_SEQ,(unsigned)sizeof(payload)-1,(unsigned long)(iface->tx-tx),(unsigned long)(iface->rx-rx));
     return CM_OK;
 }
+cm_error_t cm_vnet_probe(void)
+{ return cm_net_probe(cm_virtio_net_ifid(),"virtio-net",cm_virtio_net_transmit,cm_virtio_net_receive); }
+
 int cm_vnet_codec_selftest(void)
 {
     uint8_t mac[6]={2,0,0,0,0,1},dst[6]={2,0,0,0,0,2},frame[CM_PKT_MAX];

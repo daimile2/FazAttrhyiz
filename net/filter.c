@@ -1,4 +1,5 @@
 #include "capmix/virtio_net.h"
+#include "capmix/e1000.h"
 #include "capmix/net.h"
 #include "capmix/klog.h"
 
@@ -55,6 +56,9 @@ cm_error_t cm_net_init(void)
     cm_nft_init();
     cm_udp_init();
     (void)cm_virtio_net_init();
+    (void)cm_e1000_init();
+    cm_iface_t *nic=cm_net_primary_iface();
+    kinfo("net primary: %s (priority virtio-net > e1000)",nic?nic->name:"unavailable");
     kinfo("net: in-kernel stack (XNU lesson), XDP + nft");
     return CM_OK;
 }

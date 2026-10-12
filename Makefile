@@ -43,7 +43,7 @@ SRC = \
 	io/blk.c io/virtio_blk.c io/ahci.c \
 	io/uring.c \
 	io/driverkit.c \
-	net/if.c net/virtio_net.c net/virtio_ip.c \
+	net/if.c net/e1000.c net/virtio_net.c net/virtio_ip.c \
 	net/pkt.c net/udp.c \
 	net/ebpf.c \
 	net/filter.c \
@@ -54,7 +54,7 @@ SRC = \
 	security/gate.c \
 	virt/job.c \
 	virt/kvm.c virt/hardware.c virt/vmcs.c virt/ept.c arch/x86_64/virt_probe.S arch/x86_64/vmcs.S \
-	boot/kernel.c boot/m3_test.c boot/m4_test.c \
+	boot/kernel.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
 	boot/phase9_test.c boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c \
 	boot/phase3_test.c \
  

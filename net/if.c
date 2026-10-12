@@ -48,3 +48,9 @@ void cm_net_dump_if(void)
               (unsigned long)g_if[i].rx, (unsigned long)g_if[i].tx,
               (unsigned long)g_if[i].drop, g_if[i].xdp_prog);
 }
+
+cm_iface_t *cm_net_primary_iface(void)
+{
+    cm_iface_t *v=cm_if_get(cm_if_find("vnet0"));
+    return v?v:cm_if_get(cm_if_find("enet0"));
+}

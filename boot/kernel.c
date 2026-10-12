@@ -1,3 +1,4 @@
+#include "capmix/e1000.h"
 #include "capmix/ahci.h"
 #include "capmix/power.h"
 #include "capmix/boot.h"
@@ -490,6 +491,7 @@ int capmix_selftest(void)
     fails += cm_phase2_selftest();
 
     fails += cm_m4_selftest();
+    fails += cm_m8_selftest();
     extern int cm_phase5_selftest(void);
     fails += cm_phase5_selftest();
 

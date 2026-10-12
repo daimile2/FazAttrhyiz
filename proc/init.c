@@ -32,9 +32,9 @@ static cm_error_t provision(void)
 static void init_entry(void)
 {
     cm_proc_t *p=cm_proc_current();
-    cm_iface_t *nic=cm_if_get(cm_if_find("vnet0"));
-    kinfo("init: CapMix %s mode=product root=%s nic=%s", CAPMIX_VERSION,
-          cm_blk_is_disk()?"disk":"ram",nic?(nic->up?"vnet0/up":"vnet0/down"):"unavailable");
+    cm_iface_t *nic=cm_net_primary_iface();
+    kinfo("init: CapMix %s mode=product root=%s nic=%s/%s", CAPMIX_VERSION,
+          cm_blk_is_disk()?"disk":"ram",nic?nic->name:"unavailable",nic?(nic->up?"up":"down"):"none");
     kinfo("init: pid=%llu product root=%s COW (no phase pipeline)",(unsigned long)p->pid,
           cm_blk_backend_name());
     cm_error_t e=provision();if(e)kerr("init: ELF provisioning failed=%d",e);

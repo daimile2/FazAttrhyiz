@@ -31,7 +31,8 @@ PID1/shell 本身仍是内核 C-entry 任务。`exit` 同步根并进入控制�
 2. CD/DVD 挂载默认产品 `capmix.iso`，勾选开机连接，从虚拟光驱启动。
    保留普通虚拟显示器以获取 GOP；不需要 GPU 加速。
 3. 存储/网卡可选。**M7 增加了 SATA/AHCI 支持（见 [M7](M7_AHCI.md)）；virtio 仍仅支持
-   legacy/transitional PCI。尚未实现 SCSI/NVMe、e1000 或 vmxnet3 驱动。** VMware 配置若不能提供
+   legacy/transitional PCI。M8 增加了特定 e1000/e1000e 型号支持（见 [M8](M8_E1000.md)）；
+   尚未实现 SCSI/NVMe 或 vmxnet3 驱动。** VMware 配置若不能提供
    受支持的 virtio 或 AHCI 设备，直接使用 RAM 根、网卡 unavailable 进入 shell；
    需明确选择受支持的控制器；其他 VMware 虚拟盘不会自动得到持久根。QEMU 的 raw 盘也不能
    直接当 VMware 可用的 virtio 盘承诺支持。

@@ -78,5 +78,5 @@ Boot，挂产品 ISO。新建**专用空虚拟硬盘**，控制器类型选择 S
 
 VMDK 是宿主文件格式，客户机通过 AHCI 访问扇区；不能直接把 raw 文件
 路径冒充 VMDK。成功应见 `ahci ready` 和 `root=disk`；无受支持的 SATA
-控制器/盘时回退 RAM。SATA 支持不等于新增 VMware 网卡支持，网卡仍可能
+控制器/盘时回退 RAM。网卡支持见后续 [M8 e1000](M8_E1000.md)；不受支持的网卡仍可能
 unavailable。本轮用 QEMU BIOS/UEFI 验证，不声称 VMware SATA 实测 PASS。
