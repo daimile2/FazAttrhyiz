@@ -8,6 +8,7 @@
 #include "capmix/obs.h"
 #include "capmix/fs.h"
 #include "capmix/elf.h"
+#include "capmix/uaccess.h"
 
 #include <string.h>
 
@@ -82,45 +83,58 @@ void cm_fdio_close_all(cm_proc_t *p)
         if (p->fd[fd] >= 0) (void)close_fd(p, p->task, fd);
 }
 
-static int64_t sys_write(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+static const cm_elf_image_t *caller_image(void)
 {
-    CM_UNUSED(a3);
-    int fd = (int)a0;
-    const char *buf = (const char *)(uintptr_t)a1;
-    uint64_t len = a2;
-    cm_proc_t *p = cm_proc_current();
-    if (!buf) return CM_ERR_INVAL;
-    if (p && p->elf) {
-        if (fd != 1 && fd != 2) return CM_ERR_INVAL;
-        if (!cm_elf_user_range(p->elf, a1, len, 4)) return CM_ERR_INVAL;
-        p->elf_write_calls++; p->elf_written_bytes += len;
+    cm_proc_t *p=cm_proc_current();return p?p->elf:NULL;
+}
+static int64_t file_io(uint64_t fd,uint64_t address,uint64_t length,int write)
+{
+    const cm_elf_image_t *im=caller_image();
+    if(fd>=CM_FD_MAX || !cm_user_access(im,address,length,!write))return CM_ERR_INVAL;
+    int64_t error;cm_file_t *f=fd_file((int)fd,write?CM_RIGHT_WRITE:CM_RIGHT_READ,&error);
+    if(!f)return error;
+    if(!length)return 0;
+    void *buffer=cm_page_alloc(0);if(!buffer)return CM_ERR_NOMEM;
+    uint64_t done=0;
+    while(done<length) {
+        uint64_t n=length-done;if(n>CM_PAGE_SIZE)n=CM_PAGE_SIZE;
+        if(write && cm_copyin(im,buffer,address+done,n)) {error=CM_ERR_INVAL;break;}
+        int64_t result=write?cm_vfs_write(f,buffer,n):cm_vfs_read(f,buffer,n);
+        if(result<0) {error=result;break;}
+        if(!write && result && cm_copyout(im,address+done,buffer,(uint64_t)result)) {error=CM_ERR_INVAL;break;}
+        done+=(uint64_t)result;error=0;
+        if((uint64_t)result<n)break;
     }
-    if (fd > 2) {
-        int64_t err;
-        cm_file_t *f = fd_file(fd, CM_RIGHT_WRITE, &err);
-        return f ? cm_vfs_write(f, buf, len) : err;
-    }
-    if (p && fd >= 0 && cm_fdio_lookup(p, fd) < 0 && fd > 2)
-        return CM_ERR_DENIED;
-    /* stdout/stderr: kernel log. Real tty comes with DriverKit. */
-    char tmp[128];
-    uint64_t n = len < sizeof(tmp) - 1 ? len : sizeof(tmp) - 1;
-    memcpy(tmp, buf, (size_t)n);
-    tmp[n] = 0;
-    /* strip trailing newline — klog adds one */
-    if (n && tmp[n - 1] == '\n') tmp[n - 1] = 0;
-    kinfo("user[%llu]: %s", (unsigned long)(p ? p->pid : 0), tmp);
-    return (int64_t)len;
+    cm_page_free(buffer,0);return done?(int64_t)done:error;
+}
+static int64_t sys_write(uint64_t fd,uint64_t address,uint64_t length,uint64_t unused)
+{
+    CM_UNUSED(unused);
+    if(fd>=CM_FD_MAX)return CM_ERR_INVAL;
+    if(fd>2)return file_io(fd,address,length,1);
+    const cm_elf_image_t *im=caller_image();
+    if(!cm_user_access(im,address,length,0))return CM_ERR_INVAL;
+    char tmp[128];uint64_t n=length<sizeof(tmp)-1?length:sizeof(tmp)-1;
+    if(cm_copyin(im,tmp,address,n))return CM_ERR_INVAL;
+    tmp[n]=0;if(n && tmp[n-1]=='\n')tmp[n-1]=0;
+    cm_proc_t *p=cm_proc_current();
+    if(p && p->elf) {p->elf_write_calls++;p->elf_written_bytes+=length;}
+    kinfo("user[%llu]: %s",(unsigned long)(p?p->pid:0),tmp);
+    return (int64_t)length;
 }
 
 static int64_t sys_open(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
     CM_UNUSED(a2); CM_UNUSED(a3);
-    const char *path = (const char *)(uintptr_t)a0;
+    char path[CM_ELF_PATH_MAX];
+    if(cm_copyinstr(caller_image(),path,a0,sizeof(path)))return CM_ERR_INVAL;
+    if(a1>UINT32_MAX)return CM_ERR_INVAL;
     uint32_t flags = (uint32_t)a1;
+    if((flags & CM_O_ACCMODE)==CM_O_ACCMODE ||
+       (flags & ~(CM_O_ACCMODE|CM_O_CREAT|CM_O_TRUNC|CM_O_APPEND|CM_O_NOCOW)))return CM_ERR_INVAL;
     cm_proc_t *p = cm_proc_current();
     cm_thread_t *th = cm_sched_current();
-    if (!path || !p || !th || !th->task) return CM_ERR_INVAL;
+    if (!p || !th || !th->task) return CM_ERR_INVAL;
 
     cm_file_t *f = NULL;
     cm_error_t e = cm_vfs_open(path, flags, &f);
@@ -147,10 +161,7 @@ static int64_t sys_open(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 static int64_t sys_read(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
     CM_UNUSED(a3);
-    if (!a1) return CM_ERR_INVAL;
-    int64_t err;
-    cm_file_t *f = fd_file((int)a0, CM_RIGHT_READ, &err);
-    return f ? cm_vfs_read(f, (void *)(uintptr_t)a1, a2) : err;
+    return file_io(a0,a1,a2,0);
 }
 
 static int64_t sys_close(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
@@ -158,26 +169,31 @@ static int64_t sys_close(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
     cm_proc_t *p = cm_proc_current();
     cm_thread_t *th = cm_sched_current();
-    if (!p || !th || !th->task || (int)a0 <= 2) return CM_ERR_INVAL;
+    if (!p || !th || !th->task || a0 <= 2 || a0 >= CM_FD_MAX) return CM_ERR_INVAL;
     return close_fd(p, th->task, (int)a0);
 }
 
 static int64_t sys_mkdir(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
     CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
-    return a0 ? cm_vfs_mkdir((const char *)(uintptr_t)a0) : CM_ERR_INVAL;
+    char path[CM_ELF_PATH_MAX];
+    if(cm_copyinstr(caller_image(),path,a0,sizeof(path)))return CM_ERR_INVAL;
+    return cm_vfs_mkdir(path);
 }
 
 static int64_t sys_unlink(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
     CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
-    return a0 ? cm_vfs_unlink((const char *)(uintptr_t)a0) : CM_ERR_INVAL;
+    char path[CM_ELF_PATH_MAX];
+    if(cm_copyinstr(caller_image(),path,a0,sizeof(path)))return CM_ERR_INVAL;
+    return cm_vfs_unlink(path);
 }
 
 static int64_t sys_fsync(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
     CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
     int64_t err;
+    if(a0>=CM_FD_MAX)return CM_ERR_INVAL;
     cm_file_t *f = fd_file((int)a0, CM_RIGHT_WRITE, &err);
     return f ? cm_vfs_fsync(f) : err;
 }
@@ -484,9 +500,7 @@ uint64_t cm_bench_syscall_ipc(int rounds)
 }
 
 
-/* User pointers arrive from ring3 and must stay inside the user window.
- * sys_write only NULL-checks; do better here, or any caller can hand the
- * kernel a kernel address and get it dereferenced with kernel privilege. */
+/* Ordinary ELF file pointers use the eager image-backed uaccess helpers. */
 
 void cm_syscall_init(void) {}
 
@@ -499,7 +513,7 @@ const char *cm_sys_name(uint32_t nr)
 
 int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
-    /* Bounded ELF ABI until all pointer-bearing syscalls have copyin/out.
+    /* Bounded ELF ABI: file calls use image-backed copyin/out.
      * Leave the existing hosted/C-entry and embedded ring3 tests unchanged. */
     cm_proc_t *elf_proc = cm_proc_current();
     if (elf_proc && elf_proc->elf) {
@@ -509,7 +523,8 @@ int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t 
         int udp_call = nr >= CM_SYS_UDP_OPEN && nr <= CM_SYS_UDP_CLOSE;
         if (nr == CM_SYS_DRV_RECV_WAIT) return sys_drv_recv_wait(a0,a1,a2,a3);
         int trace_call = nr == CM_SYS_TRACE_READ || nr == CM_SYS_TRACE_CONFIG;
-        if (!udp_call && !trace_call && nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)
+        int file_call=nr>=CM_SYS_OPEN && nr<=CM_SYS_FSYNC;
+        if (!file_call && !udp_call && !trace_call && nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)
             return CM_ERR_NOTSUP;
     }
     if (cm_obs_enabled()) {

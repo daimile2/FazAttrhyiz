@@ -12,11 +12,15 @@
 
 #define CM_TICK_NS 1000000ull          /* 1 ms target period */
 #define CM_PIT_HZ     1193182ull
-#define CM_PIT_COUNT  11932u
+#define CM_PIT_COUNT  59659u /* approximately 50ms, measured only on BSP */
 #define CM_PIT_CH2    0x42u
 #define CM_PIT_CMD    0x43u
 #define CM_PIT_GATE   0x61u
-#define CM_PERIODIC_INIT 0x10000u
+#define CM_APIC_DIVIDE 16u
+#ifndef CAPMIX_HOSTED
+static uint64_t g_apic_freq;
+static uint32_t g_periodic_count;
+#endif
 
 static volatile uint32_t *g_lapic;
 static volatile uint64_t g_timer_ticks[CM_MAX_CPUS];
@@ -102,29 +106,16 @@ void     cm_need_resched_clear(void) { g_need_resched[cm_cpu_id()] = 0; }
 
 static uint64_t pit_run(uint32_t count)
 {
-    uint8_t gate = inb(CM_PIT_GATE);
-    outb(CM_PIT_GATE, (uint8_t)((gate & ~0x02u) | 0x01u));
-
-    outb(CM_PIT_CMD, 0xB0);
-    outb(CM_PIT_CH2, (uint8_t)(count & 0xFF));
-    outb(CM_PIT_CH2, (uint8_t)((count >> 8) & 0xFF));
-
-    uint64_t t0 = cm_rdtsc();
-    uint32_t spins = 0;
-    int ok = 0;
-    for (;;) {
-        outb(CM_PIT_CMD, 0x80);
-        uint32_t lo = inb(CM_PIT_CH2);
-        uint32_t hi = inb(CM_PIT_CH2);
-        uint32_t cur = lo | (hi << 8);
-        if (cur == 0 || cur > count) { ok = 1; break; }
-        if (++spins > 5000000u) break;
-    }
-    uint64_t t1 = cm_rdtsc();
-
-    outb(CM_PIT_GATE, gate);
-    if (!ok || t1 <= t0) return 0;
-    return t1 - t0;
+    uint8_t gate=inb(CM_PIT_GATE);
+    outb(CM_PIT_GATE,(uint8_t)(gate&~3u)); /* gate low, speaker disabled */
+    outb(CM_PIT_CMD,0xb0); /* channel2, lo/hi, mode0 */
+    outb(CM_PIT_CH2,(uint8_t)count);outb(CM_PIT_CH2,(uint8_t)(count>>8));
+    uint64_t t0=cm_rdtsc();
+    outb(CM_PIT_GATE,(uint8_t)((gate&~2u)|1u));
+    unsigned i;
+    for(i=0;i<5000000u;i++)if(inb(CM_PIT_GATE)&0x20)break; /* OUT2 terminal count */
+    uint64_t t1=cm_rdtsc();outb(CM_PIT_GATE,gate);
+    return i<5000000u && t1>t0?t1-t0:0;
 }
 
 #ifndef CAPMIX_HOSTED
@@ -163,44 +154,109 @@ int cm_smp_trace_test(void (*callback)(unsigned),unsigned rounds)
 #endif
 }
 
+/* Independent allocator soak rendezvous; TRACE dispatch is unchanged. */
+#ifndef CAPMIX_HOSTED
+static void (*buddy_callback)(unsigned);
+static unsigned buddy_generation,buddy_go,buddy_run,buddy_ready[CM_MAX_CPUS],buddy_done[CM_MAX_CPUS];
+#endif
+int cm_smp_buddy_test(void (*callback)(unsigned))
+{
+    if(!callback)return -1;
+#ifdef CAPMIX_HOSTED
+    callback(0);return 1;
+#else
+    buddy_callback=callback;
+    __atomic_store_n(&buddy_run,0,__ATOMIC_RELEASE);
+    unsigned generation=__atomic_add_fetch(&buddy_generation,1,__ATOMIC_RELEASE);
+    uint64_t deadline=cm_rdtsc()+cm_tsc_hz()*5;bool ready;
+    do {
+        ready=true;
+        for(int i=1;i<cm_cpu_count();i++)if(__atomic_load_n(&buddy_ready[i],__ATOMIC_ACQUIRE)!=generation)ready=false;
+        if(ready)break;
+        __asm__ volatile("pause");
+    } while(cm_rdtsc()<deadline);
+    __atomic_store_n(&buddy_run,ready,__ATOMIC_RELEASE);
+    __atomic_store_n(&buddy_go,generation,__ATOMIC_RELEASE);
+    if(!ready)return -1; /* callbacks not enabled, including late APs */
+    callback(0);
+    deadline=cm_rdtsc()+cm_tsc_hz()*20;bool done;
+    do {
+        done=true;
+        for(int i=1;i<cm_cpu_count();i++)if(__atomic_load_n(&buddy_done[i],__ATOMIC_ACQUIRE)!=generation)done=false;
+        if(done)break;
+        __asm__ volatile("pause");
+    } while(cm_rdtsc()<deadline);
+    if(!done)cm_panic("buddy soak AP join timeout; refusing unsafe test continuation");
+    return cm_cpu_count();
+#endif
+}
+
 static uint64_t tsc_freq_cpuid(void)
 {
-    uint32_t mx = 0, a = 0, b = 0, c = 0, d = 0;
-    cpuid(0, &mx, &b, &c, &d);
-
-    if (mx >= 0x16) {
-        cpuid(0x16, &a, &b, &c, &d);
-        if (a >= 100 && a <= 10000)
-            return (uint64_t)a * 1000000ull;
-    }
-    if (mx >= 0x15) {
-        cpuid(0x15, &a, &b, &c, &d);
-        if (a && b && c)
-            return ((uint64_t)c * (uint64_t)b) / (uint64_t)a;
+    uint32_t mx,a,b,c,d;cpuid(0,&mx,&b,&c,&d);
+    if(mx>=0x15) {
+        cpuid(0x15,&a,&b,&c,&d);
+        if(a && b && c){g_tsc_src="cpuid15";return (uint64_t)c*b/a;}
     }
     return 0;
 }
-
-static uint64_t tsc_freq_pit(void)
-{
-    uint64_t d = pit_run(CM_PIT_COUNT);
-    if (!d) return 0;
-    return d * CM_PIT_HZ / CM_PIT_COUNT;
-}
-
 static uint64_t detect_tsc_freq(void)
 {
-    uint64_t f = tsc_freq_cpuid();
-    if (f) { g_tsc_src = "cpuid"; return f; }
-
-    f = tsc_freq_pit();
-    if (f >= 100000000ull && f <= 20000000000ull) {
-        g_tsc_src = "pit";
-        return f;
+    uint64_t f=tsc_freq_cpuid();if(f)return f;
+    uint64_t samples[3];unsigned n=0;
+    for(unsigned i=0;i<3;i++) {
+        uint64_t d=pit_run(CM_PIT_COUNT);
+        f=d*CM_PIT_HZ/CM_PIT_COUNT;
+        if(d && f>=100000000ull && f<=20000000000ull)samples[n++]=f;
     }
-    g_tsc_src = "unknown";
-    return 0;
+    if(n) {
+        for(unsigned i=0;i<n;i++)for(unsigned j=i+1;j<n;j++)if(samples[j]<samples[i]){uint64_t v=samples[i];samples[i]=samples[j];samples[j]=v;}
+        g_tsc_src="pit-median";return samples[n/2];
+    }
+    /* CPUID16 is nominal MHz, not the preferred TSC-frequency reference. */
+    uint32_t mx,a,b,c,d;cpuid(0,&mx,&b,&c,&d);
+    if(mx>=0x16){cpuid(0x16,&a,&b,&c,&d);if(a>=100 && a<=10000){g_tsc_src="cpuid16-fallback";return (uint64_t)a*1000000;}}
+    g_tsc_src="unknown";return 0;
 }
+#ifndef CAPMIX_HOSTED
+static int calibrate_periodic(void)
+{
+    if(!g_tsc_freq)return 0;
+    uint64_t samples[5];unsigned n=0;
+    lapic_write(0x320,CM_TIMER_VEC|(1u<<16)); /* masked one-shot */
+    lapic_write(0x3e0,3); /* divide by 16 */
+    for(unsigned i=0;i<5;i++) {
+        lapic_write(0x380,UINT32_MAX);
+        uint64_t t0=cm_rdtsc();uint32_t c0=lapic_read(0x390);
+        uint64_t until=t0+g_tsc_freq/40;unsigned guard=10000000;
+        while(cm_rdtsc()<until && guard){guard--;__asm__ volatile("pause");}
+        uint32_t c1=lapic_read(0x390);uint64_t dt=cm_rdtsc()-t0;
+        lapic_write(0x380,0);
+        if(!guard || !dt || !c1 || c0<=c1)continue;
+        uint64_t hz=(uint64_t)(c0-c1)*g_tsc_freq/dt;
+        if(hz>=100000 && hz<=4000000000ull)samples[n++]=hz;
+    }
+    if(n<3)return 0;
+    for(unsigned i=0;i<n;i++)for(unsigned j=i+1;j<n;j++)if(samples[j]<samples[i]){uint64_t v=samples[i];samples[i]=samples[j];samples[j]=v;}
+    g_apic_freq=samples[n/2];
+    g_periodic_count=(uint32_t)((g_apic_freq+500)/1000);
+    kinfo("lapic calib: mode=periodic calib_hz=%llu divisor=%u samples=%u initial_count=%u tsc_src=%s",
+          (unsigned long)g_apic_freq,CM_APIC_DIVIDE,n,g_periodic_count,g_tsc_src);
+    return g_periodic_count!=0;
+}
+static void configure_timer(int arm)
+{
+    if(g_deadline) {
+        lapic_write(0x320,CM_TIMER_VEC|0x40000u);
+        if(arm)cm_timer_arm();
+    } else {
+        lapic_write(0x3e0,3);
+        lapic_write(0x320,CM_TIMER_VEC|0x20000u);
+        lapic_write(0x380,arm?g_periodic_count:0);
+    }
+}
+#endif
+
 void cm_lapic_init_ap(void);
 void cm_ap_main(int cpu);
 int  cm_ap_index_of(uint32_t lapic_id);
@@ -222,12 +278,22 @@ void cm_timer_arm(void)
 static uint64_t g_tick_sample_tsc[CM_TICK_PERIOD_LOG_N];
 static uint64_t g_tick_sample_n[CM_TICK_PERIOD_LOG_N];
 static volatile int g_tick_samples_logged;
+#define CM_PERIOD_SAMPLES 128u
+static struct {unsigned state,count;uint64_t first,last;} period_probe[CM_MAX_CPUS];
 
 void cm_timer_isr(void)
 {
     uint64_t now = cm_rdtsc();
     int cpu = cm_cpu_id();
 
+    unsigned state=__atomic_load_n(&period_probe[cpu].state,__ATOMIC_ACQUIRE);
+    if(state==1) {
+        period_probe[cpu].first=period_probe[cpu].last=now;period_probe[cpu].count=1;
+        __atomic_store_n(&period_probe[cpu].state,2,__ATOMIC_RELEASE);
+    } else if(state==2) {
+        period_probe[cpu].last=now;
+        if(++period_probe[cpu].count==CM_PERIOD_SAMPLES)__atomic_store_n(&period_probe[cpu].state,3,__ATOMIC_RELEASE);
+    }
     g_timer_ticks[cpu]++;
     g_need_resched[cpu] = 1;
 
@@ -270,6 +336,36 @@ void cm_timer_dump_early_ticks(void)
                   (unsigned long)g_tick_sample_tsc[i],
                   (unsigned long)d);
     }
+}
+
+int cm_timer_calibration_selftest(void)
+{
+#ifdef CAPMIX_HOSTED
+    kinfo("timer calib selftest skipped: hosted has no LAPIC IRQ");return 0;
+#else
+    if(!g_tsc_freq || !g_lapic_ready)return 1;
+    for(int c=0;c<cm_cpu_count();c++)__atomic_store_n(&period_probe[c].state,1,__ATOMIC_RELEASE);
+    uint64_t until=cm_rdtsc()+g_tsc_freq*3;bool complete;
+    do {
+        complete=true;
+        for(int c=0;c<cm_cpu_count();c++)if(__atomic_load_n(&period_probe[c].state,__ATOMIC_ACQUIRE)!=3)complete=false;
+        if(complete)break;
+        __asm__ volatile("pause");
+    } while(cm_rdtsc()<until);
+    int fails=0;
+    for(int c=0;c<cm_cpu_count();c++) {
+        if(__atomic_load_n(&period_probe[c].state,__ATOMIC_ACQUIRE)!=3){kerr("timer calib cpu=%d IRQ sample timeout",c);fails++;continue;}
+        uint64_t dt=period_probe[c].last-period_probe[c].first;
+        uint64_t ns=dt*1000000000ull/g_tsc_freq/(CM_PERIOD_SAMPLES-1);
+        uint64_t error=ns>CM_TICK_NS?ns-CM_TICK_NS:CM_TICK_NS-ns;
+        uint64_t permille=error*1000/CM_TICK_NS;
+        int ok=error*100<CM_TICK_NS*5;
+        if(!ok)fails++;
+        kinfo("timer calib cpu=%d tsc-deadline=%d samples=%u elapsed_tsc=%llu mean_ns=%llu target_ns=%llu error_permille=%llu %s",
+              c,g_deadline,CM_PERIOD_SAMPLES,(unsigned long)dt,(unsigned long)ns,(unsigned long)CM_TICK_NS,(unsigned long)permille,ok?"PASS":"FAIL");
+    }
+    kinfo("timer calib selftest: %s (%d failures)",fails?"FAIL":"PASS",fails);return fails;
+#endif
 }
 
 uint32_t cm_lapic_ccr(void)
@@ -446,6 +542,13 @@ void cm_ap_main(int cpu)
             for (unsigned n=0;n<trace_rounds;n++) trace_callback((unsigned)cpu);
             cm_irq_restore(trace_flags);
             __atomic_store_n(&trace_done[cpu],generation,__ATOMIC_RELEASE);
+        }
+        unsigned buddy_gen=__atomic_load_n(&buddy_generation,__ATOMIC_ACQUIRE);
+        if(buddy_gen && __atomic_load_n(&buddy_done[cpu],__ATOMIC_RELAXED)!=buddy_gen) {
+            __atomic_store_n(&buddy_ready[cpu],buddy_gen,__ATOMIC_RELEASE);
+            while(__atomic_load_n(&buddy_go,__ATOMIC_ACQUIRE)!=buddy_gen)__asm__ volatile("pause");
+            if(__atomic_load_n(&buddy_run,__ATOMIC_ACQUIRE))buddy_callback((unsigned)cpu);
+            __atomic_store_n(&buddy_done[cpu],buddy_gen,__ATOMIC_RELEASE);
         }
         if (__atomic_load_n(&g_ap_sched_enable, __ATOMIC_ACQUIRE) &&
             cm_sched_runnable() > 0) {
@@ -669,19 +772,11 @@ void cm_lapic_init_ap(void)
     lapic_write(0x360, 1u << 16);                /* mask LINT1 */
     lapic_write(0x370, 1u << 16);                /* mask error    */
 
-    /* Timer: reuse the BSP's calibrated g_tick_tsc. Never re-run the PIT
-     * here — four CPUs hammering PIT channel 2 at once gives garbage, and
-     * the BSP already measured the TSC frequency before any AP existed.
-     * MSR_TSC_DEADLINE and every LAPIC register are per-CPU, so this arms
-     * only this AP. */
-    if (g_deadline && g_tick_tsc) {
-        lapic_write(0x320, CM_TIMER_VEC | 0x40000u);
-        wrmsr(MSR_TSC_DEADLINE, cm_rdtsc() + g_tick_tsc);
-        kinfo("ap: cpu=%d lapic timer armed tick_tsc=%llu",
-              cm_cpu_id(), (unsigned long)g_tick_tsc);
-    } else {
-        kwarn("ap: cpu=%d no TSC-deadline mode — timer NOT armed", cm_cpu_id());
-    }
+    /* Both modes use exactly the BSP's immutable calibration. No AP PIT use. */
+    configure_timer(1);
+    kinfo("ap: cpu=%d timer armed tsc-deadline=%d calib_hz=%llu initial_count=%u",
+          cm_cpu_id(),g_deadline,(unsigned long)(g_deadline?g_tsc_freq:g_apic_freq),g_periodic_count);
+
 #endif
 }
 
@@ -717,7 +812,7 @@ void cm_lapic_init(void)
     if (has_deadline && g_tsc_freq) {
         g_deadline = 1;
         g_tick_tsc = g_tsc_freq * CM_TICK_NS / 1000000000ull;
-        if (!g_tick_tsc) g_tick_tsc = 3000000ull;
+        if (!g_tick_tsc) cm_panic("invalid TSC tick calibration");
         lapic_write(0x320, CM_TIMER_VEC | 0x40000u);
         g_lapic_ready = 1;
         kinfo("lapic: TSC-deadline tick_tsc=%llu (target %llu ns), armed after sti",
@@ -725,16 +820,14 @@ void cm_lapic_init(void)
     } else {
         g_deadline = 0;
         g_tick_tsc = 0;
-        lapic_write(0x3E0, 0x3);
-        lapic_write(0x320, CM_TIMER_VEC | 0x20000u);
-        lapic_write(0x380, CM_PERIODIC_INIT);
-        g_lapic_ready = 1;
-        kwarn("lapic: periodic UNCALIBRATED - APIC bus assumed 1 GHz");
-        kinfo("lapic: periodic init=%x lvt=%x id=%x ver=%x svr=%x",
-              CM_PERIODIC_INIT, lapic_read(0x320),
-              lapic_read(0x20) >> 24, lapic_read(0x30), lapic_read(0xF0));
+        if(!calibrate_periodic())cm_panic("LAPIC calibration failed; refusing assumed frequency");
+        g_lapic_ready=1;
+
     }
 
+    configure_timer(0);
+    kinfo("lapic: BSP tsc-deadline=%d calib_hz=%llu target_ns=%llu initial_count=%u",
+          g_deadline,(unsigned long)(g_deadline?g_tsc_freq:g_apic_freq),(unsigned long)CM_TICK_NS,g_periodic_count);
     kinfo("lapic: readback lvt(0x320)=%x dcr(0x3E0)=%x",
           lapic_read(0x320), lapic_read(0x3E0));
 #endif
@@ -755,6 +848,7 @@ void cm_irq_enable(void)
     kinfo("lapic: pre-sti lvt=%x id=%x svr=%x",
           lapic_read(0x320), lapic_read(0x20), lapic_read(0xF0));
 
+    configure_timer(1);
     __asm__ volatile("sti");
 
     cm_timer_arm();

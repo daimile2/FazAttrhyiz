@@ -31,32 +31,13 @@ static uint64_t g_heap_pages;
 static uint8_t *g_sim_heap;
 #endif
 
-/* The free lists are plain singly-linked lists and EVERY operation on them
- * is a non-atomic read-modify-write: pop_free() does g_free[o] = b->next,
- * push_free() does b->next = g_free[o]; g_free[o] = b, and the coalesce
- * walk in cm_page_free() traverses and unlinks entries. Two CPUs in
- * cm_page_alloc() at the same instant walk away with the SAME block.
- *
- * For cm_thread_create() that means two threads sharing one 8 KiB kstack:
- * both push frames and save contexts into it, so each one's `th` and `cpu`
- * locals are overwritten by the other. That is the shape of every
- * remaining SMP fault — garbage `th` (cr2=0x96), a wild write through
- * g_current[cpu] (cr2=0xfffffffb80186d38), and an iretq that pops a
- * foreign frame (#GP, err=0). It only shows up under the SMP stress
- * phase because that is the only place threads are created and reaped
- * en masse while four CPUs schedule.
- *
- * The coalesce path is worse: an unlocked unlink can splice a list into a
- * cycle or push one block twice, after which the allocator hands the same
- * pages to two callers with no further race required.
- *
- * Locking: spinlock for cross-CPU exclusion, plus cli on bare metal so an
- * ISR landing on the same CPU cannot re-enter a half-updated list. ISR
- * paths must therefore NOT call cm_page_alloc/cm_page_free (the timer ISR
- * does not: cm_sched_tick() only picks and swaps). Hosted has no cli and
- * no ISR, so it takes the spinlock alone — same style as sched_lock() in
- * sched/eevdf.c, which keeps this file free of new dependencies. */
-static volatile unsigned int g_buddy_lock;
+/* Plain intrusive lists require ONE lock across pop/split/push/coalesce,
+ * arena publication, RR cursor, counters and state. Save IRQ state before
+ * acquiring, preventing same-CPU maskable-IRQ reentry; no NMI/reentrant use.
+ * Boot initialization is quiescent. Observability and foreign subsystem locks
+ * stay outside this lock. The historical unlocked lists could double-issue
+ * stacks; existing list serialization is retained, read-side gaps are closed. */
+static unsigned int g_buddy_lock;
 
 static uint64_t buddy_lock(void)
 {
@@ -66,16 +47,16 @@ static uint64_t buddy_lock(void)
 #else
     uint64_t flags = 0;
 #endif
-    if (__sync_lock_test_and_set(&g_buddy_lock, 1u) == 0u) return flags;
+    if (__atomic_exchange_n(&g_buddy_lock, 1u, __ATOMIC_ACQUIRE) == 0u) return flags;
     for (;;) {
         __asm__ volatile("pause" ::: "memory");
-        if (__sync_lock_test_and_set(&g_buddy_lock, 1u) == 0u) return flags;
+        if (__atomic_exchange_n(&g_buddy_lock, 1u, __ATOMIC_ACQUIRE) == 0u) return flags;
     }
 }
 
 static void buddy_unlock(uint64_t flags)
 {
-    __sync_lock_release(&g_buddy_lock);
+    __atomic_store_n(&g_buddy_lock, 0u, __ATOMIC_RELEASE);
 #ifndef CAPMIX_HOSTED
     if (flags & 0x200) __asm__ volatile("sti");
 #else
@@ -280,8 +261,10 @@ void cm_mm_stats(cm_mm_stats_t *out)
     extern uint64_t cm_slab_pages(void);
     extern cm_pressure_level_t cm_pressure_current(void);
     memset(out, 0, sizeof(*out));
+    uint64_t flags=buddy_lock();
     out->total_pages = g_total_pages;
     out->free_pages  = g_free_pages;
+    buddy_unlock(flags);
     out->slab_pages  = cm_slab_pages();
     cm_commit_stats(&out->committed_pages, &out->commit_limit);
     out->pressure         = cm_pressure_current();
@@ -296,8 +279,20 @@ void cm_mm_stats(cm_mm_stats_t *out)
     out->oom_kills        = cm_oom_kills();
 }
 
-uint64_t cm_mm_free_pages(void)  { return g_free_pages; }
-uint64_t cm_mm_total_pages(void) { return g_total_pages; }
+uint64_t cm_mm_free_pages(void)
+{ uint64_t flags=buddy_lock(),n=g_free_pages;buddy_unlock(flags);return n; }
+uint64_t cm_mm_total_pages(void)
+{ uint64_t flags=buddy_lock(),n=g_total_pages;buddy_unlock(flags);return n; }
+
+cm_error_t cm_buddy_arena_snapshot(unsigned index,cm_buddy_arena_info_t *out)
+{
+    if(!out)return CM_ERR_INVAL;
+    uint64_t flags=buddy_lock();
+    if(index>=arena_count){buddy_unlock(flags);return CM_ERR_NOENT;}
+    cm_arena_t *a=&arenas[index];
+    *out=(cm_buddy_arena_info_t){(uint64_t)(uintptr_t)a->base,a->pages,a->free_pages,a->node};
+    buddy_unlock(flags);return CM_OK;
+}
 
 void cm_mm_dump(void)
 {
@@ -312,8 +307,8 @@ void cm_mm_dump(void)
           (unsigned long)s.swapped_pages, (unsigned long)s.swap_slots,
           (unsigned long)s.swap_total, s.jetsam_kills, s.oom_kills,
           cm_pressure_name(s.pressure));
-    for (unsigned i=0;i<arena_count;i++) {
-        kinfo("  buddy node=%u arena=%u pages=%llu free=%llu",arenas[i].node,i,
-              (unsigned long)arenas[i].pages,(unsigned long)arenas[i].free_pages);
-    }
+    cm_buddy_arena_info_t a;
+    for(unsigned i=0;cm_buddy_arena_snapshot(i,&a)==CM_OK;i++)
+        kinfo("  buddy node=%u arena=%u pages=%llu free=%llu",a.node,i,
+              (unsigned long)a.pages,(unsigned long)a.free_pages);
 }

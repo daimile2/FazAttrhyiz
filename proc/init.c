@@ -8,26 +8,31 @@
 #include "capmix/io.h"
 #include <string.h>
 #include "../build/hello_elf.inc"
+#include "../build/file_elf.inc"
 static cm_error_t root_status;
 void cm_product_record_root(cm_error_t status) {root_status=status;}
 #ifndef CAPMIX_HOSTED
+static cm_error_t install_missing(const char *path,const void *bytes,uint64_t length)
+{
+    cm_stat_t stat;cm_error_t e=cm_vfs_stat(path,&stat);
+    if(!e)return CM_OK;
+    if(e!=CM_ERR_NOENT)return e;
+    cm_file_t *file=NULL;e=cm_vfs_open(path,CM_O_WRONLY|CM_O_CREAT,&file);
+    if(e)return e;
+    int64_t n=cm_vfs_write(file,bytes,length);
+    e=n==(int64_t)length?cm_vfs_fsync(file):CM_ERR_IO;
+    cm_vfs_close(file);
+    if(!e)kinfo("init: provisioned %s via VFS (%u bytes)",path,(unsigned)length);
+    return e;
+}
 static cm_error_t provision(void)
 {
-    cm_stat_t stat;
-    cm_error_t e=cm_vfs_stat("/bin",&stat);
+    cm_stat_t stat;cm_error_t e=cm_vfs_stat("/bin",&stat);
     if(e==CM_ERR_NOENT)e=cm_vfs_mkdir("/bin");
     else if(!e && stat.kind!=CM_INO_DIR)e=CM_ERR_NOTDIR;
     if(e)return e;
-    e=cm_vfs_stat("/bin/hello.elf",&stat);
-    if(!e)return CM_OK; /* preserve an existing installed executable */
-    if(e!=CM_ERR_NOENT)return e;
-    cm_file_t *file=NULL;e=cm_vfs_open("/bin/hello.elf",CM_O_WRONLY|CM_O_CREAT,&file);
-    if(e)return e;
-    int64_t n=cm_vfs_write(file,cm_test_elf,sizeof(cm_test_elf));
-    e=n==(int64_t)sizeof(cm_test_elf)?cm_vfs_fsync(file):CM_ERR_IO;
-    cm_vfs_close(file);
-    if(!e)kinfo("init: provisioned /bin/hello.elf via VFS (%u bytes)",(unsigned)sizeof(cm_test_elf));
-    return e;
+    e=install_missing("/bin/hello.elf",cm_test_elf,sizeof(cm_test_elf));
+    return e?e:install_missing("/bin/filetest.elf",cm_file_elf,sizeof(cm_file_elf));
 }
 static void init_entry(void)
 {

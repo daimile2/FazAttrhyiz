@@ -7,8 +7,9 @@
 > 内存走 Windows no-overcommit + macOS 四级压缩管线 + Linux OOM 兜底，
 > 调度走 EEVDF + QoS + turnstile，观测从第 1 阶段就把 trace 埋进去。
 
-当前完成度：**阶段 0–8 可运行骨架**（宿主机 `make test`）。
-裸机 QEMU 步骤见 `docs/QEMU.md`。
+当前状态：**phase0–9、NUMA/EPT 与 M2–M8 已有可运行验收记录**；默认 ISO 进入产品 init/shell，`make test` 和独立 selftest ISO 执行回归。
+
+详细说明见 [内核总览：理念、接口、上限/下限与当前状态](docs/KERNEL_OVERVIEW.zh-CN.md)。其中明确区分已实现机制、用户可调用接口、容量限制和后续目标。
 
 ## 现在能跑什么
 
@@ -29,19 +30,19 @@ make test
 ## 目录
 
 ```
-include/capmix/   公共 ABI（按层拆头文件）
-arch/x86_64/      串口、链接脚本
-boot/             宿主机入口 + 将来的 Limine kmain
+include/capmix/   内核接口、共享结构与 syscall 编号
+arch/x86_64/      x86_64 页表、入口、ring3、中断、VMX 汇编
+boot/             宿主机/Limine 入口、产品/debug 分流与测试
 mm/               buddy / slab / commit / pressure
 cap/              对象与句柄
 ipc/              channel + sync IPC
 sched/            EEVDF + QoS + turnstile
 obs/              ETW 风格环形事件 + trace_id
-fs/ io/ security/ 阶段 3–6 的接口占位
-docs/DESIGN.md    与选型清单的逐条对照
+fs/ io/ security/ VFS/COW、设备驱动、网络与安全机制
+docs/            总览、阶段记录和产品里程碑说明
 ```
 
-## 实施顺序（来自清单，未改）
+## 早期实施顺序（当前状态以总览为准）
 
 | 阶段 | 内容 | 关键验证 |
 |---|---|---|
@@ -64,8 +65,8 @@ make test      # 推荐，当前主路径
 make clean
 ```
 
-裸机 ELF（`make kernel`）需要 freestanding 运行时与 Limine 镜像打包，
-作为阶段 0 的下一步，不阻塞核心原语演进。
+`make kernel` 生成 freestanding ELF，`make iso` 打包默认产品 ISO。
+完整 debug 镜像使用 `make iso LIMINE_CONFIG=boot/limine-selftest.conf`；运行方法与硬件限制见总览。
 
 ## 语言选择
 

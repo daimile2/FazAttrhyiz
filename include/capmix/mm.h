@@ -80,6 +80,10 @@ typedef struct {
     cm_pressure_level_t deepest; /* deepest stage ever used */
 } cm_pressure_stats_t;
 
+typedef struct {uint64_t base,pages,free_pages;unsigned node;} cm_buddy_arena_info_t;
+cm_error_t cm_buddy_arena_snapshot(unsigned index,cm_buddy_arena_info_t *out);
+int cm_buddy_smp_selftest(void);
+
 void      cm_mm_init(const cm_mem_region_t *regions, int nregions);
 void     *cm_page_alloc(unsigned order);
 void      cm_page_free(void *ptr, unsigned order);

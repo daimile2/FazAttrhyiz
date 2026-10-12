@@ -305,6 +305,8 @@ int capmix_selftest(void)
     fails += cm_shell_selftest();
     fails += cm_power_selftest();
     fails += cm_ahci_selftest();
+    fails += cm_timer_calibration_selftest();
+    fails += cm_buddy_smp_selftest();
     {
         uint64_t t0 = cm_rdtsc();
         for (int i = 0; i < 1000; i++)
@@ -489,6 +491,8 @@ int capmix_selftest(void)
 
     extern int cm_phase2_selftest(void);
     fails += cm_phase2_selftest();
+    extern int cm_p1a_selftest(void);
+    fails += cm_p1a_selftest();
 
     fails += cm_m4_selftest();
     fails += cm_m8_selftest();
