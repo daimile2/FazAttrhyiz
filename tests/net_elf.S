@@ -109,5 +109,5 @@ payload: .ascii "udp-loopback-test"
 hello: .ascii "udp lo rx ok\n"
 .section .bss
 .balign 16
-datagram: .skip 272
+datagram: .skip 1488
 .section .note.GNU-stack,"",@progbits

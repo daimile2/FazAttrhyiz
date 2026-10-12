@@ -357,9 +357,19 @@ static int64_t sys_udp_send(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     if (a0 >= CM_HANDLES_PER_TASK || !a1 || a1 > 65535 || !a3 || a3 > CM_UDP_PAYLOAD ||
         !cm_elf_user_range(p->elf, a2, a3, 4)) return CM_ERR_INVAL;
     uint8_t payload[CM_UDP_PAYLOAD];
-    memcpy(payload, (const void *)(uintptr_t)a2, (size_t)a3);
+    if(cm_copyin(p->elf,payload,a2,a3))return CM_ERR_INVAL;
     cm_error_t err = cm_udp_sendto(p->task, (int)a0, (uint16_t)a1, payload, (uint16_t)a3);
     return err ? err : (int64_t)a3;
+}
+static int64_t sys_udp_sendaddr(uint64_t hid,uint64_t address,uint64_t a,uint64_t b)
+{
+    cm_proc_t *p=udp_caller();if(!p)return CM_ERR_NOTSUP;
+    if(a || b || hid>=CM_HANDLES_PER_TASK)return CM_ERR_INVAL;
+    cm_udp_send_request_t request;
+    if(cm_copyin(p->elf,&request,address,sizeof(request)))return CM_ERR_INVAL;
+    if(!request.daddr)return CM_ERR_INVAL;
+    cm_error_t e=cm_udp_sendaddr(p->task,(int)hid,request.daddr,request.dport,request.data,request.len);
+    return e?e:request.len;
 }
 static int64_t sys_udp_recv(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
@@ -371,7 +381,7 @@ static int64_t sys_udp_recv(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     cm_udp_datagram_t out;
     cm_error_t err = cm_udp_recv(p->task, (int)a0, &out);
     if (err) return err;
-    memcpy((void *)(uintptr_t)a1, &out, sizeof(out));
+    if(cm_copyout(p->elf,a1,&out,sizeof(out)))return CM_ERR_INVAL;
     return out.len;
 }
 static int64_t sys_trace_read_cap(uint64_t hid,uint64_t cpu,uint64_t address,uint64_t unused)
@@ -428,6 +438,7 @@ static const struct {
     { CM_SYS_UNLINK,         "unlink",         sys_unlink },
     { CM_SYS_FSYNC,          "fsync",          sys_fsync },
     { CM_SYS_FORK,           "fork",           sys_fork },
+    { CM_SYS_UDP_SENDADDR, "udp_sendaddr", sys_udp_sendaddr },
     { CM_SYS_UDP_OPEN,       "udp_open",       sys_udp_open },
     { CM_SYS_UDP_BIND,       "udp_bind",       sys_udp_bind },
     { CM_SYS_UDP_SEND,       "udp_send",       sys_udp_send },
@@ -520,7 +531,7 @@ int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t 
         if (nr == CM_SYS_FORK) return CM_ERR_NOTSUP;
         if (nr == CM_SYS_IPC_RECV && cm_drv_has_receiver(elf_proc->pid))
             return sys_ipc_recv(a0, a1, a2, a3);
-        int udp_call = nr >= CM_SYS_UDP_OPEN && nr <= CM_SYS_UDP_CLOSE;
+        int udp_call = (nr >= CM_SYS_UDP_OPEN && nr <= CM_SYS_UDP_CLOSE) || nr==CM_SYS_UDP_SENDADDR;
         if (nr == CM_SYS_DRV_RECV_WAIT) return sys_drv_recv_wait(a0,a1,a2,a3);
         int trace_call = nr == CM_SYS_TRACE_READ || nr == CM_SYS_TRACE_CONFIG;
         int file_call=nr>=CM_SYS_OPEN && nr<=CM_SYS_FSYNC;

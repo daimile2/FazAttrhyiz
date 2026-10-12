@@ -9,6 +9,8 @@
 
 当前状态：**phase0–9、NUMA/EPT 与 M2–M8 已有可运行验收记录**；默认 ISO 进入产品 init/shell，`make test` 和独立 selftest ISO 执行回归。
 
+实网卡 UDP 与后台 RX 的接口、限制和 echo 验收命令见 [P1b 文档](docs/P1B_UDP_NIC.md)。
+
 详细说明见 [内核总览：理念、接口、上限/下限与当前状态](docs/KERNEL_OVERVIEW.zh-CN.md)。其中明确区分已实现机制、用户可调用接口、容量限制和后续目标。
 
 ## 现在能跑什么

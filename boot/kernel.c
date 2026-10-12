@@ -498,6 +498,8 @@ int capmix_selftest(void)
     fails += cm_m8_selftest();
     extern int cm_phase5_selftest(void);
     fails += cm_phase5_selftest();
+    extern int cm_p1b_selftest(void);
+    fails += cm_p1b_selftest();
 
     kinfo("--- selftest: irq + blk-mq + user driver isolation ---");
     {

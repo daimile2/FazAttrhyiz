@@ -30,7 +30,7 @@
 #define CM_SYS_UNLINK        15
 #define CM_SYS_FSYNC         16
 
-/* Bounded lo UDP capabilities (native API, not BSD/POSIX socket numbers). */
+/* Bounded lo/NIC UDP capabilities (native API, not BSD/POSIX socket numbers). */
 #define CM_SYS_UDP_OPEN      17
 #define CM_SYS_UDP_BIND      18
 #define CM_SYS_UDP_SEND      19
@@ -39,6 +39,7 @@
 #define CM_SYS_TRACE_READ    22
 #define CM_SYS_TRACE_CONFIG  23
 #define CM_SYS_DRV_RECV_WAIT 24
+#define CM_SYS_UDP_SENDADDR 25
 
 /* POSIX compat band — routed, not native. */
 #define CM_SYS_FORK         128

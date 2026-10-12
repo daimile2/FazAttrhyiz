@@ -8,7 +8,7 @@
 #define CHECK(expr) do { if (!(expr)) { \
     kerr("phase5: %s line %d: %s", __func__, __LINE__, #expr); failed++; goto cleanup; \
 } } while (0)
-_Static_assert(sizeof(cm_udp_datagram_t) == 272 && offsetof(cm_udp_datagram_t, data) == 16, "net ELF UDP ABI");
+_Static_assert(sizeof(cm_udp_datagram_t) == 1488 && offsetof(cm_udp_datagram_t, data) == 16, "net ELF UDP ABI");
 _Static_assert(CM_SYS_UDP_OPEN == 17 && CM_SYS_UDP_BIND == 18 && CM_SYS_UDP_SEND == 19 &&
                CM_SYS_UDP_RECV == 20 && CM_SYS_UDP_CLOSE == 21, "net ELF syscall ABI");
 static const uint8_t payload[] = "udp-loopback-test";

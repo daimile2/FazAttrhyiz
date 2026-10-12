@@ -38,7 +38,7 @@ static cm_error_t acquire(cm_task_t *task, int hid, cm_rights_t rights, cm_objec
 cm_error_t cm_udp_init(void)
 {
     memset(g_udp, 0, sizeof(g_udp));
-    kinfo("udp: lo datagrams, %u capability endpoints x %u queued, max payload=%u",
+    kinfo("udp: lo/NIC datagrams, %u capability endpoints x %u queued, max payload=%u",
           CM_UDP_ENDPOINTS, CM_UDP_QUEUE, CM_UDP_PAYLOAD);
     return CM_OK;
 }
@@ -64,7 +64,7 @@ cm_error_t cm_udp_bind(cm_task_t *task, int hid, int ifid, uint16_t port)
 {
     cm_iface_t *iface = cm_if_get(ifid);
     if (!iface || !port) return CM_ERR_INVAL;
-    if (iface->addr != CM_UDP_LO_ADDR) return CM_ERR_NOTSUP;
+    if (iface->addr != CM_UDP_LO_ADDR && ifid!=cm_if_find("vnet0") && ifid!=cm_if_find("enet0")) return CM_ERR_NOTSUP;
     if (!iface->up) return CM_ERR_DEAD;
     cm_object_t *obj;
     cm_error_t err = acquire(task, hid, CM_RIGHT_WRITE, &obj);
@@ -102,10 +102,10 @@ static uint16_t udp_checksum(const uint8_t *ip, const uint8_t *udp, uint16_t byt
     sum += CM_IPPROTO_UDP + bytes;
     return complement(sum_bytes(sum, udp, bytes));
 }
-cm_error_t cm_udp_frame(uint32_t addr, uint16_t sport, uint16_t dport,
+cm_error_t cm_udp_frame_to(uint32_t addr,uint32_t dest, uint16_t sport, uint16_t dport,
                         const void *data, uint16_t len, uint8_t *out, uint16_t *frame_len)
 {
-    if (!out || !frame_len || !data || !sport || !dport || !len || len > CM_UDP_PAYLOAD || addr != CM_UDP_LO_ADDR)
+    if (!out || !frame_len || !data || !sport || !dport || !len || len > CM_UDP_PAYLOAD || !addr || !dest)
         return CM_ERR_INVAL;
     uint16_t n = (uint16_t)(42 + len);
     memset(out, 0, n);
@@ -113,7 +113,7 @@ cm_error_t cm_udp_frame(uint32_t addr, uint16_t sport, uint16_t dport,
     uint8_t *ip = out + 14, *udp = ip + 20;
     ip[0] = 0x45; ip[8] = 64; ip[9] = CM_IPPROTO_UDP;
     wr16(ip + 2, (uint16_t)(28 + len)); wr16(ip + 6, 0x4000); /* DF, no fragments */
-    wr32(ip + 12, addr); wr32(ip + 16, addr);
+    wr32(ip + 12, addr); wr32(ip + 16, dest);
     wr16(ip + 10, complement(sum_bytes(0, ip, 20)));
     wr16(udp, sport); wr16(udp + 2, dport); wr16(udp + 4, (uint16_t)(8 + len));
     memcpy(udp + 8, data, len);
@@ -122,17 +122,27 @@ cm_error_t cm_udp_frame(uint32_t addr, uint16_t sport, uint16_t dport,
     *frame_len = n;
     return CM_OK;
 }
+cm_error_t cm_udp_frame(uint32_t addr,uint16_t sport,uint16_t dport,
+                       const void *data,uint16_t len,uint8_t *out,uint16_t *bytes)
+{
+    if(addr!=CM_UDP_LO_ADDR)return CM_ERR_INVAL;
+    return cm_udp_frame_to(addr,addr,sport,dport,data,len,out,bytes);
+}
 cm_error_t cm_udp_inject(int ifid, const uint8_t *frame, uint16_t len)
 {
     cm_iface_t *iface = cm_if_get(ifid);
     if (!iface || !iface->up) return CM_ERR_DEAD;
-    if (iface->addr != CM_UDP_LO_ADDR) return CM_ERR_NOTSUP;
     if (!frame || len < 43 || len > CM_UDP_FRAME_MAX) return CM_ERR_INVAL;
     const uint8_t *ip = frame + 14, *udp = ip + 20;
-    /* Strict checks apply only here, not to old metadata-only classifier tests. */
+    uint16_t total=rd16(ip+2);
+    if(total<29 || total>(uint16_t)(len-14) || total>28+CM_UDP_PAYLOAD ||
+       (iface->addr==CM_UDP_LO_ADDR && total!=len-14))return CM_ERR_INVAL;
+    len=(uint16_t)(total+14);
+    /* Ethernet padding is outside the IP/UDP checksum and payload. */
     if (rd16(frame + 12) != CM_ETH_IP || ip[0] != 0x45 || !ip[8] || ip[9] != CM_IPPROTO_UDP ||
         rd16(ip + 2) != len - 14 || (rd16(ip + 6) & ~0x4000u) ||
-        rd32(ip + 12) != iface->addr || rd32(ip + 16) != iface->addr ||
+        (iface->addr==CM_UDP_LO_ADDR && rd32(ip+12)!=iface->addr) ||
+        !rd32(ip+12) || rd32(ip + 16) != iface->addr ||
         complement(sum_bytes(0, ip, 20)) || !rd16(udp) || !rd16(udp + 2) ||
         rd16(udp + 4) != len - 34 || (rd16(udp + 6) && udp_checksum(ip, udp, (uint16_t)(len - 34)))) {
         __sync_fetch_and_add(&iface->rx, 1); CM_TRACE(UDP_RX,0,ifid,len,0); __sync_fetch_and_add(&iface->drop, 1); return CM_ERR_INVAL;
@@ -162,7 +172,7 @@ cm_error_t cm_udp_inject(int ifid, const uint8_t *frame, uint16_t len)
     if (err) __sync_fetch_and_add(&iface->drop, 1);
     return err;
 }
-cm_error_t cm_udp_sendto(cm_task_t *task, int hid, uint16_t dport, const void *data, uint16_t len)
+cm_error_t cm_udp_sendaddr(cm_task_t *task, int hid, uint32_t destination,uint16_t dport, const void *data, uint16_t len)
 {
     if (!data || !dport || !len || len > CM_UDP_PAYLOAD) return CM_ERR_INVAL;
     cm_object_t *obj;
@@ -178,12 +188,21 @@ cm_error_t cm_udp_sendto(cm_task_t *task, int hid, uint16_t dport, const void *d
     else if (!iface || !iface->up) err = CM_ERR_DEAD;
     else {
         uint8_t frame[CM_UDP_FRAME_MAX]; uint16_t bytes;
-        err = cm_udp_frame(iface->addr, sport, dport, data, len, frame, &bytes);
-        if (!err) { __sync_fetch_and_add(&iface->tx, 1); CM_TRACE(UDP_TX,0,ifid,dport,len); err = cm_udp_inject(ifid, frame, bytes); }
+        uint32_t dest=destination?destination:(iface->addr==CM_UDP_LO_ADDR?iface->addr:iface->gateway);
+        if(iface->addr==CM_UDP_LO_ADDR && dest!=iface->addr)err=CM_ERR_NOTSUP;
+        else err=cm_udp_frame_to(iface->addr,dest,sport,dport,data,len,frame,&bytes);
+        if(!err) {
+            if(iface->addr==CM_UDP_LO_ADDR) {
+                __sync_fetch_and_add(&iface->tx,1);err=cm_udp_inject(ifid,frame,bytes);
+            } else err=cm_net_wire_send(ifid,dest,frame,bytes);
+            CM_TRACE(UDP_TX,0,ifid,dport,len);
+        }
     }
     cm_obj_release(obj);
     return err;
 }
+cm_error_t cm_udp_sendto(cm_task_t *task,int hid,uint16_t port,const void *data,uint16_t length)
+{return cm_udp_sendaddr(task,hid,0,port,data,length);}
 cm_error_t cm_udp_recv(cm_task_t *task, int hid, cm_udp_datagram_t *out)
 {
     if (!out) return CM_ERR_INVAL;

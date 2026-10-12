@@ -110,11 +110,10 @@ cm_error_t cm_nft_add(uint8_t proto, uint16_t dport, uint32_t src,
                       int drop, const char *label);
 void       cm_net_dump(void);
 
-/* Phase 5 bounded IPv4 UDP over lo. PORT capabilities carry typed UDP
- * payloads, not POSIX fds. No TCP, routing, fragmentation, or blocking. */
+/* Bounded IPv4 UDP: lo or registered NIC, MTU=1500, no fragmentation. */
 #define CM_UDP_ENDPOINTS 16u
 #define CM_UDP_QUEUE 8u
-#define CM_UDP_PAYLOAD 256u
+#define CM_UDP_PAYLOAD 1472u
 #define CM_UDP_LO_ADDR 0x7f000001u
 #define CM_UDP_FRAME_MAX (14u + 20u + 8u + CM_UDP_PAYLOAD)
 typedef struct {
@@ -135,4 +134,17 @@ cm_error_t cm_udp_inject(int ifid, const uint8_t *frame, uint16_t len);
 cm_error_t cm_udp_frame(uint32_t addr, uint16_t sport, uint16_t dport,
                         const void *data, uint16_t len, uint8_t *out, uint16_t *frame_len);
 
+/* Explicit destination ABI; existing sendto remains lo/default-gateway. */
+typedef struct {
+    uint32_t daddr;
+    uint16_t dport,len;
+    uint8_t data[CM_UDP_PAYLOAD];
+} cm_udp_send_request_t;
+cm_error_t cm_udp_sendaddr(cm_task_t *,int,uint32_t,uint16_t,const void *,uint16_t);
+cm_error_t cm_net_bg_start(void);
+void cm_net_bg_stop(void);
+uint64_t cm_net_bg_frames(void);
+uint64_t cm_net_bg_udp_queued(int ifid);
+cm_error_t cm_net_wire_send(int,uint32_t,uint8_t *,uint16_t);
+cm_error_t cm_udp_frame_to(uint32_t,uint32_t,uint16_t,uint16_t,const void *,uint16_t,uint8_t *,uint16_t *);
 #endif

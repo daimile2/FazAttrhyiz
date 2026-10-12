@@ -202,7 +202,7 @@ selftest 自动等价 PASS。无 VMX 路径与“整套 TCG 工作负载已验�
 | shell | PS/2 输入；FB + serial 输出；help/echo/ls/cat/run/exit/poweroff/shutdown |
 | 静态应用 | CapMix syscall ABI 的 little-endian x86_64 ET_EXEC，可抢占，正常 exit/reclaim |
 | 文件持久化 | virtio-blk 或 AHCI 上的 COW 根，已验 sync/remount/跨启动读取 |
-| 网络 | lo 原生 UDP syscall；硬件 NIC 注册/link/static IP；debug ARP/ICMP payload 验证 |
+| 网络 | lo/NIC UDP syscall；后台 RX 线程、静态 IP；debug ARP/ICMP/UDP payload 验证 |
 | 用户驱动 | 测试 ELF 已验 IRQ channel 收取、阻塞/唤醒、崩溃隔离 |
 | 观测 | 授权 session 的 ring3 trace read/config；无权限拒绝 |
 | 虚拟机 | 一次真实 VMLAUNCH → VMCALL / EPT violation → 完整 teardown 演示 |
@@ -283,7 +283,7 @@ selftest 自动等价 PASS。无 VMX 路径与“整套 TCG 工作负载已验�
 | 包缓冲池/单帧 | 64 / 1518B | `net.h`；不提供 jumbo/VLAN 全栈 |
 | lo UDP endpoint | 16 | 原生 PORT capability |
 | 每 UDP 队列 | 8 个 datagram | 非阻塞，满/空按错误码返回 |
-| 每 UDP payload | 256B | lo only，不是 NIC 上通用 UDP socket |
+| 每 UDP payload | 1472B | lo/vnet0/enet0，非阻塞，静态邻居/网关；非完整 BSD socket |
 | 受限 BPF | 64 条指令，4 个程序 | 简化 ISA，无 JIT |
 | nft 规则 | 16 | 简化规则模型 |
 | blk queues / depth | 4 / 每队列 32 | 当前硬件仍同步单 in-flight；不是 128 个硬件并发命令 |
@@ -502,7 +502,7 @@ kernel_alive；这不覆盖内核态 AHCI/NIC 驱动自身出现任意程序错�
 | `cm_if_add/get/find` | 内核 iface 注册与查询 | 不是 POSIX ifconfig/netlink |
 | `cm_net_primary_iface` | 已注册 vnet0 优先，否则 enet0 | 不实现运行期自动 failover/路由 |
 | `cm_net_rx` | 包解析、计数、XDP/nft 分类入口 | ICMP probe 在分类之后再验证内容 |
-| `cm_udp_open/bind/sendto/recv/close` | lo datagram capability | ≤256B、非阻塞，无 TCP/BSD socket 全家桶 |
+| `cm_udp_open/bind/sendto/recv/close` | lo datagram capability | ≤1472B、lo/NIC 非阻塞，无 TCP/BSD socket 全家桶 |
 | virtio/e1000 transmit/receive | 真实 NIC DMA 发送/轮询取帧 | kernel-facing，不是直接开放给任意 ELF 的 raw NIC syscall |
 | `cm_net_probe(ifid,label,send,recv)` | 单邻居 ARP + ICMP echo 和 payload 校验 | BSP 有界 selftest，状态每次调用独立 |
 | BPF/nft load/attach/rule API | 受限包策略和 verifier | 没有通用 eBPF JIT、动态 attach 或完整 nft 语言 |
@@ -603,11 +603,12 @@ C 分发器形式为 `cm_syscall(nr,a0,a1,a2,a3)`。
 | 16 | FSYNC | 提交文件 | 允许；fd/FILE 权限及 copyin/out 校验 |
 | 17 | UDP_OPEN | 创建 lo UDP endpoint handle | 允许进入原生处理器，受对象/资源条件限制 |
 | 18 | UDP_BIND | lo/port 绑定 | 允许，权限/参数检查 |
-| 19 | UDP_SEND | 发送 bounded payload | 允许，≤256B，校验用户范围 |
+| 19 | UDP_SEND | 发送 bounded payload | 允许，≤1472B，统一 copyin/out |
 | 20 | UDP_RECV | 收取 datagram | 允许，无数据 AGAIN，校验目标用户范围 |
 | 21 | UDP_CLOSE | 关闭 UDP handle | 允许 |
 | 22 | TRACE_READ | 读 session 中下一事件/更新 cursor | 允许进入，但无授权 TRACE capability 返回 DENIED |
 | 23 | TRACE_CONFIG | 按 session 范围配置 mask | 允许进入，仍受授权检查 |
+| 25 | UDP_SENDADDR | 指定目标 IPv4/端口的 UDP 发送 | 允许；有类型 endpoint capability + copyin |
 | 24 | DRV_RECV_WAIT | 注册驱动睡眠等待 IRQ 消息 | 受注册/endpoint/lifecycle 条件限制 |
 | 128 | FORK | POSIX compat 占位 | NOTSUP |
 | 129 | EXECVE | 替换式 execve 编号占位 | 没有对应实现，NOTSUP |
@@ -632,7 +633,7 @@ C 分发器形式为 `cm_syscall(nr,a0,a1,a2,a3)`。
 | CLOCK | 0 | 0 | 0 | 0 | 原始 TSC tick，不是 LAPIC tick 计数 |
 | UDP_OPEN | 0 | 0 | 0 | 0 | task-local endpoint handle |
 | UDP_BIND | handle | lo iface ID | port 1..65535 | 0 | CM_OK |
-| UDP_SEND | handle | destination port | readable user buffer | length 1..256 | 已发送 byte length |
+| UDP_SEND | handle | destination port | readable user buffer | length 1..1472 | 已发送 byte length |
 | UDP_RECV | handle | writable/readable `cm_udp_datagram_t` buffer | 0 | 0 | payload length；空队列 AGAIN |
 | UDP_CLOSE | handle | 0 | 0 | 0 | CM_OK |
 | TRACE_READ | authorized handle | CPU index | readable/writable `cm_trace_read_t` | 0 | CM_OK：一个 event；AGAIN：暂无可读 event |
@@ -846,7 +847,7 @@ make iso                           # 恢复默认 product
 | 完整故障隔离 | user page fault 转进程失败、异常栈/信号/恢复、更多负面测试 | 不能保证任意坏 ELF 只伤自己 |
 | init/shell 用户态化 | 用户 console/input 服务与 fd/IPC 接口、原生 init ELF | 当前 PID1/shell 在内核可信域 |
 | 驱动 runtime | DMA/IOMMU 授权、设备资源对象、真实 IRQ/完成与用户服务 | 当前硬件驱动是内核最小实现 |
-| 网络产品化 | 后台 RX、邻居超时、路由、真实 NIC UDP socket，之后 TCP/DHCP | 当前硬件 ARP/ICMP probe，用户 UDP lo-only |
+| 网络产品化 | 后台 RX、邻居超时、路由、真实 NIC UDP socket，之后 TCP/DHCP | 已具备后台 RX/NIC UDP；邻居无到期、无完整路由/TCP/DHCP |
 | 文件系统规模 | 可变卷布局、更多寻址、并发元数据、断电/恢复覆盖 | 固定前 8 MiB，自有小 COWFS |
 | 安全链 | 公钥认证、可信 manifest/签名门控、NX、KASLR、审核策略覆盖 | digest 不能认证发布者，现有策略并非全覆盖 |
 | NUMA | 使用更多真实 RAM、负载观测、页迁移、热插拔与调度协同 | 当前 RR 新分配与耗尽回退 |

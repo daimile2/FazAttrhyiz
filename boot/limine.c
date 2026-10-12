@@ -49,6 +49,17 @@ int cm_boot_parse_selftest(const char *line)
     }
     return selftest;
 }
+int cm_boot_has_option(const char *option)
+{
+    const char *line=boot_cmdline;size_t length=strlen(option);
+    while(*line) {
+        while(*line==' ' || *line=='\t')line++;
+        const char *start=line;
+        while(*line && *line!=' ' && *line!='\t')line++;
+        if((size_t)(line-start)==length && !memcmp(start,option,length))return 1;
+    }
+    return 0;
+}
 int cm_boot_is_selftest(void)
 {
 #ifdef CAPMIX_HOSTED
