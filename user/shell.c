@@ -1,3 +1,4 @@
+#include "capmix/power.h"
 #include "capmix/shell.h"
 #include "capmix/boot.h"
 #include "capmix/kernel.h"
@@ -69,7 +70,14 @@ static cm_error_t command(char *text)
     if(equal(text,"echo")){cm_puts(args);cm_putchar('\n');return CM_OK;}
     if(equal(text,"help")) {
         if(*args)return CM_ERR_INVAL;
-        cm_puts("help | echo TEXT | ls [PATH] | cat PATH | run ELF_PATH | exit\n");return CM_OK;
+        cm_puts("help | echo TEXT | ls [PATH] | cat PATH | run ELF_PATH | exit | poweroff/shutdown\n");return CM_OK;
+    }
+    if(equal(text,"poweroff") || equal(text,"shutdown")) {
+        if(*args)return CM_ERR_INVAL;
+        cm_error_t e=cm_vfs_sync();
+        if(e){kerr("poweroff: root sync failed=%d; staying in shell",e);return e;}
+        kinfo("poweroff: root sync=0");
+        cm_poweroff();return CM_OK;
     }
     if(equal(text,"exit"))return *args?CM_ERR_INVAL:1;
     if(equal(text,"ls")){if(!*args)args="/";return path_ok(args)?list(args):CM_ERR_INVAL;}
@@ -114,6 +122,8 @@ void cm_shell_run(void)
 int cm_shell_selftest(void)
 {
     char help[]="help",empty[]="  ",bad[]="unknown",relative[]="run relative",missing[]="run /__m5_missing__.elf";
+    char offargs[]="poweroff no", shutdownargs[]="shutdown no";
+    if(command(offargs)!=CM_ERR_INVAL || command(shutdownargs)!=CM_ERR_INVAL)return 1;
     char exit[]="exit",exitarg[]="exit no",echo[]="echo m5 parser verified";
     if(command(help) || command(empty) || command(echo) || command(bad)!=CM_ERR_NOTSUP ||
        command(relative)!=CM_ERR_INVAL || command(missing)!=CM_ERR_NOENT || command(exit)!=1 ||

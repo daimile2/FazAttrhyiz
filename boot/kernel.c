@@ -1,3 +1,4 @@
+#include "capmix/power.h"
 #include "capmix/boot.h"
 #include "capmix/shell.h"
 #include "capmix/virtio_net.h"
@@ -253,6 +254,7 @@ void capmix_after_paging(void)
 {
     cm_console_init();
     cm_numa_init();
+    cm_power_init();
     cm_cap_init();
     cm_sched_init();
     cm_proc_init();
@@ -299,6 +301,7 @@ int capmix_selftest(void)
     kinfo("checkpoint A");
     int fails = cm_console_selftest();
     fails += cm_shell_selftest();
+    fails += cm_power_selftest();
     {
         uint64_t t0 = cm_rdtsc();
         for (int i = 0; i < 1000; i++)

@@ -82,3 +82,6 @@ not claim a full selftest PASS because it deliberately does not run that suite.
 VMware UEFI: retain the M2 Limine UEFI/GOP setup and firmware keyboard support;
 use a keyboard exposing the supported PS/2 interface. M5 adds no VMware-specific
 storage/network support: an unsupported device uses the existing RAM root.
+
+M6 adds `poweroff`/`shutdown`, the product status banner and the explicit
+[VMware UEFI setup and ACPI limits](M6_PRODUCT_BOOT.md).

@@ -11,7 +11,7 @@ INCLUDES = -Iinclude
 
 SRC = \
 	console/fb.c console/ps2.c \
-	arch/x86_64/serial.c \
+	arch/x86_64/serial.c arch/x86_64/power.c \
 	arch/x86_64/paging.c \
 	arch/x86_64/idt.c \
 	arch/x86_64/lapic.c \

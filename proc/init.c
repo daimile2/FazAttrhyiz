@@ -1,3 +1,5 @@
+#include "capmix/config.h"
+#include "capmix/net.h"
 #include "capmix/boot.h"
 #include "capmix/shell.h"
 #include "capmix/kernel.h"
@@ -30,6 +32,9 @@ static cm_error_t provision(void)
 static void init_entry(void)
 {
     cm_proc_t *p=cm_proc_current();
+    cm_iface_t *nic=cm_if_get(cm_if_find("vnet0"));
+    kinfo("init: CapMix %s mode=product root=%s nic=%s", CAPMIX_VERSION,
+          cm_blk_is_virtio()?"disk":"ram",nic?(nic->up?"vnet0/up":"vnet0/down"):"unavailable");
     kinfo("init: pid=%llu product root=%s (no phase pipeline)",(unsigned long)p->pid,
           cm_blk_is_virtio()?"virtio-blk COW":"ramdisk COW");
     cm_error_t e=provision();if(e)kerr("init: ELF provisioning failed=%d",e);
