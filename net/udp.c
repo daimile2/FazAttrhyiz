@@ -1,5 +1,6 @@
 #include "capmix/trace.h"
 #include "capmix/net.h"
+#include "capmix/dhcp.h"
 #include "capmix/arch.h"
 #include "capmix/sched.h"
 #include "capmix/cap_internal.h"
@@ -66,6 +67,7 @@ cm_error_t cm_udp_bind(cm_task_t *task, int hid, int ifid, uint16_t port)
     if (!iface || !port) return CM_ERR_INVAL;
     if (iface->addr != CM_UDP_LO_ADDR && ifid!=cm_if_find("vnet0") && ifid!=cm_if_find("enet0")) return CM_ERR_NOTSUP;
     if (!iface->up) return CM_ERR_DEAD;
+    if(port==68 && iface->addr!=CM_UDP_LO_ADDR)return CM_ERR_DENIED;
     cm_object_t *obj;
     cm_error_t err = acquire(task, hid, CM_RIGHT_WRITE, &obj);
     if (err) return err;
@@ -105,7 +107,8 @@ static uint16_t udp_checksum(const uint8_t *ip, const uint8_t *udp, uint16_t byt
 cm_error_t cm_udp_frame_to(uint32_t addr,uint32_t dest, uint16_t sport, uint16_t dport,
                         const void *data, uint16_t len, uint8_t *out, uint16_t *frame_len)
 {
-    if (!out || !frame_len || !data || !sport || !dport || !len || len > CM_UDP_PAYLOAD || !addr || !dest)
+    if (!out || !frame_len || !data || !sport || !dport || !len || len > CM_UDP_PAYLOAD || !dest ||
+        (!addr && !(sport==68 && dport==67 && dest==UINT32_MAX)))
         return CM_ERR_INVAL;
     uint16_t n = (uint16_t)(42 + len);
     memset(out, 0, n);
@@ -138,11 +141,13 @@ cm_error_t cm_udp_inject(int ifid, const uint8_t *frame, uint16_t len)
     if(total<29 || total>(uint16_t)(len-14) || total>28+CM_UDP_PAYLOAD ||
        (iface->addr==CM_UDP_LO_ADDR && total!=len-14))return CM_ERR_INVAL;
     len=(uint16_t)(total+14);
-    /* Ethernet padding is outside the IP/UDP checksum and payload. */
+    int dhcp=rd16(udp)==67 && rd16(udp+2)==68 && cm_dhcp_receiving(ifid) &&
+        (rd32(ip+16)==UINT32_MAX || rd32(ip+16)==iface->addr || cm_dhcp_offered_address(ifid,rd32(ip+16)));
+    /* DHCP alone can receive broadcast/offered-address replies before commit. */
     if (rd16(frame + 12) != CM_ETH_IP || ip[0] != 0x45 || !ip[8] || ip[9] != CM_IPPROTO_UDP ||
         rd16(ip + 2) != len - 14 || (rd16(ip + 6) & ~0x4000u) ||
         (iface->addr==CM_UDP_LO_ADDR && rd32(ip+12)!=iface->addr) ||
-        !rd32(ip+12) || rd32(ip + 16) != iface->addr ||
+        !rd32(ip+12) || (!dhcp && rd32(ip + 16) != iface->addr) ||
         complement(sum_bytes(0, ip, 20)) || !rd16(udp) || !rd16(udp + 2) ||
         rd16(udp + 4) != len - 34 || (rd16(udp + 6) && udp_checksum(ip, udp, (uint16_t)(len - 34)))) {
         __sync_fetch_and_add(&iface->rx, 1); CM_TRACE(UDP_RX,0,ifid,len,0); __sync_fetch_and_add(&iface->drop, 1); return CM_ERR_INVAL;
@@ -150,6 +155,7 @@ cm_error_t cm_udp_inject(int ifid, const uint8_t *frame, uint16_t len)
     cm_xdp_act_t act = cm_net_rx(ifid, frame, len);
     CM_TRACE(UDP_RX,0,ifid,len,act);
     if (act != CM_XDP_PASS) return act == CM_XDP_DROP ? CM_ERR_DENIED : CM_ERR_NOTSUP;
+    if(dhcp)return cm_dhcp_input(ifid,udp+8,(uint16_t)(len-42));
     cm_udp_datagram_t datagram = {0};
     datagram.saddr = rd32(ip + 12); datagram.daddr = rd32(ip + 16);
     datagram.sport = rd16(udp); datagram.dport = rd16(udp + 2);

@@ -126,3 +126,20 @@ uint64_t cm_net_bg_frames(void){return __atomic_load_n(&frames,__ATOMIC_RELAXED)
 
 uint64_t cm_net_bg_udp_queued(int id)
 {return id>=0 && id<CM_MAX_IFACE?__atomic_load_n(&udp_queued[id],__ATOMIC_RELAXED):0;}
+
+/* Narrow bootstrap hooks; the RX worker/scheduling loop remains unchanged. */
+cm_error_t cm_net_dhcp_send(int id,uint8_t *frame,uint16_t length)
+{
+    cm_iface_t *iface=cm_if_get(id);
+    if(!iface || !iface->up || iface->addr==CM_UDP_LO_ADDR)return CM_ERR_DEAD;
+    if(!frame || length<42 || rd16(frame+12)!=CM_ETH_IP ||
+       frame[23]!=CM_IPPROTO_UDP || rd32(frame+26)!=0 ||
+       rd32(frame+30)!=UINT32_MAX || rd16(frame+34)!=68 || rd16(frame+36)!=67)return CM_ERR_INVAL;
+    memset(frame,255,6);memcpy(frame+6,iface->mac,6);return tx(id,frame,length);
+}
+cm_error_t cm_net_boot_address(int id,uint32_t address,uint32_t mask,uint32_t gateway)
+{
+    cm_iface_t *iface=cm_if_get(id);if(!iface || !iface->up)return CM_ERR_DEAD;
+    uint64_t f=guard();iface->addr=address;iface->netmask=mask;iface->gateway=gateway;
+    memset(&peers[id],0,sizeof(peers[id]));unguard(f);return CM_OK;
+}

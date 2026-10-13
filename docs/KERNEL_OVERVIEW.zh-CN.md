@@ -202,7 +202,7 @@ selftest 自动等价 PASS。无 VMX 路径与“整套 TCG 工作负载已验�
 | shell | PS/2 输入；FB + serial 输出；help/echo/ls/cat/run/exit/poweroff/shutdown |
 | 静态应用 | CapMix syscall ABI 的 little-endian x86_64 ET_EXEC，可抢占，正常 exit/reclaim |
 | 文件持久化 | virtio-blk 或 AHCI 上的 COW 根，已验 sync/remount/跨启动读取 |
-| 网络 | lo/NIC UDP syscall；后台 RX 线程、静态 IP；debug ARP/ICMP/UDP payload 验证 |
+| 网络 | lo/NIC UDP syscall；后台 RX 线程、DHCP/静态回退；debug ARP/ICMP/UDP payload 验证 |
 | 用户驱动 | 测试 ELF 已验 IRQ channel 收取、阻塞/唤醒、崩溃隔离 |
 | 观测 | 授权 session 的 ring3 trace read/config；无权限拒绝 |
 | 虚拟机 | 一次真实 VMLAUNCH → VMCALL / EPT violation → 完整 teardown 演示 |
@@ -847,7 +847,7 @@ make iso                           # 恢复默认 product
 | 完整故障隔离 | user page fault 转进程失败、异常栈/信号/恢复、更多负面测试 | 不能保证任意坏 ELF 只伤自己 |
 | init/shell 用户态化 | 用户 console/input 服务与 fd/IPC 接口、原生 init ELF | 当前 PID1/shell 在内核可信域 |
 | 驱动 runtime | DMA/IOMMU 授权、设备资源对象、真实 IRQ/完成与用户服务 | 当前硬件驱动是内核最小实现 |
-| 网络产品化 | 后台 RX、邻居超时、路由、真实 NIC UDP socket，之后 TCP/DHCP | 已具备后台 RX/NIC UDP；邻居无到期、无完整路由/TCP/DHCP |
+| 网络产品化 | 后台 RX、邻居超时、路由、真实 NIC UDP socket，之后 TCP/续租 | 已具备后台 RX/NIC UDP；邻居无到期、无完整路由/TCP；DHCP 首次获取已支持，无续租 |
 | 文件系统规模 | 可变卷布局、更多寻址、并发元数据、断电/恢复覆盖 | 固定前 8 MiB，自有小 COWFS |
 | 安全链 | 公钥认证、可信 manifest/签名门控、NX、KASLR、审核策略覆盖 | digest 不能认证发布者，现有策略并非全覆盖 |
 | NUMA | 使用更多真实 RAM、负载观测、页迁移、热插拔与调度协同 | 当前 RR 新分配与耗尽回退 |
