@@ -87,3 +87,5 @@ Rust 安全边界（Asterinas 路线）可以在 `cap/` 与 `mm/` 稳定后以 f
 
 静态 ELF 多进程并发、固定 CPU 亲和、`run ... &` 与退出/关机等待语义：
 [ELF_CONCURRENCY.md](docs/ELF_CONCURRENCY.md)。
+
+默认产品已使用 CPL=3 的 `/sbin/init.elf` 与 `/bin/shell.elf`；启动 capability、用户控制 ABI 与限制见 [USER_INIT_SHELL.md](docs/USER_INIT_SHELL.md)。

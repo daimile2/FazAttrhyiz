@@ -49,6 +49,7 @@ typedef struct cm_proc {
     int           elf_cpu, elf_entry_slot;
     uint64_t elf_start_tsc, elf_end_tsc;
     int published;
+    cm_id_t parent_pid;
 } cm_proc_t;
 
 void       cm_proc_init(void);
@@ -64,6 +65,9 @@ cm_error_t cm_proc_reap_elf(cm_id_t pid);
 cm_error_t cm_proc_release_product_elf(cm_id_t pid);
 /* BSP selftest or product PID1; recycle record/task only after off-CPU reap. */
 cm_error_t cm_proc_release_elf(cm_id_t pid);
+cm_error_t cm_proc_release_child(cm_id_t parent,cm_id_t child);
+int cm_proc_children_pending(cm_id_t parent);
+int cm_proc_reap_orphans(void);
 /* Each ELF has fixed CPU affinity, including blocked/exit cleanup. */
 int cm_proc_task_is_elf(const cm_task_t *task);
 int cm_proc_task_cpu_allowed(const cm_task_t *task, int cpu);

@@ -140,7 +140,7 @@ resident 表示数据当前在 RAM 中。压力管线可以回收 clean cache、
 Limine → 串口与 cmdline/内存/FB 快照 → 内核自有页表
        → 内存/NUMA/ACPI、cap/sched/proc/syscall、块设备与 COW 根
        → 网络/安全/虚拟化基础初始化、LAPIC/AP 启动
-       → 原生 C-entry PID1 → 供应缺失的 /bin/hello.elf → shell
+       → bootstrap 供应缺失 ELF → CPL3 PID1 init 正式挂根 → CPL3 shell
        → run PATH → 真实 CPL3 静态 ELF → exit → off-CPU 回收
 ```
 
@@ -148,10 +148,10 @@ Limine → 串口与 cmdline/内存/FB 快照 → 内核自有页表
 破坏性 selftest。debug 才会建立真实根 → scratch RAM 根 → 恢复真实根
 的测试流程，隔离压力/COW/设备 offline 测试。
 
-PID1 和 shell 目前是内核 C-entry 任务，**不是用户态 init/shell ELF**。
-`run` 的子进程才是真实 ring3。PID1 固定 BSP；产品打开 AP 调度，shell
+产品 PID1 和 shell 已分别是 `/sbin/init.elf`、`/bin/shell.elf`，均真实 CPL=3。
+用户 init/shell 固定 BSP；产品打开 AP 调度，shell
 将 ELF round-robin 固定到 online CPU，`run ... &` 可后台运行。入口隔离、
-overlap 与回收语义见 [ELF 并发说明](ELF_CONCURRENCY.md)。
+overlap 与回收语义见 [ELF 并发说明](ELF_CONCURRENCY.md)；启动与 capability ABI 见 [用户 init/shell](USER_INIT_SHELL.md)。
 
 ### 3.3 四条重要数据路径
 
@@ -588,7 +588,7 @@ C 分发器形式为 `cm_syscall(nr,a0,a1,a2,a3)`。
 | 0 | NOP | 无操作 | 允许 |
 | 1 | EXIT | 记录退出码/终止执行 | 允许 |
 | 2 | WRITE | stdout/stderr 或既有 fd 适配 | 允许 stdout/stderr 与 FILE fd；统一 copyin，≤1 MiB |
-| 3 | SPAWN | 接受 spawn attr，创建任务 | ELF 白名单拒绝；产品 shell 从可信 C 入口调用 |
+| 3 | SPAWN | native attr / 用户 request | 用户 CONTROL EXEC 门控、嵌套 copyin/out、返回 CHILD capability |
 | 4 | HANDLE_CLOSE | 释放局部 handle | ELF 白名单拒绝 |
 | 5 | CHANNEL_CREATE | 创建 channel 两端 | ELF 白名单拒绝 |
 | 6 | IPC_SEND | 复制小消息并发送 | ELF 白名单拒绝，通用 copyin/out 尚未补全 |
@@ -612,6 +612,7 @@ C 分发器形式为 `cm_syscall(nr,a0,a1,a2,a3)`。
 | 25 | UDP_SENDADDR | 指定目标 IPv4/端口的 UDP 发送 | 允许；有类型 endpoint capability + copyin |
 | 26–30 | TCP_OPEN/CONNECT/SEND/RECV/CLOSE | 主动 TCP capability | 允许；copyin/out，单次≤4096B，有限等待/非阻塞 recv |
 | 24 | DRV_RECV_WAIT | 注册驱动睡眠等待 IRQ 消息 | 受注册/endpoint/lifecycle 条件限制 |
+| 31–37 | console/child wait/yield/readdir/boot/poweroff | 用户 init/shell 控制 ABI | 类型/right/owner 校验；见 USER_INIT_SHELL.md |
 | 128 | FORK | POSIX compat 占位 | NOTSUP |
 | 129 | EXECVE | 替换式 execve 编号占位 | 没有对应实现，NOTSUP |
 
@@ -742,8 +743,9 @@ PASS 的含义是这次配置下测试断言通过；skip 的含义是相应能�
 | IOMMU/VFIO | attach/记账对象不是已实现 DMA 隔离/透传 |
 | 生产认证 | 无形式化验证或独立安全审计，不以自测 PASS 替代 |
 
-内核 C API 和 PID1 shell 都位于可信域；不能从“能力系统默认拒绝”推导出
-整个内核 C 代码已经 memory-safe 或所有内核入口可对不可信调用者开放。
+内核 C API 位于可信域；用户 init/shell 已是 CPL3，但持有 bootstrap 管理能力，
+镜像来源仍由启动策略信任。不能从“能力系统默认拒绝”推导出整个内核 C 代码
+已经 memory-safe 或所有入口均可对任意不可信调用者开放。
 
 ## 11. 构建、运行与验收
 
@@ -847,7 +849,7 @@ make iso                           # 恢复默认 product
 | 多用户进程/SMP | 多独立地址空间、每 CPU user-entry 状态、调度/迁移/退出同步 | 已支持多个 ELF、固定亲和与双 ELF overlap；尚无用户迁移 |
 | 用户 SDK/ABI | 安全 copyin/out、完整文件/VMO/channel 用户接口、参数启动、libc 子集 | 不能运行普通 Linux ELF，也不能从 ELF 自行调用全套 VFS |
 | 完整故障隔离 | user page fault 转进程失败、异常栈/信号/恢复、更多负面测试 | 不能保证任意坏 ELF 只伤自己 |
-| init/shell 用户态化 | 用户 console/input 服务与 fd/IPC 接口、原生 init ELF | 当前 PID1/shell 在内核可信域 |
+| init/shell 用户态化 | 用户 console/input 服务与 fd/IPC 接口、原生 init ELF | 已是静态用户 ELF；尚无动态链接/完整服务管理 |
 | 驱动 runtime | DMA/IOMMU 授权、设备资源对象、真实 IRQ/完成与用户服务 | 当前硬件驱动是内核最小实现 |
 | 网络产品化 | 后台 RX、邻居超时、路由、真实 NIC UDP socket，之后 TCP 可靠性/续租 | 已具备后台 RX/NIC UDP；邻居无到期、无完整路由；最小主动 TCP 内核 API 和用户 ELF syscall 26–30 已支持，无重传/拥塞控制；DHCP 无续租 |
 | 文件系统规模 | 可变卷布局、更多寻址、并发元数据、断电/恢复覆盖 | 固定前 8 MiB，自有小 COWFS |

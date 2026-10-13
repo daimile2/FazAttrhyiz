@@ -1,3 +1,4 @@
+#include "capmix/control.h"
 #include "capmix/config.h"
 #include "capmix/net.h"
 #include "capmix/dhcp.h"
@@ -8,6 +9,8 @@
 #include "capmix/fs.h"
 #include "capmix/io.h"
 #include <string.h>
+#include "../build/user_init.inc"
+#include "../build/user_shell.inc"
 #include "../build/hello_elf.inc"
 #include "../build/file_elf.inc"
 #include "../build/wire_elf.inc"
@@ -36,24 +39,13 @@ static cm_error_t provision(void)
     if(e==CM_ERR_NOENT)e=cm_vfs_mkdir("/bin");
     else if(!e && stat.kind!=CM_INO_DIR)e=CM_ERR_NOTDIR;
     if(e)return e;
-    e=install_missing("/bin/hello.elf",cm_test_elf,sizeof(cm_test_elf));
+    e=install_missing("/bin/shell.elf",cm_user_shell_elf,sizeof(cm_user_shell_elf));
+    if(!e)e=install_missing("/bin/hello.elf",cm_test_elf,sizeof(cm_test_elf));
     if(!e)e=install_missing("/bin/filetest.elf",cm_file_elf,sizeof(cm_file_elf));
     if(!e)e=install_missing("/bin/udpwire.elf",cm_wire_elf,sizeof(cm_wire_elf));
     if(!e)e=install_missing("/bin/tcpwire.elf",cm_tcp_elf,sizeof(cm_tcp_elf));
     if(!e)e=install_missing("/bin/argtest.elf",cm_argv_elf,sizeof(cm_argv_elf));
     return e?e:install_missing("/bin/concurrent.elf",cm_concurrent_elf,sizeof(cm_concurrent_elf));
-}
-static void init_entry(void)
-{
-    cm_dhcp_boot_configure();
-    cm_proc_t *p=cm_proc_current();
-    cm_iface_t *nic=cm_net_primary_iface();
-    kinfo("init: CapMix %s mode=product root=%s nic=%s/%s", CAPMIX_VERSION,
-          cm_blk_is_disk()?"disk":"ram",nic?nic->name:"unavailable",nic?(nic->up?"up":"down"):"none");
-    kinfo("init: pid=%llu product root=%s COW (no phase pipeline)",(unsigned long)p->pid,
-          cm_blk_backend_name());
-    cm_error_t e=provision();if(e)kerr("init: ELF provisioning failed=%d",e);
-    cm_shell_run();cm_syscall(CM_SYS_EXIT,0,0,0,0);
 }
 #endif
 void cm_product_start(cm_error_t status)
@@ -65,18 +57,32 @@ void cm_product_start(cm_error_t status)
         kerr("init: root mount failed=%d, product refused",status?status:root_status);cm_console_idle();return;
     }
     cm_smp_sched_disable(); /* publish PID1 and worker before opening AP scheduling */
-    cm_spawn_attr_t attr={.path="init",.entry=init_entry,.qos=CM_QOS_USER_INTERACTIVE};
+    cm_error_t prep=provision();
+    cm_stat_t st;
+    if(!prep){prep=cm_vfs_stat("/sbin",&st);if(prep==CM_ERR_NOENT)prep=cm_vfs_mkdir("/sbin");}
+    if(!prep)prep=install_missing("/sbin/init.elf",cm_user_init_elf,sizeof(cm_user_init_elf));
+    if(prep){kerr("init: bootstrap ELF provisioning failed=%d",prep);cm_console_idle();return;}
+    const char *argv[]={"/sbin/init.elf",NULL};
+    const char *envp[]={"PATH=/bin","CAPMIX=product",NULL};
+    cm_spawn_attr_t attr={.path="/sbin/init.elf",.argv=argv,.envp=envp,.qos=CM_QOS_USER_INTERACTIVE};
     cm_id_t pid=0;cm_error_t e=cm_posix_spawn(&attr,&pid);
     if(e || pid!=1){kerr("init: PID1 spawn failed=%d pid=%llu",e,(unsigned long)pid);cm_console_idle();return;}
+    cm_proc_t *p=cm_proc_lookup(pid);
+    e=cm_control_seed(p);
+    if(e){cm_control_process_exit(p);p->exited=1;p->main->state=CM_TH_DEAD;cm_thread_reap(p->main);
+        (void)cm_proc_release_child(0,pid);kerr("init: bootstrap capabilities failed=%d",e);cm_console_idle();return;}
+    kinfo("init: kernel bootstrap -> /sbin/init.elf PID1 (user ELF)");
     (void)cm_net_bg_start();
     cm_smp_sched_enable();
-    cm_proc_t *p=cm_proc_lookup(pid);
-    while(!p->exited || (p->main && p->main->id)) {
+    for(;;) {
+        int orphans=cm_proc_reap_orphans();
+        if(__atomic_load_n(&p->exited,__ATOMIC_ACQUIRE) && (!p->main || !p->main->id) && !orphans)break;
         (void)cm_sched_run_until_idle(1);
         __asm__ volatile("sti; hlt" ::: "memory");
     }
     cm_smp_sched_disable();
     cm_net_bg_stop();
+    if(p->elf)(void)cm_proc_release_child(0,pid);
     kinfo("init: PID1 exited; kernel console idle");cm_console_idle();
 #endif
 }

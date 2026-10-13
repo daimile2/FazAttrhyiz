@@ -1,3 +1,4 @@
+#include "capmix/control.h"
 #include "capmix/trace.h"
 #include "capmix/tcp.h"
 #include "capmix/syscall.h"
@@ -36,6 +37,7 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
         cm_udp_process_exit(p->task);
         cm_tcp_process_exit(p->task);
         cm_trace_process_exit(p->task);
+        cm_control_process_exit(p);
     }
     if (th) th->state = CM_TH_DEAD;
     if (p) __atomic_store_n(&p->exited,1,__ATOMIC_RELEASE);
@@ -583,6 +585,8 @@ void cm_syscall_init(void) {}
 
 const char *cm_sys_name(uint32_t nr)
 {
+    static const char *control_names[]={"console_read","console_write","child_wait","yield","readdir","boot_control","poweroff"};
+    if(nr>=CM_SYS_CONSOLE_READ && nr<=CM_SYS_POWEROFF)return control_names[nr-CM_SYS_CONSOLE_READ];
     for (unsigned i = 0; i < CM_ARRAY_LEN(g_sys); i++)
         if (g_sys[i].nr == nr) return g_sys[i].name;
     return "unknown";
@@ -594,6 +598,8 @@ int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t 
      * Leave the existing hosted/C-entry and embedded ring3 tests unchanged. */
     cm_proc_t *elf_proc = cm_proc_current();
     if (elf_proc && elf_proc->elf) {
+        if(nr==CM_SYS_SPAWN || (nr>=CM_SYS_CONSOLE_READ && nr<=CM_SYS_POWEROFF))
+            return cm_control_syscall(nr,a0,a1,a2,a3);
         if (nr == CM_SYS_FORK) return CM_ERR_NOTSUP;
         if (nr == CM_SYS_IPC_RECV && cm_drv_has_receiver(elf_proc->pid))
             return sys_ipc_recv(a0, a1, a2, a3);

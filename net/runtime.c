@@ -120,7 +120,16 @@ void cm_net_bg_stop(void)
 {
     __atomic_store_n(&running,0,__ATOMIC_RELEASE);
     /* Debug lifecycle only: AP scheduling is quiescent at this test stage. */
-    for(unsigned i=0;worker && worker->id && i<512;i++)(void)cm_sched_run_until_idle(1);
+    /* Product disables AP scheduling before join, but an AP may still hold
+     * the worker until its current yield completes. A fixed 512 BSP picks
+     * can expire before that vCPU gets host time. Retain a bounded deadline. */
+    uint64_t hz=cm_tsc_hz(),deadline=cm_rdtsc()+hz*2;
+    unsigned limit=hz?10000000u:512u;
+    for(unsigned i=0;worker && __atomic_load_n(&worker->id,__ATOMIC_ACQUIRE) && i<limit;i++) {
+        if(hz && cm_rdtsc()>deadline)break;
+        (void)cm_sched_run_until_idle(1);
+        __asm__ volatile("pause" ::: "memory");
+    }
     if(worker && worker->id)cm_panic("net RX worker did not stop");
     worker=NULL;
 }

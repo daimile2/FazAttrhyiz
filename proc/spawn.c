@@ -159,10 +159,9 @@ cm_error_t cm_proc_reap_elf(cm_id_t pid)
     return CM_OK;
 }
 
-cm_error_t cm_proc_release_elf(cm_id_t pid)
+static cm_error_t release_elf_record(cm_id_t pid)
 {
-    cm_proc_t *parent=cm_proc_current(), *p=cm_proc_lookup(pid);
-    if(cm_cpu_id()!=0 || (!cm_boot_is_selftest() && (!parent || parent->pid!=1)) || p==parent)return CM_ERR_DENIED;
+    cm_proc_t *p=cm_proc_lookup(pid);
     if(!p || !p->exited || !p->elf_thread_id)return CM_ERR_INVAL;
     if(p->elf) {cm_error_t e=cm_proc_reap_elf(pid);if(e)return e;}
     if(p->main)return CM_ERR_BUSY;
@@ -176,6 +175,38 @@ cm_error_t cm_proc_release_elf(cm_id_t pid)
     memset(task,0,sizeof(*task));memset(p,0,sizeof(*p));
     kinfo("exec record reap: pid=%llu task/entry-stack slot recycled",(unsigned long)pid);
     return CM_OK;
+}
+cm_error_t cm_proc_release_elf(cm_id_t pid)
+{
+    cm_proc_t *parent=cm_proc_current();
+    if(cm_cpu_id()!=0 || (!cm_boot_is_selftest() && (!parent || parent->pid!=1)) || (parent && parent->pid==pid))return CM_ERR_DENIED;
+    return release_elf_record(pid);
+}
+cm_error_t cm_proc_release_child(cm_id_t parent,cm_id_t child)
+{
+    cm_proc_t *p=cm_proc_lookup(child);
+    if(cm_cpu_id()!=0 || !p || p->parent_pid!=parent || parent==child)return CM_ERR_DENIED;
+    return release_elf_record(child);
+}
+int cm_proc_children_pending(cm_id_t parent)
+{
+    for(unsigned i=0;i<CM_MAX_PROCS;i++)if(g_procs[i].used && g_procs[i].parent_pid==parent && g_procs[i].elf)return 1;
+    return 0;
+}
+int cm_proc_reap_orphans(void)
+{
+    int pending=0;
+    for(unsigned i=0;i<CM_MAX_PROCS;i++) {
+        cm_proc_t *p=&g_procs[i];if(!p->used || !p->elf || !p->parent_pid)continue;
+        cm_proc_t *parent=cm_proc_lookup(p->parent_pid);
+        if(parent && !__atomic_load_n(&parent->exited,__ATOMIC_ACQUIRE))continue;
+        if(__atomic_load_n(&p->exited,__ATOMIC_ACQUIRE) && (!p->main || __atomic_load_n(&p->main->id,__ATOMIC_ACQUIRE)!=p->elf_thread_id)) {
+            cm_id_t pid=p->pid;
+            if(cm_proc_release_child(p->parent_pid,pid)==CM_OK){kinfo("user orphan reap: pid=%llu",(unsigned long)pid);continue;}
+        }
+        pending++;
+    }
+    return pending;
 }
 cm_error_t cm_proc_release_product_elf(cm_id_t pid)
 {
