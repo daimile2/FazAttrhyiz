@@ -4,6 +4,7 @@
 #include "capmix/kernel.h"
 #include "capmix/console.h"
 #include "capmix/fs.h"
+#include "capmix/elf.h"
 #include <string.h>
 #define LINE_MAX 256u
 static char line[LINE_MAX];
@@ -45,14 +46,64 @@ static cm_error_t cat(const char *path)
     if(total==4096)cm_puts("shell: cat limit 4096 bytes\n");
     return e;
 }
-static cm_error_t run(const char *path)
+#define JOB_MAX 8
+static cm_id_t jobs[JOB_MAX];
+static unsigned next_cpu;
+static int elf_done(cm_proc_t *p)
 {
-    cm_spawn_attr_t attr={.path=path,.qos=CM_QOS_USER_INTERACTIVE};cm_id_t pid=0;
+    return p && __atomic_load_n(&p->exited,__ATOMIC_ACQUIRE) &&
+        (!p->main || __atomic_load_n(&p->main->id,__ATOMIC_ACQUIRE)!=p->elf_thread_id);
+}
+static void reap_background(void)
+{
+    for(unsigned i=0;i<JOB_MAX;i++)if(jobs[i]) {
+        cm_proc_t *p=cm_proc_lookup(jobs[i]);
+        if(!elf_done(p))continue;
+        cm_id_t pid=jobs[i];int64_t code=p->exit_code;
+        cm_error_t e=cm_proc_release_product_elf(pid);
+        if(!e) {jobs[i]=0;kinfo("shell background done: pid=%llu exit=%lld reap=ok",(unsigned long)pid,(long)code);}
+    }
+}
+static void wait_background(void)
+{
+    int announced=0;
+    for(;;) {
+        reap_background();unsigned n=0;
+        for(unsigned i=0;i<JOB_MAX;i++)n+=jobs[i]!=0;
+        if(!n)break;
+        if(!announced){kinfo("shell: waiting for %u background ELF before exit/poweroff",n);announced=1;}
+        cm_sched_yield();
+    }
+}
+static cm_error_t run(char *text)
+{
+    const char *argv[CM_ELF_ARG_MAX+2];unsigned argc=0;
+    while(*text) {
+        while(*text==' ' || *text=='\t')text++;
+        if(!*text)break;
+        if(argc==CM_ELF_ARG_MAX+1)return CM_ERR_NOSPC;
+        argv[argc++]=text;
+        while(*text && *text!=' ' && *text!='\t')text++;
+        if(*text)*text++=0;
+    }
+    int background=argc && equal(argv[argc-1],"&");
+    if(background)argc--;
+    if(argc>CM_ELF_ARG_MAX)return CM_ERR_NOSPC;
+    if(!argc || !path_ok(argv[0]))return CM_ERR_INVAL;
+    reap_background();
+    unsigned slot=0;
+    if(background){while(slot<JOB_MAX && jobs[slot])slot++;if(slot==JOB_MAX)return CM_ERR_NOSPC;}
+    argv[argc]=NULL;const char *path=argv[0];
+    const char *envp[]={"PATH=/bin","CAPMIX=product",NULL};
+    cm_spawn_attr_t attr={.path=path,.qos=CM_QOS_USER_INTERACTIVE,.argv=argv,.envp=envp,
+        .cpu_set=1,.cpu=(int)(next_cpu%(unsigned)cm_cpu_count())};cm_id_t pid=0;
     cm_error_t e=cm_posix_spawn(&attr,&pid);if(e)return e;
+    next_cpu++;
     cm_proc_t *p=cm_proc_lookup(pid);
     kinfo("shell run: pid=%llu path=%s",(unsigned long)pid,path);
+    if(background){jobs[slot]=pid;kinfo("shell background start: pid=%llu cpu=%d path=%s",(unsigned long)pid,p->elf_cpu,path);return CM_OK;}
     /* Native PID1 yields; never nest the scheduler's host context. */
-    while(!p->exited || (p->main && p->main->id==p->elf_thread_id))cm_sched_yield();
+    while(!elf_done(p)){reap_background();cm_sched_yield();}
     int64_t code=p->exit_code;uint64_t preempts=p->elf_preempts;
     e=cm_proc_release_product_elf(pid);
     kinfo("shell run done: pid=%llu exit=%lld preempts=%llu reclaim=%d",
@@ -70,10 +121,11 @@ static cm_error_t command(char *text)
     if(equal(text,"echo")){cm_puts(args);cm_putchar('\n');return CM_OK;}
     if(equal(text,"help")) {
         if(*args)return CM_ERR_INVAL;
-        cm_puts("help | echo TEXT | ls [PATH] | cat PATH | run ELF_PATH | exit | poweroff/shutdown\n");return CM_OK;
+        cm_puts("help | echo TEXT | ls [PATH] | cat PATH | run ELF_PATH [ARGS] [&] | exit | poweroff/shutdown\n");return CM_OK;
     }
     if(equal(text,"poweroff") || equal(text,"shutdown")) {
         if(*args)return CM_ERR_INVAL;
+        wait_background();
         cm_error_t e=cm_vfs_sync();
         if(e){kerr("poweroff: root sync failed=%d; staying in shell",e);return e;}
         kinfo("poweroff: root sync=0");
@@ -82,7 +134,7 @@ static cm_error_t command(char *text)
     if(equal(text,"exit"))return *args?CM_ERR_INVAL:1;
     if(equal(text,"ls")){if(!*args)args="/";return path_ok(args)?list(args):CM_ERR_INVAL;}
     if(equal(text,"cat"))return path_ok(args)?cat(args):CM_ERR_INVAL;
-    if(equal(text,"run"))return path_ok(args)?run(args):CM_ERR_INVAL;
+    if(equal(text,"run"))return run(args);
     return CM_ERR_NOTSUP;
 }
 static int feed(char c)
@@ -108,15 +160,17 @@ static int feed(char c)
 }
 void cm_shell_run(void)
 {
-    length=0;overflow=0;
+    length=0;overflow=0;memset(jobs,0,sizeof(jobs));next_cpu=0;
     kinfo("shell ready: PID1 native controller, PS/2 input, FB + serial; run enters CPL=3");
     cm_puts("CapMix shell (help for commands)\ncapmix> ");
     for(;;) {
+        reap_background();
         char c;cm_error_t e=cm_ps2_read_char(&c);
         if(e==CM_OK){if(feed(c))break;}
         else if(e!=CM_ERR_AGAIN)kerr("shell input error=%d",e);
         cm_sched_yield();
     }
+    wait_background();
     cm_error_t e=cm_vfs_sync();kinfo("shell exit: root sync=%d",e);
 }
 int cm_shell_selftest(void)

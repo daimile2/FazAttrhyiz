@@ -172,7 +172,7 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     memcpy(im->path, path, path_len + 1);
     err = cm_commit_charge(pages);
     if (err) goto done;
-    im->charged = pages; im->entry = eh.entry; im->stack = CM_ELF_STACK_TOP - 32; /* argc=0, argv/envp NULL */
+    im->charged = pages; im->entry = eh.entry; im->stack = CM_ELF_STACK_TOP;
     im->root = cm_space_create(&im->cr3);
     if (!im->root) { err = CM_ERR_NOMEM; goto done; }
     for (unsigned i = 0; i < eh.phnum; i++) {
@@ -197,6 +197,8 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     }
     for (unsigned i = 0; i < im->npages; i++)
         finalize_write(im, im->pages[i].virt, im->pages[i].flags & 2);
+    err = cm_elf_set_args(im,NULL,NULL);
+    if(err)goto done;
     err = build_shadow(im);
     if (err) goto done;
     *out = im;

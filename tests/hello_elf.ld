@@ -9,7 +9,7 @@ SECTIONS {
     . = 0x400000;
     .text : { *(.text) } :text
     . = 0x401000;
-    .data : { *(.data) } :data
+    .data : { *(.data) *(.rodata*) } :data
     .bss (NOLOAD) : { *(.bss) } :data
     /DISCARD/ : { *(.note*) *(.comment) *(.eh_frame*) }
 }

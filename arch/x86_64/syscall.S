@@ -30,7 +30,7 @@ cm_syscall_entry:
 	pushq	%rsi
 	pushq	%rdi
 	pushq	%rax
-	incq	cm_user_syscalls(%rip)
+	lock incq	cm_user_syscalls(%rip)
 	/* syscall ABI: rax=nr rdi=a0 rsi=a1 rdx=a2 r10=a3
 	 * C ABI:       rdi=nr rsi=a0 rdx=a1 rcx=a2 r8=a3 */
 	movq	0(%rsp), %rdi
@@ -39,7 +39,7 @@ cm_syscall_entry:
 	movq	24(%rsp), %rcx
 	movq	32(%rsp), %r8
 	call	cm_syscall
-	cmpq	$0, cm_leave_user(%rip)
+	cmpq	$0, %gs:64
 	jne	1f
 	addq	$8, %rsp
 	popq	%rdi

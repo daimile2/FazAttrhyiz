@@ -36,7 +36,7 @@ SRC = \
 	sched/eevdf.c \
 	ipc/channel.c \
 	proc/syscall.c proc/uaccess.c \
-	proc/spawn.c proc/elf.c proc/init.c user/shell.c \
+	proc/spawn.c proc/elf.c proc/elf_args.c proc/init.c user/shell.c \
 	fs/vfs.c \
 	fs/cowfs.c \
 	io/irq.c \
@@ -54,7 +54,7 @@ SRC = \
 	security/gate.c \
 	virt/job.c \
 	virt/kvm.c virt/hardware.c virt/vmcs.c virt/ept.c arch/x86_64/virt_probe.S arch/x86_64/vmcs.S \
-	boot/kernel.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
+	boot/kernel.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
 	boot/phase9_test.c boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c \
 	boot/phase3_test.c \
  
@@ -76,7 +76,7 @@ FREE_LDFLAGS = -nostdlib -static -no-pie -Wl,--build-id=none \
 
 all: test
 
-$(HOST_BIN): build/wire_elf.inc build/file_elf.inc build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc build/blockd_wait_elf.inc $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
+$(HOST_BIN): build/concurrent_elf.inc build/argv_elf.inc build/tcp_elf.inc build/wire_elf.inc build/file_elf.inc build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc build/blockd_wait_elf.inc $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
 	$(CC) $(CFLAGS) $(INCLUDES) -DCAPMIX_HOSTED -o $@ $(HOST_SRC)
 
 test: $(HOST_BIN)
@@ -116,7 +116,7 @@ build/net_elf.inc: build/net.elf scripts/embed-elf.py
 
 kernel: $(FREE_BIN)
 
-$(FREE_BIN): build/wire_elf.inc build/file_elf.inc build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc build/blockd_wait_elf.inc $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
+$(FREE_BIN): build/concurrent_elf.inc build/argv_elf.inc build/tcp_elf.inc build/wire_elf.inc build/file_elf.inc build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc build/blockd_wait_elf.inc $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
 	$(CC) $(FREE_CFLAGS) $(INCLUDES) $(FREE_LDFLAGS) -o $@ $(FREE_SRC)
 
 iso: $(FREE_BIN)
@@ -188,3 +188,30 @@ build/wire.elf: build/wire-elf.o tests/hello_elf.ld
 	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -Wl,-T,tests/hello_elf.ld -o $@ $<
 build/wire_elf.inc: build/wire.elf scripts/embed-elf.py
 	python3 scripts/embed-elf.py $< $@ cm_wire_elf
+
+build/tcp-elf.o: tests/tcp_elf.S
+	mkdir -p build
+	$(CC) -c -nostdlib -fno-pie -o $@ $<
+build/tcp.elf: build/tcp-elf.o tests/hello_elf.ld
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -Wl,-T,tests/hello_elf.ld -o $@ $<
+build/tcp_elf.inc: build/tcp.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_tcp_elf
+
+build/argv-crt.o: user/crt0.S
+	mkdir -p build
+	$(CC) -c -nostdlib -fno-pie -o $@ $<
+build/argv-main.o: tests/argv_main.c
+	mkdir -p build
+	$(CC) -std=c11 -Wall -Wextra -O2 -ffreestanding -fno-stack-protector -fno-pie -mno-red-zone -mgeneral-regs-only -fno-asynchronous-unwind-tables -c -o $@ $<
+build/argv.elf: build/argv-crt.o build/argv-main.o tests/hello_elf.ld
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -Wl,-T,tests/hello_elf.ld -o $@ build/argv-crt.o build/argv-main.o
+build/argv_elf.inc: build/argv.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_argv_elf
+
+build/concurrent.o: tests/concurrent_elf.S
+	@mkdir -p build
+	$(CC) -c -nostdlib -o $@ $<
+build/concurrent.elf: build/concurrent.o tests/hello_elf.ld
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -Wl,-T,tests/hello_elf.ld -o $@ $<
+build/concurrent_elf.inc: build/concurrent.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_concurrent_elf

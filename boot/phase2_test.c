@@ -113,8 +113,7 @@ int cm_phase2_selftest(void)
     kinfo("elf rollback ok: rejected image and commit-denied leave no image allocations");
     cm_spawn_attr_t attr = { .path = "/bin/hello.elf", .qos = CM_QOS_USER_INTERACTIVE };
     CHECK(cm_posix_spawn(&attr, &pid) == CM_OK && pid);
-    cm_id_t another = 0;
-    CHECK(cm_posix_spawn(&attr, &another) == CM_ERR_BUSY && !another);
+
     cm_proc_t *p = cm_proc_lookup(pid);
     CHECK(p && p->elf && !p->exited);
     CHECK(cm_proc_task_cpu_allowed(p->task, 0) && !cm_proc_task_cpu_allowed(p->task, 1));

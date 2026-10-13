@@ -41,8 +41,8 @@ CapMix 是一个用 C11 实现的 x86_64 capability 混合内核，提供两种�
 **当前上限**有三层，必须分开：
 
 1. **编译期容量上限**：例如最多 8 CPU、32 个 proc 槽位、512 项/CPU 静态 trace 环。
-2. **运行路径上限**：例如目前最多一个待回收 ELF，用户 ELF 固定在 BSP；
-   即使表中有 32 个 proc 槽位，也不表示可同时运行 32 个用户 ELF。
+2. **运行路径上限**：多个 ELF 可并发，首版固定 CPU 亲和、不迁移；
+   32 个 proc 槽包括 PID1 和退出记录，shell 最多 8 后台 + 1 前台。
 3. **设计可扩展方向**：以后可扩展多进程、驱动 runtime、网络服务和客户机；
    这些属于路线，不是当前能力或可承诺的性能数字。
 
@@ -149,14 +149,15 @@ Limine → 串口与 cmdline/内存/FB 快照 → 内核自有页表
 的测试流程，隔离压力/COW/设备 offline 测试。
 
 PID1 和 shell 目前是内核 C-entry 任务，**不是用户态 init/shell ELF**。
-`run` 的子进程才是真实 ring3。产品 runner 将原生 PID1 和单 ELF 放在 BSP，
-关闭 AP 调度，不能把“启动了多个 AP”解释为产品中的多核用户进程并行。
+`run` 的子进程才是真实 ring3。PID1 固定 BSP；产品打开 AP 调度，shell
+将 ELF round-robin 固定到 online CPU，`run ... &` 可后台运行。入口隔离、
+overlap 与回收语义见 [ELF 并发说明](ELF_CONCURRENCY.md)。
 
 ### 3.3 四条重要数据路径
 
 | 路径 | 实际步骤 | 核心边界 |
 |---|---|---|
-| 用户 ELF | VFS 读取 → PT_LOAD 校验/分配 → 用户页表 → iretq → syscall/抢占 → 回收 | 单 pending ELF，CPU0；不是替换式 execve |
+| 用户 ELF | VFS 读取 → PT_LOAD 校验/分配 → 用户页表 → iretq → syscall/抢占 → 回收 | 多个 ELF，固定 CPU 亲和；不是替换式 execve |
 | VMO IPC | 创建页 → sender 映射/写入 → channel 传 handle → receiver 映射 | 相同 backing；任务局部 handle 数值可能不同 |
 | IRQ 驱动 | top half 记录 → bottom half 投递 channel → 唤醒 BLOCKED → ring3 recv | 可合并/背压，生命周期检查；不是任意硬件 DMA 驱动全栈 |
 | 硬件网络 probe | DMA TX → QEMU user peer ARP/echo → DMA RX → XDP/nft → 协议/内容校验 | 当前主要是 debug 中 BSP 轮询，不是产品后台 socket 服务 |
@@ -252,7 +253,7 @@ selftest 自动等价 PASS。无 VMX 路径与“整套 TCG 工作负载已验�
 | ELF backing 映射页 | 128 页，含栈 | 还要额外付出页表/内核栈等资源 |
 | ELF 地址窗口 | 0x400000..0x800000 | PT_LOAD 上界为栈起点 0x7fc000；不是任意地址 ET_EXEC |
 | ELF 用户栈 | 4 页 = 16 KiB | 栈顶 0x800000，初始 RSP 0x7fffe0 |
-| 同时 pending ELF | 1 | 前一镜像 off-CPU 回收前，第二个返回 BUSY |
+| ELF 并发 | 全局 32 proc 槽，包含 PID1/退出记录 | shell 最多 8 后台 + 1 前台；受任务/页/commit 等约束 |
 | 每 proc fd | 32 槽 | fd 适配到 capability，表大小不等于开放给 ELF 的完整文件 API |
 | VFS mount 槽 | 16 | `fs/vfs.c` |
 | VFS open-file 槽 | 64 | 全局池 |
@@ -609,6 +610,7 @@ C 分发器形式为 `cm_syscall(nr,a0,a1,a2,a3)`。
 | 22 | TRACE_READ | 读 session 中下一事件/更新 cursor | 允许进入，但无授权 TRACE capability 返回 DENIED |
 | 23 | TRACE_CONFIG | 按 session 范围配置 mask | 允许进入，仍受授权检查 |
 | 25 | UDP_SENDADDR | 指定目标 IPv4/端口的 UDP 发送 | 允许；有类型 endpoint capability + copyin |
+| 26–30 | TCP_OPEN/CONNECT/SEND/RECV/CLOSE | 主动 TCP capability | 允许；copyin/out，单次≤4096B，有限等待/非阻塞 recv |
 | 24 | DRV_RECV_WAIT | 注册驱动睡眠等待 IRQ 消息 | 受注册/endpoint/lifecycle 条件限制 |
 | 128 | FORK | POSIX compat 占位 | NOTSUP |
 | 129 | EXECVE | 替换式 execve 编号占位 | 没有对应实现，NOTSUP |
@@ -842,12 +844,12 @@ make iso                           # 恢复默认 product
 
 | 优先方向 | 要补的关键工作 | 完成前的限制 |
 |---|---|---|
-| 多用户进程/SMP | 多独立地址空间、每 CPU user-entry 状态、调度/迁移/退出同步 | 当前单 ELF BSP runner |
+| 多用户进程/SMP | 多独立地址空间、每 CPU user-entry 状态、调度/迁移/退出同步 | 已支持多个 ELF、固定亲和与双 ELF overlap；尚无用户迁移 |
 | 用户 SDK/ABI | 安全 copyin/out、完整文件/VMO/channel 用户接口、参数启动、libc 子集 | 不能运行普通 Linux ELF，也不能从 ELF 自行调用全套 VFS |
 | 完整故障隔离 | user page fault 转进程失败、异常栈/信号/恢复、更多负面测试 | 不能保证任意坏 ELF 只伤自己 |
 | init/shell 用户态化 | 用户 console/input 服务与 fd/IPC 接口、原生 init ELF | 当前 PID1/shell 在内核可信域 |
 | 驱动 runtime | DMA/IOMMU 授权、设备资源对象、真实 IRQ/完成与用户服务 | 当前硬件驱动是内核最小实现 |
-| 网络产品化 | 后台 RX、邻居超时、路由、真实 NIC UDP socket，之后 TCP 可靠性/续租 | 已具备后台 RX/NIC UDP；邻居无到期、无完整路由；最小主动 TCP 内核 API 已支持，无重传/拥塞控制；DHCP 无续租 |
+| 网络产品化 | 后台 RX、邻居超时、路由、真实 NIC UDP socket，之后 TCP 可靠性/续租 | 已具备后台 RX/NIC UDP；邻居无到期、无完整路由；最小主动 TCP 内核 API 和用户 ELF syscall 26–30 已支持，无重传/拥塞控制；DHCP 无续租 |
 | 文件系统规模 | 可变卷布局、更多寻址、并发元数据、断电/恢复覆盖 | 固定前 8 MiB，自有小 COWFS |
 | 安全链 | 公钥认证、可信 manifest/签名门控、NX、KASLR、审核策略覆盖 | digest 不能认证发布者，现有策略并非全覆盖 |
 | NUMA | 使用更多真实 RAM、负载观测、页迁移、热插拔与调度协同 | 当前 RR 新分配与耗尽回退 |

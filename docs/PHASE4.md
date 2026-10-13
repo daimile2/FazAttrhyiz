@@ -159,3 +159,6 @@ Expected log sequence: `drv wait sleeping` -> `drv irq delivered` ->
 `driver irq wake ok`. Additional checks report `driver wait lifecycle verified`
 (cancel/peer-close) and `driver blocked crash isolation ok`, followed by the
 existing `driver crash isolation ok` and `kernel_alive=1`.
+
+后续 ELF runner 已支持多镜像固定亲和并发；阻塞 IRQ recv 在另一同 CPU ELF
+退出后恢复的现场隔离测试见 [ELF_CONCURRENCY.md](ELF_CONCURRENCY.md)。

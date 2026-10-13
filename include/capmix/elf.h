@@ -9,6 +9,10 @@
 #define CM_ELF_STACK_TOP 0x800000ull
 #define CM_ELF_STACK_PAGES 4u
 #define CM_ELF_PATH_MAX 128u
+#define CM_ELF_ARG_MAX 32u
+#define CM_ELF_ENV_MAX 32u
+#define CM_ELF_ARG_STR_MAX 256u
+#define CM_ELF_ARG_BYTES 4096u
 
 typedef struct {
     unsigned char ident[16];
@@ -30,13 +34,15 @@ typedef struct {
 typedef struct cm_elf_image {
     uint64_t *root, *shadow;
     uint64_t cr3, shadow_cr3, entry, stack;
-    unsigned npages;
+    unsigned npages,argc,envc;
     uint64_t charged;
     char path[CM_ELF_PATH_MAX];
     cm_elf_page_t pages[CM_ELF_MAX_PAGES];
 } cm_elf_image_t;
 
 cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out);
+/* Inactive/private image only. NULL/empty argv defaults to {image path,NULL}. */
+cm_error_t cm_elf_set_args(cm_elf_image_t *,const char *const *,const char *const *);
 /* Caller must ensure no CPU is using either root or a pointer into the image. */
 void cm_elf_destroy(cm_elf_image_t *image);
 void *cm_elf_pointer(const cm_elf_image_t *image, uint64_t addr);

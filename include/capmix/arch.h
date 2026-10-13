@@ -37,6 +37,9 @@ void     cm_tss_set_rsp0(int cpu, uint64_t top);
 void     cm_tss_reset_rsp0(int cpu);
 /* Restore the existing shadow-mapped entry stack after ELF timer/syscall scheduling. */
 void     cm_usermode_resume_entry(void);
+void cm_usermode_context_switch(int from, int to);
+void cm_usermode_context_clear(int slot);
+void cm_usermode_exit_request(void);
 
 /* Local interrupt save/disable + restore. Anything that reads "which CPU am
  * I on" and then acts on per-CPU state must run between these: with IF=1 a

@@ -13,7 +13,7 @@
 static cm_proc_t g_procs[CM_MAX_PROCS];
 static cm_id_t   g_pid_next = 1;
 static int       g_hello_ran;
-static cm_proc_t *g_elf_pending;
+
 
 static cm_proc_t *alloc_proc(void)
 {
@@ -21,6 +21,7 @@ static cm_proc_t *alloc_proc(void)
         if (!g_procs[i].used) {
             memset(&g_procs[i], 0, sizeof(g_procs[i]));
             g_procs[i].used = 1;
+            g_procs[i].elf_entry_slot=i;
             for (int f = 0; f < CM_FD_MAX; f++) g_procs[i].fd[f] = -1;
             return &g_procs[i];
         }
@@ -86,28 +87,31 @@ static void elf_entry_wrap(void *arg)
     cm_usermode_run_elf(p);
 }
 
-/* One pending ELF task at a time. Spawn is restricted to the boot CPU;
- * this bounded first runner does not support user-thread migration. */
+/* Creation is owned by BSP; publication gates AP picks until metadata is complete. */
 static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
 {
     if (!attr->path || cm_cpu_id() != 0) return CM_ERR_INVAL;
     uint64_t irq = cm_irq_save();
-    if (g_elf_pending) { cm_irq_restore(irq); return CM_ERR_BUSY; }
+    int cpu=attr->cpu_set?attr->cpu:0;
+    if(cpu<0 || cpu>=cm_cpu_count()) {cm_irq_restore(irq);return CM_ERR_INVAL;}
     cm_elf_image_t *im = NULL;
     cm_error_t err = cm_elf_load(attr->path, &im);
     if (err) { cm_irq_restore(irq); return err; }
+    err=cm_elf_set_args(im,attr->argv,attr->envp);
+    if(err){cm_elf_destroy(im);cm_irq_restore(irq);return err;}
     cm_proc_t *p = alloc_proc();
     if (!p) { cm_elf_destroy(im); cm_irq_restore(irq); return CM_ERR_NOSPC; }
     p->pid = g_pid_next++; p->path = im->path; p->user_mode = 1;
-    p->elf = im; p->aspace_pages = im->charged; p->elf_cpu = 0;
+    p->elf = im; p->aspace_pages = im->charged; p->elf_cpu = cpu;
     p->task = cm_task_create(p->path, attr->qos);
-    if (!p->task) { cm_elf_destroy(im); memset(p, 0, sizeof(*p)); cm_irq_restore(irq); return CM_ERR_NOSPC; }
+    if (!p->task || !p->task->self_obj) {
+        if(p->task)memset(p->task,0,sizeof(*p->task));
+        cm_elf_destroy(im); memset(p,0,sizeof(*p)); cm_irq_restore(irq);return CM_ERR_NOSPC;
+    }
     p->fd[0] = 0; p->fd[1] = 1; p->fd[2] = 2;
-    /* Publish pending state before the runnable thread becomes visible. */
-    g_elf_pending = p;
+    /* The affinity gate excludes this task until main/id are installed. */
     p->main = cm_thread_create(p->task, elf_entry_wrap, p, attr->qos);
     if (!p->main) {
-        g_elf_pending = NULL;
         /* This task has not been published to any caller and has no thread. */
         cm_obj_release(p->task->self_obj);
         memset(p->task, 0, sizeof(*p->task));
@@ -115,6 +119,7 @@ static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
         cm_irq_restore(irq); return CM_ERR_NOSPC;
     }
     p->elf_thread_id = p->main->id;
+    __atomic_store_n(&p->published,1,__ATOMIC_RELEASE);
     kinfo("exec spawn: pid=%llu path=%s ELF entry=%llx full=%llx shadow=%llx",
           (unsigned long)p->pid, p->path, (unsigned long)im->entry,
           (unsigned long)im->cr3, (unsigned long)im->shadow_cr3);
@@ -123,15 +128,22 @@ static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
     return CM_OK;
 }
 
-int cm_proc_elf_serial_task(const cm_task_t *task)
+int cm_proc_task_is_elf(const cm_task_t *task)
 {
-    return g_elf_pending && g_elf_pending->task == task &&
-           g_elf_pending->elf != NULL;
+    for(int i=0;i<CM_MAX_PROCS;i++)
+        if(g_procs[i].used && g_procs[i].task==task) return g_procs[i].elf!=NULL;
+    return 0;
 }
-
-int cm_proc_task_cpu_allowed(const cm_task_t *task, int cpu)
+int cm_proc_task_cpu_allowed(const cm_task_t *task,int cpu)
 {
-    return !cm_proc_elf_serial_task(task) || cpu == g_elf_pending->elf_cpu;
+    for(int i=0;i<CM_MAX_PROCS;i++) {
+        cm_proc_t *p=&g_procs[i];
+        if(!p->used || p->task!=task)continue;
+        if(!__atomic_load_n(&p->published,__ATOMIC_ACQUIRE))return 0;
+        if(p->elf)return cpu==p->elf_cpu;
+        if(!cm_boot_is_selftest() && p->pid==1)return cpu==0;
+    }
+    return 1;
 }
 
 cm_error_t cm_proc_reap_elf(cm_id_t pid)
@@ -142,16 +154,15 @@ cm_error_t cm_proc_reap_elf(cm_id_t pid)
     cm_elf_image_t *im = p->elf;
     p->task->name = "elf-exited"; /* do not retain a name in freed image metadata */
     p->elf = NULL; p->path = "elf-exited"; p->aspace_pages = 0; p->main = NULL;
-    if (g_elf_pending == p) g_elf_pending = NULL;
     cm_elf_destroy(im);
-    kinfo("exec reap: pid=%llu image/pages/commit reclaimed", (unsigned long)pid);
+    kinfo("exec reap: pid=%llu image/pages/commit reclaimed entry-stack inactive", (unsigned long)pid);
     return CM_OK;
 }
 
-cm_error_t cm_proc_release_product_elf(cm_id_t pid)
+cm_error_t cm_proc_release_elf(cm_id_t pid)
 {
     cm_proc_t *parent=cm_proc_current(), *p=cm_proc_lookup(pid);
-    if(cm_boot_is_selftest() || !parent || parent->pid!=1 || p==parent)return CM_ERR_DENIED;
+    if(cm_cpu_id()!=0 || (!cm_boot_is_selftest() && (!parent || parent->pid!=1)) || p==parent)return CM_ERR_DENIED;
     if(!p || !p->exited || !p->elf_thread_id)return CM_ERR_INVAL;
     if(p->elf) {cm_error_t e=cm_proc_reap_elf(pid);if(e)return e;}
     if(p->main)return CM_ERR_BUSY;
@@ -163,12 +174,18 @@ cm_error_t cm_proc_release_product_elf(cm_id_t pid)
     if(!exclusive)return CM_ERR_BUSY; /* do not invalidate an externally held task */
     cm_obj_release(task->self_obj);
     memset(task,0,sizeof(*task));memset(p,0,sizeof(*p));
+    kinfo("exec record reap: pid=%llu task/entry-stack slot recycled",(unsigned long)pid);
     return CM_OK;
+}
+cm_error_t cm_proc_release_product_elf(cm_id_t pid)
+{
+    if(cm_boot_is_selftest())return CM_ERR_DENIED;
+    return cm_proc_release_elf(pid);
 }
 
 cm_error_t cm_posix_spawn(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
 {
-    if (!attr) return CM_ERR_INVAL;
+    if (!attr || cm_cpu_id()!=0) return CM_ERR_INVAL;
     if (!attr->entry) return spawn_elf(attr, out_pid);
 
     uint64_t img = attr->image_pages ? attr->image_pages : CM_USER_IMAGE_PAGES;
@@ -216,6 +233,7 @@ cm_error_t cm_posix_spawn(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
         return CM_ERR_NOMEM;
     }
 
+    __atomic_store_n(&p->published,1,__ATOMIC_RELEASE);
     cm_obs_emit(cm_trace_new(), CM_EV_CAP_MINT, p->pid, need, qos);
     kinfo("spawn: pid=%llu path=%s commit=%llu pages qos=%s",
           (unsigned long)p->pid, p->path, (unsigned long)need, cm_qos_name(qos));

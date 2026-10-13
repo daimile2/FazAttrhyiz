@@ -9,6 +9,10 @@
 
 当前状态：**phase0–9、NUMA/EPT 与 M2–M8 已有可运行验收记录**；默认 ISO 进入产品 init/shell，`make test` 和独立 selftest ISO 执行回归。
 
+静态 ELF argv/envp、初始栈与最小 crt 见 [ELF_ARGV](docs/ELF_ARGV.md)。
+
+用户 ELF TCP syscall 26–30 与 shell 测试方式见 [用户网络 ABI](docs/USER_NETWORK_ABI.md)。
+
 最小主动 TCP 的内核接口、真实 echo 验收和限制见 [P1d 文档](docs/P1D_TCP.md)。
 
 最小 DHCP、静态回退和配置说明见 [P1c 文档](docs/P1C_DHCP.md)。
@@ -80,3 +84,6 @@ make clean
 原因：现成工具链即可跑通阶段 1 的 IPC/调度验收。
 Rust 安全边界（Asterinas 路线）可以在 `cap/` 与 `mm/` 稳定后以 frame
 层替换 unsafe 部分，不推翻骨架。
+
+静态 ELF 多进程并发、固定 CPU 亲和、`run ... &` 与退出/关机等待语义：
+[ELF_CONCURRENCY.md](docs/ELF_CONCURRENCY.md)。

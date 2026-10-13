@@ -25,7 +25,6 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     cm_proc_t *p = cm_proc_current();
     cm_thread_t *th = cm_sched_current();
     if (p) {
-        p->exited = 1;
         p->exit_code = (int64_t)a0;
         if (!p->elf) {
             if (p->aspace_pages) cm_commit_uncharge(p->aspace_pages);
@@ -39,10 +38,10 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
         cm_trace_process_exit(p->task);
     }
     if (th) th->state = CM_TH_DEAD;
+    if (p) __atomic_store_n(&p->exited,1,__ATOMIC_RELEASE);
 #ifndef CAPMIX_HOSTED
     {
-        extern uint64_t cm_leave_user;
-        cm_leave_user = 1;
+        cm_usermode_exit_request();
     }
 #endif
     kinfo("sys: exit pid=%llu code=%lld",
@@ -417,6 +416,66 @@ static int64_t sys_udp_close(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     return cm_udp_close(p->task, (int)a0);
 }
 
+/* TCP native handle ABI. Image pages stay pinned until off-CPU reap. */
+_Static_assert(sizeof(cm_tcp_connect_request_t)==16 && offsetof(cm_tcp_connect_request_t,timeout_ms)==12,"TCP connect ABI");
+_Static_assert(CM_TCP_USER_IO_MAX<=CM_PAGE_SIZE,"TCP bounce page bounds");
+static int64_t sys_tcp_open(uint64_t a,uint64_t b,uint64_t c,uint64_t d)
+{
+    cm_proc_t *p=udp_caller();if(!p)return CM_ERR_NOTSUP;
+    if(a || b || c || d)return CM_ERR_INVAL;
+    int hid;cm_error_t e=cm_tcp_open(p->task,&hid);return e?e:hid;
+}
+static int64_t sys_tcp_connect(uint64_t hid,uint64_t address,uint64_t a,uint64_t b)
+{
+    cm_proc_t *p=udp_caller();if(!p)return CM_ERR_NOTSUP;
+    if(hid>=CM_HANDLES_PER_TASK || a || b)return CM_ERR_INVAL;
+    cm_tcp_connect_request_t request;
+    if(cm_copyin(p->elf,&request,address,sizeof(request)))return CM_ERR_INVAL;
+    if(request.reserved || !request.address || !request.port || !request.timeout_ms || request.timeout_ms>10000)return CM_ERR_INVAL;
+    int id;
+    if(request.ifid==CM_TCP_IF_PRIMARY) {
+        id=cm_if_find("vnet0");cm_iface_t *iface=cm_if_get(id);
+        if(!iface || !iface->up) {int alternative=cm_if_find("enet0");cm_iface_t *other=cm_if_get(alternative);
+            if(other && other->up)id=alternative;}
+        if(id<0)return CM_ERR_NOENT;
+    } else {
+        if(request.ifid>=CM_MAX_IFACE)return CM_ERR_INVAL;
+        id=(int)request.ifid;
+    }
+    cm_iface_t *iface=cm_if_get(id);if(!iface)return CM_ERR_NOENT;
+    if(!iface->up)return CM_ERR_DEAD;
+    if(id!=cm_if_find("vnet0") && id!=cm_if_find("enet0"))return CM_ERR_NOTSUP;
+    cm_error_t e=cm_tcp_connect(p->task,(int)hid,id,request.address,request.port,request.timeout_ms);
+    cm_usermode_resume_entry();return e;
+}
+static int64_t sys_tcp_send(uint64_t hid,uint64_t address,uint64_t length,uint64_t timeout)
+{
+    cm_proc_t *p=udp_caller();if(!p)return CM_ERR_NOTSUP;
+    if(hid>=CM_HANDLES_PER_TASK || !length || length>CM_TCP_USER_IO_MAX || !timeout || timeout>10000 ||
+       !cm_user_access(p->elf,address,length,0))return CM_ERR_INVAL;
+    void *buffer=cm_page_alloc(0);if(!buffer)return CM_ERR_NOMEM;
+    cm_error_t e=cm_copyin(p->elf,buffer,address,length);int64_t result=e;
+    if(!e)result=cm_tcp_send(p->task,(int)hid,buffer,(uint32_t)length,(unsigned)timeout);
+    cm_usermode_resume_entry();cm_page_free(buffer,0);return result;
+}
+static int64_t sys_tcp_recv(uint64_t hid,uint64_t address,uint64_t capacity,uint64_t unused)
+{
+    cm_proc_t *p=udp_caller();if(!p)return CM_ERR_NOTSUP;
+    if(hid>=CM_HANDLES_PER_TASK || unused || !capacity || capacity>CM_TCP_USER_IO_MAX ||
+       !cm_user_access(p->elf,address,capacity,1))return CM_ERR_INVAL;
+    void *buffer=cm_page_alloc(0);if(!buffer)return CM_ERR_NOMEM;
+    int64_t result=cm_tcp_recv(p->task,(int)hid,buffer,(uint32_t)capacity);
+    if(result>0 && cm_copyout(p->elf,address,buffer,(uint64_t)result))result=CM_ERR_INVAL;
+    cm_page_free(buffer,0);return result;
+}
+static int64_t sys_tcp_close(uint64_t hid,uint64_t timeout,uint64_t a,uint64_t b)
+{
+    cm_proc_t *p=udp_caller();if(!p)return CM_ERR_NOTSUP;
+    if(hid>=CM_HANDLES_PER_TASK || !timeout || timeout>10000 || a || b)return CM_ERR_INVAL;
+    cm_error_t e=cm_tcp_close(p->task,(int)hid,(unsigned)timeout);
+    cm_usermode_resume_entry();return e;
+}
+
 static const struct {
     uint32_t    nr;
     const char *name;
@@ -440,6 +499,11 @@ static const struct {
     { CM_SYS_UNLINK,         "unlink",         sys_unlink },
     { CM_SYS_FSYNC,          "fsync",          sys_fsync },
     { CM_SYS_FORK,           "fork",           sys_fork },
+    { CM_SYS_TCP_OPEN, "tcp_open", sys_tcp_open },
+    { CM_SYS_TCP_CONNECT, "tcp_connect", sys_tcp_connect },
+    { CM_SYS_TCP_SEND, "tcp_send", sys_tcp_send },
+    { CM_SYS_TCP_RECV, "tcp_recv", sys_tcp_recv },
+    { CM_SYS_TCP_CLOSE, "tcp_close", sys_tcp_close },
     { CM_SYS_UDP_SENDADDR, "udp_sendaddr", sys_udp_sendaddr },
     { CM_SYS_UDP_OPEN,       "udp_open",       sys_udp_open },
     { CM_SYS_UDP_BIND,       "udp_bind",       sys_udp_bind },
@@ -535,9 +599,10 @@ int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t 
             return sys_ipc_recv(a0, a1, a2, a3);
         int udp_call = (nr >= CM_SYS_UDP_OPEN && nr <= CM_SYS_UDP_CLOSE) || nr==CM_SYS_UDP_SENDADDR;
         if (nr == CM_SYS_DRV_RECV_WAIT) return sys_drv_recv_wait(a0,a1,a2,a3);
+        int tcp_call=nr>=CM_SYS_TCP_OPEN && nr<=CM_SYS_TCP_CLOSE;
         int trace_call = nr == CM_SYS_TRACE_READ || nr == CM_SYS_TRACE_CONFIG;
         int file_call=nr>=CM_SYS_OPEN && nr<=CM_SYS_FSYNC;
-        if (!file_call && !udp_call && !trace_call && nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)
+        if (!tcp_call && !file_call && !udp_call && !trace_call && nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)
             return CM_ERR_NOTSUP;
     }
     if (cm_obs_enabled()) {

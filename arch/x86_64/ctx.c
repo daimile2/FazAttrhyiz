@@ -85,6 +85,7 @@ int cm_arch_ctx_init(int tid, void (*entry)(void *), void *arg, void *stack, siz
 {
     if (tid < 0 || tid >= CM_MAX_THREADS || !stack || stack_sz < 4096 || !entry)
         return -1;
+    cm_usermode_context_clear(tid);
     memset(&g_ctx[tid], 0, sizeof(g_ctx[tid]));
     uintptr_t top = ((uintptr_t)stack + stack_sz) & ~(uintptr_t)15;
     uint64_t *sp = (uint64_t *)top;
@@ -114,6 +115,7 @@ int cm_arch_ctx_init(int tid, void (*entry)(void *), void *arg, void *stack, siz
 void cm_arch_ctx_clear(int tid)
 {
     if (tid < 0 || tid >= CM_MAX_THREADS) return;
+    cm_usermode_context_clear(tid);
     memset(&g_ctx[tid], 0, sizeof(g_ctx[tid]));
     g_entry[tid] = NULL;
     g_arg[tid] = NULL;
@@ -235,6 +237,7 @@ static void ctx_swap_locked(int from_tid, int to_tid)
         cm_tss_reset_rsp0(cpu);
 #endif
 
+    cm_usermode_context_switch(from_tid,to_tid);
     cm_ctx_switch_asm(&g_ctx[f], &g_ctx[t]);
 }
 

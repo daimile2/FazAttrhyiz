@@ -21,6 +21,9 @@ typedef struct {
     cm_qos_t         qos;
     uint64_t         image_pages;
     uint64_t         stack_pages;
+    const char *const *argv; /* trusted native vectors; copied before ELF publication */
+    const char *const *envp;
+    int cpu_set, cpu; /* optional fixed ELF affinity; default BSP */
 } cm_spawn_attr_t;
 
 struct cm_elf_image;
@@ -43,7 +46,9 @@ typedef struct cm_proc {
     int           elf_started, elf_cpl, elf_write_calls;
     uint64_t      elf_written_bytes, elf_timer_entries, elf_timer_before;
     uint64_t      elf_preempts, elf_run_ticks;
-    int           elf_cpu;
+    int           elf_cpu, elf_entry_slot;
+    uint64_t elf_start_tsc, elf_end_tsc;
+    int published;
 } cm_proc_t;
 
 void       cm_proc_init(void);
@@ -57,8 +62,10 @@ cm_error_t cm_posix_spawn(const cm_spawn_attr_t *attr, cm_id_t *out_pid);
 cm_error_t cm_proc_reap_elf(cm_id_t pid);
 /* Product PID1 only: release an off-CPU ELF exit record/task after image reap. */
 cm_error_t cm_proc_release_product_elf(cm_id_t pid);
-/* Single pending ELF remains pinned to BSP, including blocked/exit cleanup. */
-int cm_proc_elf_serial_task(const cm_task_t *task);
+/* BSP selftest or product PID1; recycle record/task only after off-CPU reap. */
+cm_error_t cm_proc_release_elf(cm_id_t pid);
+/* Each ELF has fixed CPU affinity, including blocked/exit cleanup. */
+int cm_proc_task_is_elf(const cm_task_t *task);
 int cm_proc_task_cpu_allowed(const cm_task_t *task, int cpu);
 
 /* Compat only. Hosted: returns -CM_ERR_NOTSUP and logs the reason. */

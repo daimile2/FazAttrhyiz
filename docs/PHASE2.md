@@ -116,7 +116,7 @@ phase2 selftest: PASS (0 failures)
 
 PID 是运行时分配的，检查字符串时不应固定为 10。
 
-hosted 验证 ELF 校验、段权限、BSS、地址边界、commit 拒绝回滚、串行 spawn 和
+hosted 验证 ELF 校验、段权限、BSS、地址边界、commit 拒绝回滚、spawn 和
 镜像回收；明确跳过 ring3 执行。freestanding 真实执行 ELF，校验 CPL=3、exit 0、
 一次 WRITE/15 字节，以及最终页数/commit 回到基线。
 新增同 QoS 内核竞争线程：只有在 ELF 被真实抢占且尚未退出时才增加
@@ -141,3 +141,6 @@ timeout 30 qemu-system-x86_64 -enable-kvm -m 512 -cpu host -smp 4 \
 涉及用户态抢占恢复的 `usermode.c` 与 EEVDF 路径应人工审查。
 `paging.c`、`syscall.S`、`switch.S`、IDT/IST、LAPIC timer 与 VMO 实现未修改。
 真实 ELF 抢占验收使用 KVM；hosted 继续明确跳过 ring3 执行，验证加载、拒绝与回收。
+
+后续已解除单 pending/BSP 串行限制；并发容量、CPU 亲和、双 ELF overlap 和
+同 CPU 阻塞 syscall 现场隔离见 [ELF_CONCURRENCY.md](ELF_CONCURRENCY.md)。

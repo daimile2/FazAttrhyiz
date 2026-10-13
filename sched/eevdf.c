@@ -242,9 +242,13 @@ static cm_task_t *alloc_task(void)
 
 static cm_thread_t *alloc_thread(void)
 {
-    for (int i = 0; i < CM_MAX_THREADS; i++)
-        if (g_threads[i].id == 0) return &g_threads[i];
-    return NULL;
+    uint64_t flags=cm_irq_save();sched_lock();
+    cm_thread_t *th=NULL;
+    for(int i=0;i<CM_MAX_THREADS;i++)if(!g_threads[i].id) {
+        th=&g_threads[i];memset(th,0,sizeof(*th));
+        th->id=g_tid_next++;break; /* reserve before an AP can recycle it */
+    }
+    sched_unlock();cm_irq_restore(flags);return th;
 }
 
 cm_task_t *cm_task_create(const char *name, cm_qos_t qos)
@@ -294,10 +298,9 @@ static void rq_remove(cm_thread_t *th)
 
 cm_thread_t *cm_thread_create(cm_task_t *task, cm_th_entry_t entry, void *arg, cm_qos_t qos)
 {
+    if(!task)return NULL;
     cm_thread_t *th = alloc_thread();
-    if (!th || !task) return NULL;
-    memset(th, 0, sizeof(*th));
-    th->id = g_tid_next++;
+    if (!th) return NULL;
     th->task = task;
     th->entry = entry;
     th->arg = arg;
@@ -396,7 +399,10 @@ void cm_thread_reap(cm_thread_t *th)
      * frame ends up pushed at rsp=0, faulting with cr2=0xfffffffffffffff8. */
     cm_arch_ctx_clear(th->ctx_slot);
 
-    memset(th, 0, sizeof(*th));
+    /* Publish an empty slot atomically with allocator reservation. */
+    uint64_t flags=cm_irq_save();sched_lock();
+    memset(th,0,sizeof(*th));
+    sched_unlock();cm_irq_restore(flags);
 }
 
 void cm_thread_wake(cm_thread_t *th)
@@ -694,7 +700,7 @@ void cm_sched_preempt_now(void)
     TRACE_SCHED_SWITCH(cur->trace_context,cur->id,0,0x100);
     if (cm_obs_enabled()) cm_obs_emit(cm_trace_new(), CM_EV_SCHED_SWITCH, cur->id, 0, 0x100);
     cm_arch_ctx_swap(cur->ctx_slot, -1);
-    if (cm_proc_elf_serial_task(cur->task)) cm_usermode_resume_entry();
+    if (cm_proc_task_is_elf(cur->task)) cm_usermode_resume_entry();
 }
 
 void cm_sched_maybe_preempt(void)

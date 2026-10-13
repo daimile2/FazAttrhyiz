@@ -26,6 +26,9 @@ _start:
     syscall
     cmpq $-3,%rax
     jne failed
+    movl $0x713579,%r12d
+    movl $0x724680,%r13d
+    pushq %r12
     movl $24,%eax
     movl receive_handle(%rip),%edi
     leaq message(%rip),%rsi
@@ -33,6 +36,13 @@ _start:
     xorl %r10d,%r10d
     syscall
     movq %rax,receive_result(%rip)
+    popq %rbx
+    cmpq $0x713579,%rbx
+    jne failed
+    cmpq $0x713579,%r12
+    jne failed
+    cmpq $0x724680,%r13
+    jne failed
     cmpl $1,expected_action(%rip)
     je cancelled
     cmpl $2,expected_action(%rip)

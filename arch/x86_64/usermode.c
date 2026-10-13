@@ -13,7 +13,7 @@ void cm_land_user(void);
 extern uint64_t cm_kern_rsp;
 extern uint64_t cm_user_syscalls;
 extern uint64_t cm_last_cpl;
-extern uint64_t cm_leave_user;
+
 
 #define USER_CS  0x2B
 #define USER_SS  0x23
@@ -21,15 +21,16 @@ extern uint64_t cm_leave_user;
 #define CM_PCPU_MAX 8
 /* Offsets shared with syscall.S: 0 stack, 8 user rsp, 16 reserved,
  * 24 full CR3, 32 shadow CR3, 40 scratch rax. */
-typedef struct { uint64_t rsp0, user_rsp, kern_rsp, full_cr3, user_cr3, scratch, incoming_cr3, bad_entries; } cm_pcpu_t;
+typedef struct { uint64_t rsp0, user_rsp, kern_rsp, full_cr3, user_cr3, scratch, incoming_cr3, bad_entries, leave_user, entry_top; } cm_pcpu_t;
 _Static_assert(offsetof(cm_pcpu_t, full_cr3) == 24, "entry full CR3 offset");
 _Static_assert(offsetof(cm_pcpu_t, user_cr3) == 32, "entry shadow CR3 offset");
 _Static_assert(offsetof(cm_pcpu_t, scratch) == 40, "entry scratch offset");
 _Static_assert(offsetof(cm_pcpu_t, incoming_cr3) == 48, "entry incoming offset");
 _Static_assert(offsetof(cm_pcpu_t, bad_entries) == 56, "entry counter offset");
+_Static_assert(offsetof(cm_pcpu_t, leave_user) == 64, "entry exit flag offset");
 static cm_pcpu_t g_pcpu[CM_PCPU_MAX] __attribute__((section(".entry.data"), aligned(4096)));
 #ifndef CAPMIX_HOSTED
-static uint8_t g_entry_stacks[CM_PCPU_MAX][16384]
+static uint8_t g_entry_stacks[CM_PCPU_MAX + CM_MAX_PROCS][16384]
     __attribute__((section(".entry.data"), aligned(4096)));
 extern void cm_enter_user(uint64_t cr3, uint64_t rip, uint64_t rsp, uint64_t entry_top);
 #endif
@@ -38,14 +39,10 @@ void cm_usermode_resume_entry(void)
 {
 #ifndef CAPMIX_HOSTED
     int cpu = cm_cpu_id();
-    if (cpu >= 0 && cpu < CM_PCPU_MAX) {
-        cm_tss_set_rsp0(cpu, (uint64_t)(uintptr_t)&g_entry_stacks[cpu][16384]);
-        cm_proc_t *p = cm_proc_current();
-        if (p && p->elf && !p->exited) cm_leave_user = 0;
-    }
+    if (g_pcpu[cpu].entry_top) cm_tss_set_rsp0(cpu,g_pcpu[cpu].entry_top);
 #endif
 }
-
+void cm_usermode_exit_request(void) { g_pcpu[cm_cpu_id()].leave_user=1; }
 static inline void pcpu_wrmsr(uint32_t msr, uint64_t v)
 {
     __asm__ volatile("wrmsr" :: "c"(msr), "a"((uint32_t)v), "d"((uint32_t)(v >> 32)));
@@ -56,7 +53,52 @@ void cm_pcpu_init(int cpu, uint64_t kstack_top)
     if (cpu < 0 || cpu >= CM_PCPU_MAX) return;
     g_pcpu[cpu].rsp0     = kstack_top;
     g_pcpu[cpu].kern_rsp = kstack_top;
+    pcpu_wrmsr(0xC0000101,0);
     pcpu_wrmsr(0xC0000102, (uint64_t)(uintptr_t)&g_pcpu[cpu]);
+}
+
+/* Snapshot the entry ABI and both SWAPGS phases along with every context.
+ * Fixed affinity prevents a user context from carrying an old CPU GS address. */
+#ifndef CAPMIX_HOSTED
+static struct { cm_pcpu_t p; uint64_t gs, kgs; int valid; }
+    g_entry_state[CM_MAX_THREADS + CM_MAX_CPUS];
+static uint64_t entry_rdmsr(uint32_t msr)
+{
+    uint32_t lo,hi; __asm__ volatile("rdmsr":"=a"(lo),"=d"(hi):"c"(msr));
+    return ((uint64_t)hi<<32)|lo;
+}
+#endif
+void cm_usermode_context_clear(int slot)
+{
+#ifndef CAPMIX_HOSTED
+    if(slot>=0 && slot<CM_MAX_THREADS) memset(&g_entry_state[slot],0,sizeof(g_entry_state[slot]));
+#else
+    CM_UNUSED(slot);
+#endif
+}
+void cm_usermode_context_switch(int from,int to)
+{
+#ifndef CAPMIX_HOSTED
+    int cpu=cm_cpu_id(),f=from<0?CM_MAX_THREADS+cpu:from,t=to<0?CM_MAX_THREADS+cpu:to;
+    g_entry_state[f].p=g_pcpu[cpu];
+    g_entry_state[f].gs=entry_rdmsr(0xc0000101);
+    g_entry_state[f].kgs=entry_rdmsr(0xc0000102);
+    g_entry_state[f].valid=1;
+    if(g_entry_state[t].valid) {
+        g_pcpu[cpu]=g_entry_state[t].p;
+        /* Native workers may migrate; GS denotes this CPU in either phase. */
+        uint64_t base=(uint64_t)(uintptr_t)&g_pcpu[cpu];
+        pcpu_wrmsr(0xc0000101,g_entry_state[t].gs?base:0);
+        pcpu_wrmsr(0xc0000102,g_entry_state[t].kgs?base:0);
+        if(g_pcpu[cpu].entry_top) cm_tss_set_rsp0(cpu,g_pcpu[cpu].entry_top);
+    } else {
+        memset(&g_pcpu[cpu],0,sizeof(g_pcpu[cpu]));
+        pcpu_wrmsr(0xc0000101,0);
+        pcpu_wrmsr(0xc0000102,(uint64_t)(uintptr_t)&g_pcpu[cpu]);
+    }
+#else
+    CM_UNUSED(from);CM_UNUSED(to);
+#endif
 }
 
 #define USER_BASE 0x400000ull
@@ -86,14 +128,15 @@ uint64_t cm_space_switch_cost(void) { return 0; }
 
 #else
 
-static int g_um_ready;
+static int g_um_ready[CM_PCPU_MAX];
+static int g_kpti_verified;
 /* Observation only: entry ABI and CR3 transitions remain unchanged. */
 int cm_kpti_active(void)
 {
 #if CM_KPTI
-    return g_um_ready && cm_user_syscalls && g_pcpu[0].user_cr3 &&
+    return g_kpti_verified || (g_um_ready[0] && cm_user_syscalls && g_pcpu[0].user_cr3 &&
            g_pcpu[0].full_cr3!=g_pcpu[0].user_cr3 && !g_pcpu[0].bad_entries &&
-           g_pcpu[0].incoming_cr3==g_pcpu[0].user_cr3;
+           g_pcpu[0].incoming_cr3==g_pcpu[0].user_cr3);
 #else
     return 0;
 #endif
@@ -123,7 +166,7 @@ void cm_usermode_init(void)
     wrmsr(0xC0000081, (0x18ull << 48) | (0x08ull << 32));
     wrmsr(0xC0000082, (uint64_t)(uintptr_t)cm_syscall_entry);
     wrmsr(0xC0000084, 0x257fdull);
-    g_um_ready = 1;
+    g_um_ready[cm_cpu_id()] = 1;
     kinfo("usermode: EFER.SCE LSTAR=%p STAR user=0x18 kernel=0x08",
           (void *)cm_syscall_entry);
 }
@@ -153,7 +196,7 @@ uint64_t cm_space_switch_cost(void)
 
 int cm_usermode_selftest(void)
 {
-    if (!g_um_ready) cm_usermode_init();
+    if (!g_um_ready[cm_cpu_id()]) cm_usermode_init();
     if (!cm_paging_pml4()) {
         kerr("usermode: no kernel pml4");
         return -1;
@@ -261,7 +304,8 @@ int cm_usermode_selftest(void)
     g_pcpu[cpu].user_cr3 = shadow_cr3;
     uint64_t entry_top = (uint64_t)(uintptr_t)&g_entry_stacks[cpu][16384];
     cm_tss_set_rsp0(cpu, entry_top);
-    cm_leave_user = 0;
+    g_pcpu[cpu].leave_user = 0;
+    g_pcpu[cpu].entry_top=entry_top;
 
     kinfo("usermode: iretq → 0x%llx cs=0x2b ss=0x23 cr3=%llx",
           (unsigned long)USER_BASE, (unsigned long)cr3);
@@ -276,7 +320,7 @@ int cm_usermode_selftest(void)
 
 void cm_usermode_run_elf(struct cm_proc *p)
 {
-    if (!g_um_ready) cm_usermode_init();
+    if (!g_um_ready[cm_cpu_id()]) cm_usermode_init();
     cm_thread_t *th = cm_sched_current();
     if (!p || !p->elf || !th || th->task != p->task || cm_cpu_id() != p->elf_cpu)
         cm_panic("exec: invalid ELF runner context");
@@ -289,11 +333,13 @@ void cm_usermode_run_elf(struct cm_proc *p)
     g_pcpu[cpu].full_cr3 = p->elf->cr3;
     g_pcpu[cpu].user_cr3 = p->elf->shadow_cr3;
     g_pcpu[cpu].incoming_cr3 = 0; g_pcpu[cpu].bad_entries = 0;
-    uint64_t entry_top = (uint64_t)(uintptr_t)&g_entry_stacks[cpu][16384];
+    uint64_t entry_top = (uint64_t)(uintptr_t)&g_entry_stacks[CM_PCPU_MAX+p->elf_entry_slot][16384];
     cm_tss_set_rsp0(cpu, entry_top);
-    cm_leave_user = 0;
+    g_pcpu[cpu].leave_user = 0;
+    g_pcpu[cpu].entry_top=entry_top;
     extern uint64_t cm_entry_user_irqs;
     p->elf_timer_before = cm_entry_user_irqs;
+    p->elf_start_tsc=cm_rdtsc();
     p->elf_started = 1;
     kinfo("exec ring3: pid=%llu entry=%llx rsp=%llx cpu=%d",
           (unsigned long)p->pid, (unsigned long)p->elf->entry,
@@ -320,6 +366,8 @@ void cm_land_user(void)
         CM_UNUSED(cpu);
 #endif
         extern uint64_t cm_entry_user_irqs;
+        elf_proc->elf_end_tsc=cm_rdtsc();
+        g_kpti_verified=CM_KPTI && !g_pcpu[cpu].bad_entries;
         elf_proc->elf_run_ticks = elf_proc->main->run_ticks;
         elf_proc->elf_timer_entries = cm_entry_user_irqs - elf_proc->elf_timer_before;
         kinfo("exec exit: pid=%llu code=%lld writes=%d bytes=%llu timer_entries=%llu",
@@ -342,6 +390,7 @@ void cm_land_user(void)
         cm_panic("KPTI: CR3 entry/exit mismatch");
     extern uint64_t cm_entry_user_irqs;
     if (!cm_entry_user_irqs) cm_panic("KPTI: no ring3 timer entry exercised");
+    g_kpti_verified=1;
     kinfo("KPTI: verified shadow -> full CR3 on all 102 syscall entries, ring3 timer entries=%llu",
           (unsigned long)cm_entry_user_irqs);
 #endif

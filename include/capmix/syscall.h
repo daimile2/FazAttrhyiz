@@ -40,6 +40,19 @@
 #define CM_SYS_TRACE_CONFIG  23
 #define CM_SYS_DRV_RECV_WAIT 24
 #define CM_SYS_UDP_SENDADDR 25
+#define CM_SYS_TCP_OPEN     26
+#define CM_SYS_TCP_CONNECT  27
+#define CM_SYS_TCP_SEND     28
+#define CM_SYS_TCP_RECV     29
+#define CM_SYS_TCP_CLOSE    30
+
+#define CM_TCP_USER_IO_MAX 4096u
+#define CM_TCP_IF_PRIMARY UINT32_MAX
+typedef struct {
+    uint32_t ifid, address;
+    uint16_t port, reserved;
+    uint32_t timeout_ms;
+} cm_tcp_connect_request_t;
 
 /* POSIX compat band — routed, not native. */
 #define CM_SYS_FORK         128
