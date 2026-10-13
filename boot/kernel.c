@@ -502,6 +502,8 @@ int capmix_selftest(void)
     fails += cm_p1c_selftest();
     extern int cm_p1b_selftest(void);
     fails += cm_p1b_selftest();
+    extern int cm_p1d_selftest(void);
+    fails += cm_p1d_selftest();
 
     kinfo("--- selftest: irq + blk-mq + user driver isolation ---");
     {

@@ -1,4 +1,5 @@
 #include "capmix/net.h"
+#include "capmix/tcp.h"
 #include "capmix/virtio_net.h"
 #include "capmix/e1000.h"
 #include "capmix/arch.h"
@@ -72,6 +73,7 @@ static void ingress(int id,uint8_t *packet,uint16_t n)
         if(cm_udp_inject(id,packet,n)==CM_OK)__atomic_fetch_add(&udp_queued[id],1,__ATOMIC_RELAXED);
         return;
     }
+    if(rd16(packet+12)==CM_ETH_IP && n>=34 && packet[23]==CM_IPPROTO_TCP){(void)cm_tcp_input(id,packet,n);return;}
     if(cm_net_rx(id,packet,n)!=CM_XDP_PASS || rd16(packet+12)!=0x806 || n<42)return;
     const uint8_t *a=packet+14;unsigned op=rd16(a+6),nonzero=0;
     for(unsigned i=0;i<6;i++)nonzero|=a[8+i];

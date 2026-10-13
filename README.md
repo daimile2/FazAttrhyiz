@@ -9,6 +9,8 @@
 
 当前状态：**phase0–9、NUMA/EPT 与 M2–M8 已有可运行验收记录**；默认 ISO 进入产品 init/shell，`make test` 和独立 selftest ISO 执行回归。
 
+最小主动 TCP 的内核接口、真实 echo 验收和限制见 [P1d 文档](docs/P1D_TCP.md)。
+
 最小 DHCP、静态回退和配置说明见 [P1c 文档](docs/P1C_DHCP.md)。
 
 实网卡 UDP 与后台 RX 的接口、限制和 echo 验收命令见 [P1b 文档](docs/P1B_UDP_NIC.md)。

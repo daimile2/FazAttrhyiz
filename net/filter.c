@@ -1,6 +1,7 @@
 #include "capmix/virtio_net.h"
 #include "capmix/e1000.h"
 #include "capmix/net.h"
+#include "capmix/tcp.h"
 #include "capmix/klog.h"
 
 #include <string.h>
@@ -55,6 +56,7 @@ cm_error_t cm_net_init(void)
     cm_ebpf_init();
     cm_nft_init();
     cm_udp_init();
+    cm_tcp_init();
     (void)cm_virtio_net_init();
     (void)cm_e1000_init();
     cm_iface_t *nic=cm_net_primary_iface();

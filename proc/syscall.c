@@ -1,4 +1,5 @@
 #include "capmix/trace.h"
+#include "capmix/tcp.h"
 #include "capmix/syscall.h"
 #include "capmix/cap.h"
 #include "capmix/ipc.h"
@@ -34,6 +35,7 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
         cm_anon_free_owner(p->pid);
         cm_drv_process_exit(p->pid);
         cm_udp_process_exit(p->task);
+        cm_tcp_process_exit(p->task);
         cm_trace_process_exit(p->task);
     }
     if (th) th->state = CM_TH_DEAD;
