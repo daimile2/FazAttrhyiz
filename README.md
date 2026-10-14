@@ -89,3 +89,5 @@ Rust 安全边界（Asterinas 路线）可以在 `cap/` 与 `mm/` 稳定后以 f
 [ELF_CONCURRENCY.md](docs/ELF_CONCURRENCY.md)。
 
 默认产品已使用 CPL=3 的 `/sbin/init.elf` 与 `/bin/shell.elf`；启动 capability、用户控制 ABI 与限制见 [USER_INIT_SHELL.md](docs/USER_INIT_SHELL.md)。
+
+磁盘安装：`make install-disk DISK_IMAGE=/tmp/new-system.img`；新建或全零镜像，首次从盘启动完成 COW provisioning，之后无 ISO 冷启动。布局、拒绝覆盖和 AHCI/virtio 两次启动步骤见 [INSTALL_DISK.md](docs/INSTALL_DISK.md)。

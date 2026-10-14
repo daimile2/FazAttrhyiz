@@ -40,7 +40,7 @@ SRC = \
 	fs/vfs.c \
 	fs/cowfs.c \
 	io/irq.c \
-	io/blk.c io/virtio_blk.c io/ahci.c \
+	io/blk.c io/disk_layout.c io/virtio_blk.c io/ahci.c \
 	io/uring.c \
 	io/driverkit.c \
 	net/if.c net/e1000.c net/virtio_net.c net/virtio_ip.c \
@@ -134,7 +134,7 @@ iso: $(FREE_BIN)
 		-b boot/limine/limine-bios-cd.bin -no-emul-boot \
 		-boot-load-size 4 -boot-info-table \
 		-eltorito-alt-boot -e EFI/BOOT/limine-uefi-cd.bin -no-emul-boot \
-		--protective-msdos-label \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
 		iso -o capmix.iso
 	@if [ -x third_party/limine/limine ]; then \
 		third_party/limine/limine bios-install capmix.iso; fi
@@ -232,3 +232,12 @@ build/user_init.inc: build/user-init.elf scripts/embed-elf.py
 	python3 scripts/embed-elf.py $< $@ cm_user_init_elf
 build/user_shell.inc: build/user-shell.elf scripts/embed-elf.py
 	python3 scripts/embed-elf.py $< $@ cm_user_shell_elf
+
+# Host image installer: never accepts raw devices or nonempty images.
+.PHONY: install-disk
+third_party/limine/limine: third_party/limine/limine.c third_party/limine/limine-bios-hdd.h
+	$(MAKE) -C third_party/limine
+
+install-disk: $(FREE_BIN) third_party/limine/limine
+	@test -n "$(DISK_IMAGE)" || { echo 'usage: make install-disk DISK_IMAGE=/path/new.img'; exit 1; }
+	python3 scripts/install-disk.py "$(DISK_IMAGE)"

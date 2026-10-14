@@ -209,7 +209,7 @@ selftest 自动等价 PASS。无 VMX 路径与“整套 TCG 工作负载已验�
 | 虚拟机 | 一次真实 VMLAUNCH → VMCALL / EPT violation → 完整 teardown 演示 |
 
 没有完整 shell 作业控制、进程管道、用户应用 SDK、动态链接器、桌面、
-安装器、完整网络服务或 Linux 客户机。
+guest 内图形安装器、完整网络服务或 Linux 客户机。
 
 ## 5. 当前代码的容量上限
 
@@ -890,3 +890,5 @@ IPC RTT、计数、压力测试提供的是具体测试证据，不能外推出�
 更新本总览时，应同时更新数值来源、ring3 whitelist、最新运行限制和验收
 证据，不能只把状态表全部改成 PASS。阶段早期文档可能保留历史限制，
 后续 continuation 与当前源码优先；参数/API 发生变化时必须重新核对。
+
+磁盘安装续作已提供宿主 blank-only MBR/FAT32 工具、独立 CapMix 卷 offset 与 AHCI/virtio 无 ISO 冷启动。不是 guest 安装 GUI 或真实设备安装器；两次冷启动和拒绝覆盖步骤见 [INSTALL_DISK.md](INSTALL_DISK.md)。

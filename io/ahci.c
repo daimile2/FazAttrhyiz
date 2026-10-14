@@ -8,6 +8,7 @@
  * non-NCQ LBA48, owned DMA bounce pages, polling (no IRQ routing changes). */
 static int available;
 static uint64_t sectors;
+uint64_t cm_ahci_capacity(void){return available?sectors:0;}
 #ifndef CAPMIX_HOSTED
 static volatile uint32_t *hba,*port;
 static uint32_t pci;

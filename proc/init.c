@@ -1,4 +1,5 @@
 #include "capmix/control.h"
+#include "capmix/disk_layout.h"
 #include "capmix/config.h"
 #include "capmix/net.h"
 #include "capmix/dhcp.h"
@@ -71,6 +72,7 @@ void cm_product_start(cm_error_t status)
     e=cm_control_seed(p);
     if(e){cm_control_process_exit(p);p->exited=1;p->main->state=CM_TH_DEAD;cm_thread_reap(p->main);
         (void)cm_proc_release_child(0,pid);kerr("init: bootstrap capabilities failed=%d",e);cm_console_idle();return;}
+    if(cm_blk_installed())kinfo("disk install: system ELF provisioning synced; root=disk base_lba=%llu ready",(unsigned long)cm_blk_root_base());
     kinfo("init: kernel bootstrap -> /sbin/init.elf PID1 (user ELF)");
     (void)cm_net_bg_start();
     cm_smp_sched_enable();

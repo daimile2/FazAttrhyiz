@@ -1,4 +1,6 @@
 #include "capmix/io.h"
+#include "capmix/disk_layout.h"
+#include "capmix/boot.h"
 #include "capmix/ahci.h"
 #include "capmix/virtio_blk.h"
 #include "capmix/mm.h"
@@ -21,7 +23,23 @@ static cm_bio_t g_done[CM_BLK_QD];
 static int      g_dh, g_dt, g_dn;
 static uint64_t g_done_total;
 static uint64_t g_tag_next = 1;
+_Static_assert(CM_INSTALL_ROOT_SECT==CM_BLK_DISK_SECT,"installed volume preserves raw/swap/COW layout");
+static uint64_t g_root_base[3];
+static int g_layout_bad[3];
 static int      g_backend, g_offline[3]; /* independently offline-able devices */
+
+static void probe_layout(int backend)
+{
+    static uint8_t sector[512];uint64_t base=0;
+    cm_error_t e=backend==CM_BLK_AHCI?cm_ahci_rw(CM_OP_READ,0,1,sector):cm_virtio_blk_rw(CM_OP_READ,0,1,sector);
+    if(!e)e=cm_disk_layout_parse(sector,backend==CM_BLK_AHCI?cm_ahci_capacity():cm_virtio_blk_capacity(),&base);
+    if(e==CM_ERR_NOENT){kinfo("disk install: %s legacy raw root (no install marker)",backend==CM_BLK_AHCI?"ahci":"virtio-blk");return;}
+    if(e){g_layout_bad[backend]=1;kerr("disk install: layout rejected backend=%d error=%d root I/O disabled; no format",backend,e);return;}
+    g_root_base[backend]=base;
+    kinfo("disk install: layout verified backend=%d root_base_lba=%llu ESP separate, root window=8MiB",backend,(unsigned long)base);
+}
+uint64_t cm_blk_root_base(void){return g_root_base[g_backend];}
+int cm_blk_installed(void){return g_backend!=CM_BLK_RAM && !g_layout_bad[g_backend] && g_root_base[g_backend]!=0;}
 
 cm_error_t cm_blk_init(void)
 {
@@ -45,9 +63,17 @@ cm_error_t cm_blk_init(void)
     g_dh = g_dt = g_dn = 0;
     g_done_total = 0;
     memset(g_offline,0,sizeof(g_offline));
+    memset(g_root_base,0,sizeof(g_root_base));memset(g_layout_bad,0,sizeof(g_layout_bad));
     int virtio = cm_virtio_blk_init() == CM_OK;
     int ahci = cm_ahci_init() == CM_OK;
+    if(virtio)probe_layout(CM_BLK_VIRTIO);
+    if(ahci)probe_layout(CM_BLK_AHCI);
     g_backend = virtio?CM_BLK_VIRTIO:ahci?CM_BLK_AHCI:CM_BLK_RAM;
+    if(!virtio && !ahci)kinfo("disk install skipped: no supported disk; RAM root fallback unchanged");
+    if(cm_boot_has_option("capmix.installed=1") && !cm_blk_installed()) {
+        g_layout_bad[g_backend]=1;
+        kerr("disk install: installed boot refused; selected backend lacks verified partition; no RAM/raw root substitute");
+    }
     kinfo("blk root backend: %s", cm_blk_backend_name());
     kinfo("blk: mq %d queues x qd %d, ramdisk %u sectors "
           "(raw %u / swap %u / fs %u)",
@@ -57,7 +83,7 @@ cm_error_t cm_blk_init(void)
 }
 
 void cm_blk_set_offline(int off) { g_offline[g_backend] = off; }
-int  cm_blk_online(void)         { return !g_offline[g_backend] && (g_backend==CM_BLK_VIRTIO ? cm_virtio_blk_available() : g_backend==CM_BLK_AHCI ? cm_ahci_available() : g_disk != NULL); }
+int  cm_blk_online(void)         { return !g_layout_bad[g_backend] && !g_offline[g_backend] && (g_backend==CM_BLK_VIRTIO ? cm_virtio_blk_available() : g_backend==CM_BLK_AHCI ? cm_ahci_available() : g_disk != NULL); }
 
 uint8_t *cm_blk_raw_sector(uint64_t lba)
 {
@@ -88,7 +114,7 @@ static void service(cm_bio_t *b)
         return;
     }
     if (g_backend) {
-        cm_error_t err=g_backend==CM_BLK_AHCI ? cm_ahci_rw(b->op,b->lba,b->nsect,b->buf) : cm_virtio_blk_rw(b->op,b->lba,b->nsect,b->buf);
+        cm_error_t err=g_backend==CM_BLK_AHCI ? cm_ahci_rw(b->op,b->lba+g_root_base[g_backend],b->nsect,b->buf) : cm_virtio_blk_rw(b->op,b->lba+g_root_base[g_backend],b->nsect,b->buf);
         b->status=err ? err : (int32_t)(b->nsect*CM_BLK_SECTOR);
         complete_one(b); return;
     }

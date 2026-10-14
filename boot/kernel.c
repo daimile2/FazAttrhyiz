@@ -305,6 +305,8 @@ int capmix_selftest(void)
     fails += cm_shell_selftest();
     fails += cm_power_selftest();
     fails += cm_ahci_selftest();
+    extern int cm_disk_layout_selftest(void);
+    fails += cm_disk_layout_selftest();
     fails += cm_timer_calibration_selftest();
     fails += cm_buddy_smp_selftest();
     {

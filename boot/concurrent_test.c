@@ -59,7 +59,7 @@ cleanup:
     cm_smp_sched_disable();
     /* Successful runs are already off CPU. Never force-reap a live AP context. */
     for(unsigned i=0;i<2;i++)if(ids[i] && done(p[i]) && cm_proc_release_elf(ids[i])!=CM_OK)failed++;
-    if(cm_mm_free_pages()!=before){kerr("elf concurrent reclaim page leak");failed++;}
+    if(cm_mm_free_pages()!=before){kerr("elf concurrent reclaim page mismatch before=%llu after=%llu",(unsigned long)before,(unsigned long)cm_mm_free_pages());cm_sched_dump();failed++;}
     return failed;
 }
 static int blocked_test(void)
@@ -135,6 +135,11 @@ int cm_concurrent_selftest(void)
     int e=put("/bin/concurrent.elf",cm_concurrent_elf,sizeof(cm_concurrent_elf));
     if(!e)e=put("/bin/concurrent-blockd.elf",cm_blockd_wait_elf,sizeof(cm_blockd_wait_elf));
     if(e)return 1;
+    /* Earlier IPC tests leave backgroundd runnable. Complete it before the
+     * exact free-page baseline; APs would otherwise reclaim its 4-page
+     * native stack during the overlap test (a gain, not an ELF leak). */
+    (void)cm_sched_run_until_idle(512);
+    if(cm_sched_runnable()){kerr("elf concurrency baseline not quiescent");return 1;}
     int failed=creation_rollback_test();if(!failed)failed+=overlap_test();if(!failed)failed+=blocked_test();
     kinfo("elf concurrency selftest: %s (%d failures)",failed?"FAIL":"PASS",failed);return failed;
 }
