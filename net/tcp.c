@@ -10,7 +10,7 @@
 #define RST 4u
 #define PSH 8u
 #define ACK 16u
-enum {CLOSED,SYN_SENT,ESTABLISHED,FIN_WAIT_1,FIN_WAIT_2,CLOSING,TIME_WAIT,CLOSE_WAIT,LAST_ACK,ERROR};
+enum {CLOSED,SYN_SENT,ESTABLISHED,FIN_WAIT_1,FIN_WAIT_2,CLOSING,TIME_WAIT,CLOSE_WAIT,LAST_ACK,ERROR,LISTEN,SYN_RECEIVED};
 struct pending {
     unsigned active,sent,retries,rto_ms,length;
     uint32_t seq;
@@ -27,6 +27,9 @@ struct connection {
     struct pending pending;
     unsigned tx_busy,drop_mask;
     uint64_t generation;
+    struct connection *listener; /* queue owns one used reference until accept */
+    unsigned backlog;
+    uint64_t accept_end;
 };
 struct wire {int ifid;uint32_t local,remote,rcv_nxt;uint16_t sport,dport,window;};
 struct segment {
@@ -123,6 +126,18 @@ static cm_error_t decode(const uint8_t *p,unsigned n,struct segment *out)
 /* Pure locked state transition: never sends, waits, logs or touches caps. */
 static cm_error_t advance(struct connection *c,const struct segment *s)
 {
+    if(c->state==SYN_RECEIVED) {
+        if((s->flags&RST) && s->seq==c->rcv_nxt) {
+            c->state=ERROR;clear_pending(c);return CM_ERR_DEAD;
+        }
+        if(s->flags==SYN && !s->length && s->seq+1==c->rcv_nxt) {
+            c->pending.next=cm_rdtsc();return CM_OK; /* resend retained SYN/ACK */
+        }
+        if((s->flags&(SYN|RST|ACK))!=ACK || s->ack!=c->snd_nxt || s->seq!=c->rcv_nxt)
+            return CM_ERR_INVAL;
+        c->snd_una=s->ack;acknowledge(c,cm_rdtsc(),cm_tsc_hz()/1000);
+        c->state=ESTABLISHED; /* common path below also accepts ACK + data/FIN */
+    }
     if(c->state==SYN_SENT) {
         if((s->flags&(RST|ACK))==(RST|ACK) && s->ack==c->snd_nxt){c->state=ERROR;c->ack_pending=0;clear_pending(c);return CM_ERR_DEAD;}
         if((s->flags&(SYN|ACK|FIN|RST))!=(SYN|ACK) || s->ack!=c->snd_nxt || s->length)return CM_ERR_INVAL;
@@ -179,25 +194,65 @@ static void flush_ack(struct connection *c)
     c->ack_pending=0;unlock(f);
     if(pending && emit(c,ACK,seq,NULL,0)) {f=lock();c->ack_pending=1;unlock(f);}
 }
+static void service(struct connection *,uint64_t);
+static void abort_connection(struct connection *);
+static void put_slot(struct connection *c)
+{
+    uint64_t f=lock();c->used--;if(!c->used)memset(c,0,sizeof(*c));unlock(f);
+}
+/* Caller holds tcp_lock. No allocation, caps or TX under the lock. */
+static cm_error_t queue_syn(struct connection *l,const struct segment *s,struct connection **out)
+{
+    unsigned queued=0;struct connection *child=NULL;
+    for(unsigned i=0;i<CM_TCP_CONNECTIONS;i++) {
+        if(connections[i].listener==l)queued++;
+        if(!connections[i].used && !child)child=&connections[i];
+    }
+    if(queued>=l->backlog || !child)return CM_ERR_NOSPC;
+    memset(child,0,sizeof(*child));child->used=1;child->listener=l;
+    child->state=SYN_RECEIVED;child->ifid=l->ifid;child->local=l->local;child->sport=l->sport;
+    child->remote=s->src;child->dport=s->sport;child->rcv_nxt=s->seq+1;
+    child->snd_una=(uint32_t)cm_rdtsc();child->snd_nxt=child->snd_una+1;
+    child->peer_window=s->window;child->mss=s->mss;
+    child->accept_end=cm_rdtsc()+interval(CM_TCP_ACCEPT_TTL_MS);
+    retain(child,SYN|ACK,child->snd_una,NULL,0,cm_rdtsc(),cm_rdtsc()+interval(5000));
+    *out=child;return CM_OK;
+}
+static void refuse(int id,const struct segment *s)
+{
+    if(s->flags&RST)return;
+    struct wire w={.ifid=id,.local=s->dst,.remote=s->src,.sport=s->dport,.dport=s->sport,
+        .rcv_nxt=s->seq+s->length+!!(s->flags&SYN)+!!(s->flags&FIN)};
+    uint8_t frame[58];unsigned n=encode(frame,&w,(s->flags&ACK)?RST:RST|ACK,
+                                     (s->flags&ACK)?s->ack:0,NULL,0);
+    (void)cm_net_wire_send(id,s->src,frame,(uint16_t)n);
+}
 cm_error_t cm_tcp_input(int id,const uint8_t *packet,uint16_t length)
 {
     struct segment s;cm_error_t e=decode(packet,length,&s);if(e)return e;
     cm_iface_t *iface=cm_if_get(id);if(!iface || !iface->up || s.dst!=iface->addr)return CM_ERR_INVAL;
     if(cm_net_rx(id,packet,length)!=CM_XDP_PASS)return CM_ERR_DENIED;
-    uint64_t f=lock();struct connection *c=NULL;
+    uint64_t f=lock();struct connection *c=NULL,*listener=NULL;
     for(unsigned i=0;i<CM_TCP_CONNECTIONS;i++) {
         struct connection *x=&connections[i];
-        if(x->used && x->ifid==id && x->local==s.dst && x->remote==s.src && x->sport==s.dport && x->dport==s.sport){c=x;break;}
+        if(!x->used || x->ifid!=id || x->local!=s.dst || x->sport!=s.dport)continue;
+        if(x->state==LISTEN)listener=x;
+        else if(x->remote==s.src && x->dport==s.sport){c=x;break;}
     }
-    if(!c){unlock(f);return CM_ERR_NOENT;}
-    unsigned old=c->state;e=advance(c,&s);int established=old==SYN_SENT && c->state==ESTABLISHED;
-    /* Keep this slot alive against final cap release while TX runs unlocked. */
+    int fresh=0;
+    if(!c && listener && s.flags==SYN && !s.length) {
+        e=queue_syn(listener,&s,&c);fresh=!e;
+        if(e){unlock(f);refuse(id,&s);kinfo("tcp listen refused: port=%u backlog/global capacity full error=%d",s.dport,e);return e;}
+    }
+    if(!c){unlock(f);refuse(id,&s);return CM_ERR_NOENT;}
+    unsigned old=c->state;
+    if(!fresh)e=advance(c,&s);
+    int established=(old==SYN_SENT || old==SYN_RECEIVED) && c->state==ESTABLISHED;
     c->used++;unlock(f);
-    if(established)kinfo("tcp established: if=%s local=%u peer_port=%u",iface->name,c->sport,c->dport);
-    flush_ack(c);
-    f=lock();c->used--;if(!c->used)memset(c,0,sizeof(*c));unlock(f);return e;
+    if(established)kinfo("tcp established: if=%s local=%u peer_port=%u passive=%u",iface->name,c->sport,c->dport,old==SYN_RECEIVED);
+    if(old==SYN_RECEIVED)service(c,cm_rdtsc());
+    flush_ack(c);put_slot(c);return e;
 }
-static void abort_connection(struct connection *c);
 static void destroy(void *payload)
 {
     struct connection *c=payload;abort_connection(c);uint64_t f=lock();
@@ -222,13 +277,62 @@ cm_error_t cm_tcp_open(cm_task_t *task,int *out)
     cm_object_t *obj=cm_obj_mint_owned(CM_OBJ_PORT,c,rights,destroy);if(!obj){destroy(c);return CM_ERR_NOSPC;}
     int hid=cm_handle_install(task,obj,rights);cm_obj_release(obj);if(hid<0)return hid;*out=hid;return CM_OK;
 }
+cm_error_t cm_tcp_listen(cm_task_t *task,int hid,int id,uint16_t port,unsigned backlog)
+{
+    if(!port || !backlog || backlog>CM_TCP_BACKLOG_MAX)return CM_ERR_INVAL;
+    cm_iface_t *iface=cm_if_get(id);if(!iface)return CM_ERR_NOENT;
+    if(!iface->up)return CM_ERR_DEAD;
+    if(iface->addr==CM_UDP_LO_ADDR || !iface->addr)return CM_ERR_NOTSUP;
+    cm_object_t *obj;cm_error_t e=acquire(task,hid,CM_RIGHT_WRITE,&obj);if(e)return e;
+    struct connection *c=obj->payload;uint64_t f=lock();
+    if(c->state!=CLOSED || c->busy)e=CM_ERR_BUSY;
+    for(unsigned i=0;!e && i<CM_TCP_CONNECTIONS;i++) {
+        struct connection *x=&connections[i];
+        if(x!=c && x->used && x->ifid==id && x->sport==port && x->state!=ERROR && x->state!=CLOSED)e=CM_ERR_BUSY;
+    }
+    if(!e){c->ifid=id;c->local=iface->addr;c->sport=port;c->backlog=backlog;c->state=LISTEN;}
+    unlock(f);cm_obj_release(obj);
+    if(!e)kinfo("tcp listen: if=%s port=%u backlog=%u slots=%u accept=nonblocking",iface->name,port,backlog,CM_TCP_CONNECTIONS);
+    return e;
+}
+int64_t cm_tcp_accept(cm_task_t *task,int hid)
+{
+    cm_object_t *listener;cm_error_t e=acquire(task,hid,CM_RIGHT_READ|CM_RIGHT_WRITE,&listener);if(e)return e;
+    struct connection *l=listener->payload,*c=NULL;uint64_t f=lock();
+    if(l->state!=LISTEN)e=l->state==ERROR?CM_ERR_DEAD:CM_ERR_INVAL;
+    else {
+        e=CM_ERR_AGAIN;
+        for(unsigned i=0;i<CM_TCP_CONNECTIONS;i++) {
+            struct connection *x=&connections[i];
+            if(x->listener==l && cm_rdtsc()<x->accept_end && (x->state==ESTABLISHED || x->state==CLOSE_WAIT)) {
+                c=x;c->listener=NULL;e=CM_OK;break; /* queue ref transfers to object */
+            }
+        }
+    }
+    unlock(f);
+    int result=e;
+    if(c) {
+        cm_rights_t rights=CM_RIGHT_READ|CM_RIGHT_WRITE|CM_RIGHT_DUPLICATE;
+        cm_object_t *obj=cm_obj_mint_owned(CM_OBJ_PORT,c,rights,destroy);
+        if(!obj){destroy(c);result=CM_ERR_NOSPC;}
+        else {result=cm_handle_install(task,obj,rights);cm_obj_release(obj);}
+        if(result>=0)kinfo("tcp accept: port=%u peer_port=%u handle=%d",c->sport,c->dport,result);
+    }
+    cm_obj_release(listener);return result;
+}
 static void turn(void){if(cm_sched_current())cm_sched_yield();else (void)cm_sched_run_until_idle(1);}
 static uint64_t deadline(unsigned ms){return cm_rdtsc()+(cm_tsc_hz()/1000)*ms;}
 static int timeout_ok(unsigned ms){return ms && ms<=10000;}
 static void abort_connection(struct connection *c)
 {
     uint64_t f=lock();uint32_t seq=c->snd_nxt;unsigned state=c->state;c->state=ERROR;c->busy=0;c->ack_pending=0;clear_pending(c);unlock(f);
-    if(state!=CLOSED && state!=ERROR)(void)emit(c,RST|ACK,seq,NULL,0);
+    if(state!=CLOSED && state!=ERROR && state!=LISTEN)(void)emit(c,RST|ACK,seq,NULL,0);
+    /* Detach one at a time: queue reference protects the child while TX unlocks. */
+    for(unsigned i=0;i<CM_TCP_CONNECTIONS;i++) {
+        struct connection *child=&connections[i];f=lock();
+        int owned=child->listener==c;if(owned)child->listener=NULL;unlock(f);
+        if(owned){abort_connection(child);put_slot(child);}
+    }
 }
 static void service(struct connection *c,uint64_t now)
 {
@@ -264,9 +368,12 @@ void cm_tcp_poll(void)
 {
     for(unsigned i=0;i<CM_TCP_CONNECTIONS;i++) {
         struct connection *c=&connections[i];uint64_t f=lock();
-        if(!c->used || !c->pending.active){unlock(f);continue;}
-        c->used++;unlock(f);service(c,cm_rdtsc());
-        f=lock();c->used--;if(!c->used)memset(c,0,sizeof(*c));unlock(f);
+        if(!c->used){unlock(f);continue;}
+        if(c->listener && (c->state==ERROR || cm_rdtsc()>=c->accept_end)) {
+            c->listener=NULL;unlock(f);abort_connection(c);put_slot(c);continue;
+        }
+        if(!c->pending.active){unlock(f);continue;}
+        c->used++;unlock(f);service(c,cm_rdtsc());put_slot(c);
     }
 }
 uint64_t cm_tcp_retransmits(void){return __atomic_load_n(&retransmits,__ATOMIC_RELAXED);}
@@ -360,6 +467,11 @@ cm_error_t cm_tcp_close(cm_task_t *task,int hid,unsigned ms)
     cm_object_t *obj;cm_error_t e=acquire(task,hid,CM_RIGHT_WRITE,&obj);if(e)return e;
     struct connection *c=obj->payload;uint64_t f=lock();unsigned state=c->state;
     if(c->busy){unlock(f);cm_obj_release(obj);return CM_ERR_BUSY;}
+    if(state==LISTEN) {
+        unlock(f);abort_connection(c);
+        cm_error_t drop=cm_handle_drop(task,hid);cm_obj_release(obj);
+        kinfo("tcp listener close: queued connections reclaimed");return drop;
+    }
     c->busy=1;uint32_t seq=c->snd_nxt;
     if(state==ESTABLISHED || state==CLOSE_WAIT){c->snd_nxt++;c->state=state==ESTABLISHED?FIN_WAIT_1:LAST_ACK;}
     unlock(f);uint64_t end=deadline(ms);
@@ -415,6 +527,74 @@ finish:
     if(!failed)kinfo("tcp rto exhausted cleanup verified: ERROR/RST-attempt pending=0 aliases released live=%u",before);
     return failed;
 }
+/* Exercises the actual queue/accept/cap teardown without requiring a NIC. */
+static int passive_selftest(void)
+{
+    unsigned baseline=cm_tcp_live();int failed=0,h=-1,ro=-1,accepted=-1;
+    cm_task_t *task=cm_task_create("tcp-passive-test",CM_QOS_USER_INTERACTIVE);
+    cm_object_t *obj=NULL;if(!task)return 1;
+#define PASSIVE_CHECK(x) do{if(!(x)){kerr("tcp passive test line=%d",__LINE__);failed=1;goto finish;}}while(0)
+    PASSIVE_CHECK(cm_tcp_open(task,&h)==CM_OK);
+    PASSIVE_CHECK(cm_tcp_accept(task,h)==CM_ERR_INVAL);
+    PASSIVE_CHECK(cm_tcp_listen(task,h,-1,8080,0)==CM_ERR_INVAL);
+    PASSIVE_CHECK(cm_tcp_listen(task,h,-1,8080,CM_TCP_BACKLOG_MAX+1)==CM_ERR_INVAL);
+    PASSIVE_CHECK(cm_handle_duplicate(task,h,task,&ro,CM_RIGHT_READ)==CM_OK);
+    PASSIVE_CHECK(cm_tcp_accept(task,ro)==CM_ERR_DENIED);
+    PASSIVE_CHECK(cm_tcp_listen(task,ro,cm_if_find("lo"),8080,1)==CM_ERR_NOTSUP);
+    PASSIVE_CHECK(acquire(task,h,CM_RIGHT_WRITE,&obj)==CM_OK);
+    struct connection *l=obj->payload,*c=NULL;
+    uint64_t f=lock();l->state=LISTEN;l->ifid=-1;l->sport=8080;l->backlog=1;unlock(f);
+    PASSIVE_CHECK(cm_tcp_accept(task,h)==CM_ERR_AGAIN);
+    struct segment syn={.src=0x0a000202,.sport=40000,.seq=100,.flags=SYN,.window=4096,.mss=536};
+    f=lock();cm_error_t e=queue_syn(l,&syn,&c);
+    if(!e)c->accept_end=UINT64_MAX; /* hosted TSC frequency is deliberately unknown */
+    unlock(f);PASSIVE_CHECK(e==CM_OK);
+    struct connection *extra=NULL;
+    f=lock();e=queue_syn(l,&syn,&extra);unlock(f);PASSIVE_CHECK(e==CM_ERR_NOSPC);
+    PASSIVE_CHECK(cm_tcp_accept(task,h)==CM_ERR_AGAIN); /* half-open not acceptable */
+    f=lock();e=advance(c,&syn);unlock(f);PASSIVE_CHECK(!e && c->state==SYN_RECEIVED);
+    struct segment ack={.seq=101,.ack=c->snd_nxt+1,.flags=ACK,.window=4096};
+    f=lock();e=advance(c,&ack);unlock(f);PASSIVE_CHECK(e==CM_ERR_INVAL);
+    ack.ack=c->snd_nxt;static const uint8_t data[]={1,2,3};ack.data=data;ack.length=3;
+    f=lock();e=advance(c,&ack);unlock(f);
+    PASSIVE_CHECK(e==CM_OK && c->state==ESTABLISHED && !c->pending.active && c->count==3);
+    accepted=(int)cm_tcp_accept(task,h);PASSIVE_CHECK(accepted>0 && !c->listener);
+    uint8_t got[3];PASSIVE_CHECK(cm_tcp_recv(task,accepted,got,3)==3 && !memcmp(data,got,3));
+    /* Accepted child survives listener close; queued children do not. */
+    syn.sport++;f=lock();e=queue_syn(l,&syn,&extra);unlock(f);PASSIVE_CHECK(e==CM_OK);
+    PASSIVE_CHECK(cm_tcp_close(task,h,100)==CM_OK);h=-1;
+    PASSIVE_CHECK(c->state==ESTABLISHED && extra->used==0);
+    cm_obj_release(obj);obj=NULL;(void)cm_handle_drop(task,ro);ro=-1;
+    cm_tcp_process_exit(task);accepted=-1;PASSIVE_CHECK(cm_tcp_live()==baseline);
+    /* Queue TTL returns its ownership reference even without an accept call. */
+    PASSIVE_CHECK(cm_tcp_open(task,&h)==CM_OK && acquire(task,h,CM_RIGHT_WRITE,&obj)==CM_OK);
+    l=obj->payload;f=lock();l->state=LISTEN;l->ifid=-1;l->backlog=4;
+    e=queue_syn(l,&syn,&c);if(!e)c->accept_end=0;unlock(f);PASSIVE_CHECK(!e);
+    cm_tcp_poll();PASSIVE_CHECK(c->used==0 && cm_tcp_live()==baseline+1);
+    /* Full handle table must destroy the detached accept candidate, not leak it. */
+    f=lock();e=queue_syn(l,&syn,&c);
+    if(!e){c->state=ESTABLISHED;c->accept_end=UINT64_MAX;clear_pending(c);}
+    unlock(f);PASSIVE_CHECK(!e);
+    int aliases[CM_HANDLES_PER_TASK];unsigned alias_count=0;
+    while(alias_count<CM_HANDLES_PER_TASK &&
+          cm_handle_duplicate(task,h,task,&aliases[alias_count],CM_RIGHT_READ)==CM_OK)alias_count++;
+    PASSIVE_CHECK(cm_tcp_accept(task,h)==CM_ERR_NOSPC && c->used==0);
+    for(unsigned i=0;i<alias_count;i++)(void)cm_handle_drop(task,aliases[i]);
+    /* Exhaust global slots and prove a full backlog cannot overrun the pool. */
+    int handles[CM_TCP_CONNECTIONS];unsigned count=0;
+    while(count<CM_TCP_CONNECTIONS && cm_tcp_open(task,&handles[count])==CM_OK)count++;
+    f=lock();e=queue_syn(l,&syn,&c);unlock(f);PASSIVE_CHECK(e==CM_ERR_NOSPC);
+    for(unsigned i=0;i<count;i++)(void)cm_handle_drop(task,handles[i]);
+    /* Process teardown with live queued SYN/ACK exercises kill/poweroff cleanup. */
+    f=lock();e=queue_syn(l,&syn,&c);unlock(f);PASSIVE_CHECK(!e);
+finish:
+    cm_tcp_process_exit(task);if(obj)cm_obj_release(obj);
+    if(cm_tcp_live()!=baseline)failed=1;
+    cm_obj_release(task->self_obj);memset(task,0,sizeof(*task));
+    if(!failed)kinfo("tcp passive verified: SYN/ACK+data accept=AGAIN/granted/denied backlog/full/slots bounded TTL/close/kill reclaim live=%u",baseline);
+#undef PASSIVE_CHECK
+    return failed;
+}
 static int retransmission_selftest(void)
 {
     static struct connection c;
@@ -459,7 +639,7 @@ static int retransmission_selftest(void)
 }
 int cm_tcp_mechanism_selftest(void)
 {
-    if(retransmission_selftest())return 1;
+    if(retransmission_selftest() || passive_selftest())return 1;
     uint8_t frame[58+CM_TCP_MSS];struct segment s;
     struct wire wire={.local=0x0a000202,.remote=0x0a00020f,.sport=9998,.dport=49152,.window=4096,.rcv_nxt=101};
     unsigned n=encode(frame,&wire,SYN|ACK,700,NULL,0);

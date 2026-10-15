@@ -263,7 +263,7 @@ external-hello: build/external-hello.elf build/cow-put
 	python3 scripts/copy-to-disk.py "$(DISK_IMAGE)" build/external-hello.elf /bin/external-hello.elf
 
 # Product examples use the same standalone SDK as external host-built ELFs.
-EXAMPLE_NAMES = hello nc cat ls http-get
+EXAMPLE_NAMES = hello nc cat ls http-get httpd
 EXAMPLE_ELFS = $(addprefix build/example-,$(addsuffix .elf,$(EXAMPLE_NAMES)))
 EXAMPLE_INCS = $(addprefix build/example_,$(addsuffix .inc,$(EXAMPLE_NAMES)))
 .PHONY: examples

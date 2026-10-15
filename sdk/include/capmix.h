@@ -37,6 +37,8 @@ static inline long cm_print(const char *text){return cm_print_fd(1,text);}
 #define CM_TCP_SEND 28u
 #define CM_TCP_RECV 29u
 #define CM_TCP_CLOSE 30u
+#define CM_TCP_LISTEN 40u
+#define CM_TCP_ACCEPT 41u
 #define CM_CONSOLE_READ 31u
 #define CM_CONSOLE_WRITE 32u
 #define CM_YIELD 34u
@@ -82,6 +84,18 @@ static inline long cm_report(const char *label,long error)
 typedef struct {uint32_t ifid,address;uint16_t port,reserved;uint32_t timeout_ms;} cm_sdk_tcp_request_t;
 typedef struct {uint64_t ino;uint32_t kind;char name[58];} cm_sdk_dirent_t;
 _Static_assert(sizeof(cm_sdk_tcp_request_t)==16 && sizeof(cm_sdk_dirent_t)==72,"CapMix SDK ABI sizes");
+typedef struct {uint32_t ifid;uint16_t port,backlog;} cm_sdk_tcp_listen_t;
+_Static_assert(sizeof(cm_sdk_tcp_listen_t)==8,"CapMix TCP listen ABI");
+static inline long cm_tcp_serve(uint16_t port,unsigned backlog)
+{
+    if(backlog<1 || backlog>4)return -2;
+    long h=cm_call(CM_TCP_OPEN,0,0,0,0);if(h<0)return h;
+    cm_sdk_tcp_listen_t r={UINT32_MAX,port,(uint16_t)backlog};
+    long e=cm_call(CM_TCP_LISTEN,h,(uintptr_t)&r,0,0);
+    if(e<0){(void)cm_call(CM_TCP_CLOSE,h,100,0,0);return e;}return h;
+}
+/* Empty accept queue: CM_EAGAIN. Caller yields or applies its own deadline. */
+static inline long cm_tcp_accept(long h){return cm_call(CM_TCP_ACCEPT,h,0,0,0);}
 static inline long cm_tcp_dial(uint32_t ip,uint16_t port)
 {
     long h=cm_call(CM_TCP_OPEN,0,0,0,0);if(h<0)return h;

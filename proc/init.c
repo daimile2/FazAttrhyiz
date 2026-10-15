@@ -24,6 +24,7 @@
 #include "../build/example_cat.inc"
 #include "../build/example_ls.inc"
 #include "../build/example_http-get.inc"
+#include "../build/example_httpd.inc"
 static cm_error_t root_status;
 void cm_product_record_root(cm_error_t status) {root_status=status;}
 #ifndef CAPMIX_HOSTED
@@ -59,6 +60,7 @@ static cm_error_t provision(void)
     if(!e)e=install_missing("/bin/cat.elf",cm_example_cat_elf,sizeof(cm_example_cat_elf));
     if(!e)e=install_missing("/bin/ls.elf",cm_example_ls_elf,sizeof(cm_example_ls_elf));
     if(!e)e=install_missing("/bin/http-get.elf",cm_example_http_get_elf,sizeof(cm_example_http_get_elf));
+    if(!e)e=install_missing("/bin/httpd.elf",cm_example_httpd_elf,sizeof(cm_example_httpd_elf));
     static const char sample[]="CapMix examples: persistent root ready\n";
     if(!e)e=install_missing("/example.txt",sample,sizeof(sample)-1);
     return e;

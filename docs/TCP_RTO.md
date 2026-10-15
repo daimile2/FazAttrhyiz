@@ -1,5 +1,8 @@
 # 最小 TCP：连接级 RTO 重传
 
+> 本文记录当时的主动连接/RTO交付。后续已新增用户态listen/accept与HTTP服务端，
+> 当前服务端ABI、边界及验证见 [HTTPD.md](HTTPD.md)。
+
 ## 范围与默认参数
 
 主动 TCP 保持原 connect/send/recv/close syscall 和 capability ABI。本轮为原

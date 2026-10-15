@@ -1,5 +1,8 @@
 # P1d：最小主动 TCP
 
+> 本文记录当时的主动连接/RTO交付。后续已新增用户态listen/accept与HTTP服务端，
+> 当前服务端ABI、边界及验证见 [HTTPD.md](HTTPD.md)。
+
 本轮交付**内核 capability API + 真实网卡 selftest**，没有新增 TCP syscall、
 用户 TCP ELF 或 BSD socket ABI。原 UDP syscall/ELF、DHCP、产品 shell 保留。
 实现为本项目原创代码，报文/状态语义参考

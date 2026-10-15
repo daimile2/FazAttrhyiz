@@ -1,6 +1,6 @@
-# 用户态示例：hello、nc、cat、ls、http-get
+# 用户态示例：hello、nc、cat、ls、http-get、httpd
 
-五个程序均由宿主 GCC 使用 `sdk/crt0.S`、`sdk/capmix.ld` 和
+六个程序均由宿主 GCC 使用 `sdk/crt0.S`、`sdk/capmix.ld` 和
 `sdk/include/capmix.h` 构建为静态 ET_EXEC，进入 CPL=3；不链接 Linux libc。
 它们调用普通用户 syscall，不借用内核自测入口。
 
@@ -12,9 +12,9 @@
 make examples iso
 ```
 
-独立 ELF 在 `build/example-{hello,nc,cat,ls,http-get}.elf`。ISO 内核携带这些初始文件；
+独立 ELF 在 `build/example-{hello,nc,cat,ls,http-get,httpd}.elf`。ISO 内核携带这些初始文件；
 产品启动仅在路径不存在时通过 VFS 写入并 fsync。路径为：
-`/bin/hello-sdk.elf`、`/bin/nc.elf`、`/bin/cat.elf`、`/bin/ls.elf`、`/bin/http-get.elf`。
+`/bin/hello-sdk.elf`、`/bin/nc.elf`、`/bin/cat.elf`、`/bin/ls.elf`、`/bin/http-get.elf`、`/bin/httpd.elf`。
 原 `/bin/hello.elf` 测试镜像保持原有用途。另提供 `/example.txt` 文本。
 
 新盘一行安装（目标必须不存在或是符合安装器条件的全零普通 RAW 文件）：
@@ -173,3 +173,8 @@ run /bin/http-get.elf 10.0.2.2 8000 /hello.txt
 `cm_report`摘要走fd2，其余 `cm_print/cm_output`走可重定向fd1。
 `run -i`及后台`&`不与重定向混用；nc仍用交互方式，无新增batch/pipe语义。
 覆盖/追加、权限、失败副作用、冷启动和QEMU/VBox验收见 [SHELL.md](SHELL.md)。
+
+## 用户态 HTTP 服务端
+
+新增 `/bin/httpd.elf`：`run /bin/httpd.elf 8080 &`，监听后串行accept并返回HTTP/1.0 200。
+使用宿主端口转发访问；非阻塞accept、容量/超时/回收、QEMU/VBox命令及验收矩阵见 [HTTPD.md](HTTPD.md)。

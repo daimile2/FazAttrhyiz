@@ -142,3 +142,5 @@ CAPMIX_TEST_DISK=/path/capmix-system.img python3 tests/test_copy_to_disk.py
 
 标准I/O续作：未绑定fd1/fd2时上述诊断流语义保留；绑定fd1后WRITE走FILE，
 SDK分块处理短写，`cm_report`摘要走fd2。SPAWN扩展和前台重定向见 [SHELL](SHELL.md)。
+
+服务端扩展提供listen/accept syscall40/41与SDK包装，完整ABI及最小httpd用法见 [HTTPD.md](HTTPD.md)。

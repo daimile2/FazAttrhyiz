@@ -46,6 +46,12 @@
 #define CM_SYS_TCP_RECV     29
 #define CM_SYS_TCP_CLOSE    30
 
+/* Additive server ABI: listen(handle, request*, 0, 0), accept(handle, 0, 0, 0). */
+#define CM_SYS_TCP_LISTEN 40
+#define CM_SYS_TCP_ACCEPT 41
+typedef struct {uint32_t ifid;uint16_t port,backlog;} cm_tcp_listen_request_t;
+_Static_assert(sizeof(cm_tcp_listen_request_t)==8,"TCP listen ABI");
+
 #define CM_TCP_USER_IO_MAX 4096u
 #define CM_TCP_IF_PRIMARY UINT32_MAX
 typedef struct {

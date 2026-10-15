@@ -489,6 +489,30 @@ static int64_t sys_tcp_close(uint64_t hid,uint64_t timeout,uint64_t a,uint64_t b
     cm_usermode_resume_entry();return e;
 }
 
+static int64_t sys_tcp_listen(uint64_t hid,uint64_t address,uint64_t a,uint64_t b)
+{
+    cm_proc_t *p=udp_caller();if(!p)return CM_ERR_NOTSUP;
+    if(hid>=CM_HANDLES_PER_TASK || a || b)return CM_ERR_INVAL;
+    cm_tcp_listen_request_t request;
+    if(cm_copyin(p->elf,&request,address,sizeof(request)))return CM_ERR_INVAL;
+    int id;
+    if(request.ifid==CM_TCP_IF_PRIMARY) {
+        cm_iface_t *iface=cm_net_primary_iface();if(!iface)return CM_ERR_NOENT;
+        id=cm_if_find(iface->name);
+    } else {
+        if(request.ifid>=CM_MAX_IFACE)return CM_ERR_INVAL;
+        id=(int)request.ifid;
+    }
+    if(id!=cm_if_find("vnet0") && id!=cm_if_find("enet0"))return CM_ERR_NOTSUP;
+    return cm_tcp_listen(p->task,(int)hid,id,request.port,request.backlog);
+}
+static int64_t sys_tcp_accept(uint64_t hid,uint64_t a,uint64_t b,uint64_t c)
+{
+    cm_proc_t *p=udp_caller();if(!p)return CM_ERR_NOTSUP;
+    if(hid>=CM_HANDLES_PER_TASK || a || b || c)return CM_ERR_INVAL;
+    return cm_tcp_accept(p->task,(int)hid);
+}
+
 static const struct {
     uint32_t    nr;
     const char *name;
@@ -513,6 +537,8 @@ static const struct {
     { CM_SYS_FSYNC,          "fsync",          sys_fsync },
     { CM_SYS_FORK,           "fork",           sys_fork },
     { CM_SYS_TCP_OPEN, "tcp_open", sys_tcp_open },
+    { CM_SYS_TCP_LISTEN, "tcp_listen", sys_tcp_listen },
+    { CM_SYS_TCP_ACCEPT, "tcp_accept", sys_tcp_accept },
     { CM_SYS_TCP_CONNECT, "tcp_connect", sys_tcp_connect },
     { CM_SYS_TCP_SEND, "tcp_send", sys_tcp_send },
     { CM_SYS_TCP_RECV, "tcp_recv", sys_tcp_recv },
@@ -616,7 +642,7 @@ static int64_t dispatch(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint
             return sys_ipc_recv(a0, a1, a2, a3);
         int udp_call = (nr >= CM_SYS_UDP_OPEN && nr <= CM_SYS_UDP_CLOSE) || nr==CM_SYS_UDP_SENDADDR;
         if (nr == CM_SYS_DRV_RECV_WAIT) return sys_drv_recv_wait(a0,a1,a2,a3);
-        int tcp_call=nr>=CM_SYS_TCP_OPEN && nr<=CM_SYS_TCP_CLOSE;
+        int tcp_call=(nr>=CM_SYS_TCP_OPEN && nr<=CM_SYS_TCP_CLOSE) || nr==CM_SYS_TCP_LISTEN || nr==CM_SYS_TCP_ACCEPT;
         int trace_call = nr == CM_SYS_TRACE_READ || nr == CM_SYS_TRACE_CONFIG;
         int file_call=nr>=CM_SYS_OPEN && nr<=CM_SYS_FSYNC;
         if (!tcp_call && !file_call && !udp_call && !trace_call && nr != CM_SYS_NOP && nr != CM_SYS_WRITE && nr != CM_SYS_EXIT && nr != CM_SYS_CLOCK)

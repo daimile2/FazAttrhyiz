@@ -33,6 +33,10 @@ int cm_tcp_elf_selftest(void)
     int64_t hid=cm_syscall(CM_SYS_TCP_OPEN,0,0,0,0);
     CHECK(hid>0);
     CHECK(cm_syscall(CM_SYS_TCP_CONNECT,(uint64_t)hid,UINT64_MAX,0,0)==CM_ERR_INVAL);
+    CHECK(cm_syscall(CM_SYS_TCP_LISTEN,(uint64_t)hid,UINT64_MAX,0,0)==CM_ERR_INVAL);
+    CHECK(cm_syscall(CM_SYS_TCP_ACCEPT,(uint64_t)readonly,0,0,0)==CM_ERR_DENIED);
+    CHECK(cm_syscall(CM_SYS_TCP_ACCEPT,(uint64_t)hid,0,0,0)==CM_ERR_INVAL);
+    CHECK(cm_syscall(CM_SYS_TCP_ACCEPT,(uint64_t)hid,1,0,0)==CM_ERR_INVAL);
     CHECK(cm_syscall(CM_SYS_TCP_SEND,(uint64_t)readonly,0x402000,1,100)==CM_ERR_DENIED);
     CHECK(cm_syscall(CM_SYS_TCP_SEND,(uint64_t)hid,0x402000,4097,100)==CM_ERR_INVAL);
     CHECK(cm_syscall(CM_SYS_TCP_RECV,(uint64_t)hid,0x400000,1,0)==CM_ERR_INVAL);

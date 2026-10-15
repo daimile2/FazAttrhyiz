@@ -301,7 +301,7 @@ COW物理起点为10304；ESP只供引导，运行期VFS根为COW。详见 [安�
 | UDP endpoint | 16 | lo/vnet0/enet0共用，原生PORT capability |
 | 每 UDP 队列 | 8 个 datagram | 非阻塞，满/空按错误码返回 |
 | 每 UDP payload | 1472B | lo/vnet0/enet0，非阻塞；NIC地址可用DHCP lease，非完整BSD socket |
-| TCP连接槽 / RX窗口 | 8 / 每连接4096B | 主动连接，无listen/accept；无窗口缩放 |
+| TCP连接槽 / RX窗口 | 8 / 每连接4096B | 主动/被动连接共享8槽；backlog≤4，无窗口缩放 |
 | TCP MSS / 单次用户I/O | 536B / 4096B | MSS可受对端更小值限制；一次仅一段待确认 |
 | TCP重传 | 初始200ms，最大1600ms，最多4次重传 | SYN/数据/FIN；指数退避，API总期限可能先终止，无拥塞控制 |
 | RX预算/等待 | 16帧/接口，idle BLOCKED | 已路由IRQ通知为主；10ms推进RTO/回退，100ms IRQ watchdog |
@@ -1048,3 +1048,9 @@ IPC RTT、计数、压力测试提供的是具体测试证据，不能外推出�
 后续 continuation 与当前源码优先；参数/API 发生变化时必须重新核对。
 
 磁盘安装续作已提供宿主 blank-only MBR/FAT32 工具、独立 CapMix 卷 offset 与 AHCI/virtio 无 ISO 冷启动。不是 guest 安装 GUI 或真实设备安装器；两次冷启动和拒绝覆盖步骤见 [INSTALL_DISK.md](INSTALL_DISK.md)。
+
+### 用户态最小 HTTP 服务端续作
+
+已补 listen/accept syscall40/41与 `/bin/httpd.elf`，支持通过宿主端口转发读取HTTP/1.0 200。
+accept非阻塞，连接池8槽、监听backlog≤4；支持队列满拒绝及close/kill回收。
+不做本机TCP回环、TLS、线程池或完整HTTP解析，详见 [HTTPD.md](HTTPD.md)。
