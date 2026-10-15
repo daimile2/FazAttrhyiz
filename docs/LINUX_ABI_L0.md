@@ -1,5 +1,7 @@
 # Linux ABI L0：可关闭的静态 persona，与原生 ABI 并存
 
+后续 COW fork、有界 brk 与替换式 execve 见 [L2](LINUX_ABI_L2.md)。本文保留本阶段快照；L2 默认关闭且不改变原生 ABI。
+
 后续文件映射与定制 BusyBox 子集见 [L1](LINUX_ABI_L1.md)。本文保留 L0 验收快照；
 L1 已实现 open(nr=2)，未知调用探针改用保留号 0x40000000，黄金 write/exit ELF 不变。
 

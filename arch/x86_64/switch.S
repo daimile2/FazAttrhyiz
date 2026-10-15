@@ -83,7 +83,7 @@ FAULT_STUB 10	/* #TS */
 FAULT_STUB 11	/* #NP */
 FAULT_STUB 12	/* #SS */
 FAULT_STUB 13	/* #GP */
-FAULT_STUB 14	/* #PF */
+/* #PF below has a recoverable L2 COW path. */
 FAULT_STUB 17	/* #AC */
 
 .globl cm_timer_stub
@@ -133,3 +133,66 @@ cm_isr_count:
 .quad	0
 
 .section .note.GNU-stack,"",@progbits
+
+.section .entry.text,"ax",@progbits
+.globl cm_fault_stub_14
+cm_fault_stub_14:
+    CM_ENTRY_SAVE
+    pushq %rax
+    pushq %rbx
+    pushq %rcx
+    pushq %rdx
+    pushq %rsi
+    pushq %rdi
+    pushq %rbp
+    pushq %r8
+    pushq %r9
+    pushq %r10
+    pushq %r11
+    pushq %r12
+    pushq %r13
+    pushq %r14
+    pushq %r15
+    movq %rsp,%r12
+#if CM_KPTI && !defined(CAPMIX_HOSTED)
+    leaq 136(%r12),%rcx
+#else
+    leaq 120(%r12),%rcx
+#endif
+    movq (%rcx),%rdi
+    movq %cr2,%rsi
+    movq 16(%rcx),%rdx
+    andq $-16,%rsp
+    call cm_linux_cow_fault
+    testl %eax,%eax
+    jz 2f
+    movq %r12,%rsp
+    popq %r15
+    popq %r14
+    popq %r13
+    popq %r12
+    popq %r11
+    popq %r10
+    popq %r9
+    popq %r8
+    popq %rbp
+    popq %rdi
+    popq %rsi
+    popq %rdx
+    popq %rcx
+    popq %rbx
+    popq %rax
+    CM_ENTRY_RESTORE
+    addq $8,%rsp /* hardware #PF error code */
+    iretq
+2:
+#if CM_KPTI && !defined(CAPMIX_HOSTED)
+    leaq 136(%r12),%rcx
+#else
+    leaq 120(%r12),%rcx
+#endif
+    movq $14,%rdi
+    movq (%rcx),%rsi
+    movq 8(%rcx),%rdx
+    call cm_fault_isr
+    ud2

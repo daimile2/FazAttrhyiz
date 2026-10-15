@@ -12,7 +12,7 @@
 
 先加载/准备参数、创建 task/thread，再 release-publish 完整进程元数据；EEVDF 在 publish 前不选择该任务。AP 使用与 BSP 相同的调度入口，SYSCALL MSR 在各 CPU 首次执行 ELF 时初始化。
 
-后续已补齐 capability 门控的用户 spawn/wait，见 [USER_INIT_SHELL.md](USER_INIT_SHELL.md)。内核创建仍由 BSP 控制，fork 仍 NOTSUP。
+后续已补齐 capability 门控的用户 spawn/wait，见 [USER_INIT_SHELL.md](USER_INIT_SHELL.md)。内核创建仍由 BSP 控制，原生 fork 仍 NOTSUP。可选 Linux persona 的 L2 fork/exec 与 BSP 亲和限制见 [LINUX_ABI_L2](LINUX_ABI_L2.md)。
 
 ## 入口与回收
 

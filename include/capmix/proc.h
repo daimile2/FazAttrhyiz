@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "abi.h"
+#include "linux_process.h"
 #include "sched.h"
 
 /* User process + posix_spawn.
@@ -34,6 +35,10 @@ typedef struct cm_proc {
     int           used;
     cm_abi_t abi;
     uint64_t linux_enosys,linux_write_bytes,linux_last_syscall,linux_calls;
+    cm_linux_regs_t linux_regs;
+    cm_linux_regs_t *linux_frame; /* valid only while in the hardware syscall */
+    uint64_t linux_fs;
+    int linux_resume,linux_fork_child;
     uint8_t linux_console[CM_FD_MAX],linux_cloexec[CM_FD_MAX];
     cm_id_t       pid;
     cm_task_t    *task;

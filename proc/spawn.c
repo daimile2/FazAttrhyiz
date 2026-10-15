@@ -6,6 +6,7 @@
 #include "capmix/kernel.h"
 #include "capmix/obs.h"
 #include "capmix/elf.h"
+#include "capmix/uaccess.h"
 
 #include <string.h>
 #include <stdint.h>
@@ -98,6 +99,7 @@ static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
     cm_elf_image_t *im = NULL;
     cm_error_t err = cm_elf_load(attr->path, &im);
     if (err) { cm_irq_restore(irq); return err; }
+    if(im->abi==CM_ABI_LINUX && cpu!=0){kinfo("linux L2 affinity: requested cpu=%d -> BSP0 (bounded fork/reap ownership)",cpu);cpu=0;}
     err=cm_elf_set_args(im,attr->argv,attr->envp);
     if(err){cm_elf_destroy(im);cm_irq_restore(irq);return err;}
     cm_proc_t *p = alloc_proc();
@@ -402,4 +404,59 @@ void cm_user_hello(void)
     cm_syscall(CM_SYS_COMMIT_STAT, (uint64_t)(uintptr_t)&committed,
                (uint64_t)(uintptr_t)&limit, 0, 0);
     cm_syscall(CM_SYS_EXIT, 0, 0, 0, 0);
+}
+
+/* Linux-only fork. Creation/reap follow the existing BSP ownership rule.
+ * FILE inheritance never bypasses DUPLICATE or amplifies a right. */
+int64_t cm_linux_fork(void)
+{
+    cm_proc_t *parent=cm_proc_current();
+    if(!parent || parent->abi!=CM_ABI_LINUX || !parent->linux_frame)return -38;
+    if(cm_cpu_id()!=0)return -11;
+    uint64_t irq=cm_irq_save();cm_error_t e=CM_ERR_NOSPC;
+    cm_proc_t *p=alloc_proc();if(!p){cm_irq_restore(irq);return -11;}
+    p->abi=CM_ABI_LINUX;p->pid=g_pid_next++;p->parent_pid=parent->pid;p->linux_fork_child=1;
+    e=cm_elf_clone_cow(parent->elf,&p->elf);if(e)goto fail;
+    p->path=p->elf->path;p->aspace_pages=p->elf->charged;p->user_mode=1;p->elf_cpu=parent->elf_cpu;
+    p->task=cm_task_create(p->path,parent->task->qos);if(!p->task || !p->task->self_obj){e=CM_ERR_NOSPC;goto fail;}
+    p->stdio_mask=parent->stdio_mask;
+    for(int fd=0;fd<CM_FD_MAX;fd++)if(parent->fd[fd]>=0) {
+        p->linux_console[fd]=parent->linux_console[fd];p->linux_cloexec[fd]=parent->linux_cloexec[fd];
+        if(p->linux_console[fd])p->fd[fd]=0;
+        else {int hid;e=cm_handle_duplicate(parent->task,parent->fd[fd],p->task,&hid,~0u);if(e)goto fail;p->fd[fd]=hid;}
+    }
+    p->linux_regs=parent->linux_regs;p->linux_regs.rax=0;p->linux_resume=1;p->linux_fs=cm_arch_user_fs_get();
+    p->main=cm_thread_create(p->task,elf_entry_wrap,p,parent->task->qos);
+    if(!p->main){e=CM_ERR_NOSPC;goto fail;}
+    p->elf_thread_id=p->main->id;__atomic_store_n(&p->published,1,__ATOMIC_RELEASE);
+    cm_id_t pid=p->pid;kinfo("linux L2 fork: parent=%llu child=%llu pages=%u COW=RO reserves=resident cpu=%d",(unsigned long)parent->pid,(unsigned long)pid,p->elf->npages,p->elf_cpu);
+    cm_irq_restore(irq);return (int64_t)pid;
+fail:
+    if(p->task){cm_fdio_close_all(p);if(p->task->self_obj)cm_obj_release(p->task->self_obj);memset(p->task,0,sizeof(*p->task));}
+    cm_elf_destroy(p->elf);memset(p,0,sizeof(*p));cm_irq_restore(irq);
+    return e==CM_ERR_DENIED?-13:e==CM_ERR_OVERCOMMIT || e==CM_ERR_NOMEM?-12:-11;
+}
+int64_t cm_linux_wait4(int64_t pid,uint64_t status,uint64_t options,uint64_t usage)
+{
+    cm_proc_t *p=cm_proc_current();if(!p || cm_cpu_id()!=0)return -11;
+    if((pid<=0 && pid!=-1) || (options&~1ull))return -22;
+    if(usage)return -95;
+    if(status && !cm_user_access(p->elf,status,4,1))return -14;
+    for(;;) {
+        int found=0;
+        for(unsigned i=0;i<CM_MAX_PROCS;i++) {
+            cm_proc_t *c=&g_procs[i];if(!c->used || !c->linux_fork_child || c->parent_pid!=p->pid || (pid>0 && c->pid!=(uint64_t)pid))continue;
+            found=1;
+            if(!__atomic_load_n(&c->exited,__ATOMIC_ACQUIRE) || (c->main && __atomic_load_n(&c->main->id,__ATOMIC_ACQUIRE)==c->elf_thread_id))continue;
+            uint32_t st=((uint32_t)c->exit_code&255u)<<8;cm_id_t result=c->pid;
+            if(status && cm_copyout(p->elf,status,&st,4))return -14;
+            int e=cm_proc_release_child(p->pid,result);if(e)return -11;
+            kinfo("linux L2 wait4 reap: parent=%llu child=%llu status=%x",(unsigned long)p->pid,(unsigned long)result,st);
+            return (int64_t)result;
+        }
+        if(!found)return -10;
+        if(options)return 0;
+        cm_sched_yield();cm_usermode_resume_entry();
+        if(__atomic_load_n(&p->kill_pending,__ATOMIC_ACQUIRE))return -4;
+    }
 }

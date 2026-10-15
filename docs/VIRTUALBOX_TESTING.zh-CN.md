@@ -418,3 +418,14 @@ poweroff
 有界 BSS 分配（64KiB）**，不支持任意 musl/BusyBox。详细 ABI、哈希和开关见
 [LINUX_ABI_L1](LINUX_ABI_L1.md)。本轮 VBox7.2.20 SMP4 实测文件/重定向/冷启动读回；
 新 VM 的 e1000 启动为 link-down，网络未记通过，也未运行 VBox 全量 debug。
+
+### Linux L2 COW/fork/exec 产品路径（2026-10-15）
+
+启用Linux的测试安装盘可按 [L2手册](LINUX_ABI_L2.md) 离线导入两个探针 ELF，
+在用户shell执行 `run /bin/linux-l2.elf`。预先准备至少5字节的 `/l2-file.txt`。
+本轮实际调用 VBoxManage，在 VBox7.2.20、UEFI、AHCI、SMP4、无ISO环境验证：
+`linux L2 COW fault` → `linux L2 fork`/`execve replace` → `wait4 ... status=2a00`，
+最后父进程 `exit=0 reap=ok`。按执行顺序通常 fork日志先于COW日志；不要求跨类日志固定排序。
+证据为 `/tmp/linux-l2-vbox-product.log`；同轮BusyBox cat、原生hello、ACPI关机通过。
+这是产品探针验证，不是VBox全量debug或网络全回归。首版Linux进程固定BSP；
+COW页常驻、不支持压缩/换出，产品Linux仍默认关闭，原生ELF SMP策略保留。

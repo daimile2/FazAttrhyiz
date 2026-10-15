@@ -1067,3 +1067,10 @@ write/exit/arch_prctl分发、Linux auxv与FS基址上下文。产品默认关�
 仅承诺「定制 musl 静态 BusyBox 子集 + 有界 BSS 分配」的 echo/cat/ls；
 每进程 64 KiB arena、标量整数 printf 配置，未实现 mmap/brk/fork/socket/动态链接。
 产品默认关闭，原生 ABI 与已有 /bin 不删除不改名，详见 [LINUX_ABI_L1](LINUX_ABI_L1.md)。
+
+### Linux ABI L2 内存与进程续作
+
+可选 Linux persona 增加驻留 COW fork、有限 brk、wait4 和同 PID execve；
+fork 提前扣 commit 并预留潜在副本物理页，COW 页不参与压缩/swap。首版 Linux 固定 BSP，
+每镜像仍128页，产品默认关闭。原生 fork 保持 NOTSUP，原生 ELF SMP 并发保留。
+L1 的定制 BusyBox/64KiB BSS 分配器未替换，不代表通用 musl 或 sh 已可用；详见 [LINUX_ABI_L2](LINUX_ABI_L2.md)。

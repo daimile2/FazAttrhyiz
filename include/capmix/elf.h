@@ -30,6 +30,7 @@ typedef struct {
 typedef struct {
     uint64_t virt;
     void *backing;
+    uint32_t shared; /* L2 resident backing reference, zero for native */
     uint32_t flags; /* ELF PF_R=4 PF_W=2 PF_X=1 */
 } cm_elf_page_t;
 typedef struct cm_elf_image {
@@ -39,7 +40,7 @@ typedef struct cm_elf_image {
     uint64_t phdr;
     uint16_t phnum,phent;
     unsigned npages,argc,envc;
-    uint64_t charged;
+    uint64_t charged,brk_base,brk_end;
     char path[CM_ELF_PATH_MAX];
     cm_elf_page_t pages[CM_ELF_MAX_PAGES];
 } cm_elf_image_t;
@@ -51,4 +52,8 @@ cm_error_t cm_elf_set_args(cm_elf_image_t *,const char *const *,const char *cons
 void cm_elf_destroy(cm_elf_image_t *image);
 void *cm_elf_pointer(const cm_elf_image_t *image, uint64_t addr);
 int cm_elf_user_range(const cm_elf_image_t *image, uint64_t addr, uint64_t bytes, uint32_t flags);
+cm_error_t cm_elf_clone_cow(cm_elf_image_t *,cm_elf_image_t **);
+cm_error_t cm_elf_cow_write(cm_elf_image_t *,uint64_t);
+uint64_t cm_elf_brk(cm_elf_image_t *,uint64_t);
+uint64_t cm_elf_cow_splits(void);
 #endif

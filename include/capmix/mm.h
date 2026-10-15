@@ -94,6 +94,7 @@ uint64_t  cm_mm_total_pages(void);
 
 cm_error_t cm_commit_charge(uint64_t pages);
 void       cm_commit_uncharge(uint64_t pages);
+void       cm_commit_stats(uint64_t *committed,uint64_t *limit);
 void       cm_commit_add_backing(uint64_t pages);   /* swap extends the limit */
 
 /* --- anonymous memory (mm/anon.c) ---------------------------------------

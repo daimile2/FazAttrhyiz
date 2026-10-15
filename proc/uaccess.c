@@ -13,6 +13,7 @@ static cm_error_t copy(const cm_elf_image_t *im,void *kernel,uint64_t user,uint6
     if(!cm_user_access(im,user,size,out))return CM_ERR_INVAL;
     while(size) {
         uint64_t n=CM_PAGE_SIZE-(user&CM_PAGE_MASK);if(n>size)n=size;
+        if(out && im && im->abi==CM_ABI_LINUX && cm_elf_cow_write((cm_elf_image_t *)im,user))return CM_ERR_NOMEM;
         void *p=im?cm_elf_pointer(im,user):(void *)(uintptr_t)user;
         if(out)memcpy(p,kernel,(size_t)n);else memcpy(kernel,p,(size_t)n);
         kernel=(char *)kernel+n;user+=n;size-=n;

@@ -159,3 +159,19 @@ void cm_fault_isr(uint64_t vec, uint64_t err, uint64_t rip, uint64_t frame)
 	for (;;)
 		__asm__ volatile("hlt");
 }
+
+/* Only present/write/user faults on a logically writable, shared Linux page
+ * are recoverable. All other faults retain the existing fatal reporter. */
+#include "capmix/proc.h"
+#include "capmix/elf.h"
+int cm_linux_cow_fault(uint64_t err,uint64_t address,uint64_t cs)
+{
+    if((cs&3)!=3 || (err&31)!=7)return 0;
+    cm_proc_t *p=cm_proc_current();
+    if(!p || p->abi!=CM_ABI_LINUX || !p->elf)return 0;
+    uint64_t pte=cm_space_lookup(p->elf->root,address);
+    if(!(pte&1) || (pte&2))return 0;
+    if(cm_elf_cow_write(p->elf,address))return 0;
+    kinfo("linux L2 COW fault: pid=%llu va=%llx split_total=%llu",(unsigned long)p->pid,(unsigned long)address,(unsigned long)cm_elf_cow_splits());
+    return 1;
+}

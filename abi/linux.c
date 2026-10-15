@@ -48,7 +48,7 @@ int64_t cm_linux_errno(int64_t e)
     case CM_ERR_BUSY:return -16;
     case CM_ERR_DENIED:return -13;
     case CM_ERR_AGAIN:return -11;
-    case CM_ERR_NOMEM:return -12;
+    case CM_ERR_NOMEM:case CM_ERR_OVERCOMMIT:return -12;
     case CM_ERR_NOSPC:return -28;
     case CM_ERR_NOENT:return -2;
     case CM_ERR_NOTSUP:return -38;
@@ -90,6 +90,11 @@ int64_t cm_linux_dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t 
         {1,l_write},{60,l_exit},{158,l_arch_prctl}
     };
     for(unsigned i=0;i<sizeof(calls)/sizeof(calls[0]);i++)if(calls[i].nr==nr)return calls[i].fn(a,b,c,d);
+    if(nr==57)return cm_linux_fork();
+    if(nr==61)return cm_linux_wait4((int64_t)a,b,c,d);
+    if(nr==59)return cm_linux_execve(a,b,c);
+    if(nr==12)return (int64_t)cm_elf_brk(active->elf,a);
+    if(nr==9)return -95; /* mmap unsupported: including file/MAP_SHARED */
     int64_t result;if(cm_linux_file_call(nr,a,b,c,d,&result))return result;
 #else
     (void)nr;(void)a;(void)b;(void)c;(void)d;

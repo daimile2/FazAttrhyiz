@@ -80,8 +80,8 @@ static int descriptor_test(void)
     CHECK(cm_syscall(63,SCRATCH+1024,0,0,0)==0);
     cm_linux_utsname_t *u=cm_elf_pointer(p->elf,SCRATCH+1024);CHECK(equal(u->sysname,"CapMix") && equal(u->machine,"x86_64"));
     CHECK(cm_syscall(39,0,0,0,0)==(int64_t)pid);
-    CHECK(cm_syscall(9,0,0,0,0)==-38 && cm_syscall(12,0,0,0,0)==-38 && p->linux_enosys==2);
-    kinfo("linux L1 fd verified: copy/errno/stat144/dirent64/openat/seek dup-shared-offset close/console-alias mmap/brk=ENOSYS");
+    CHECK(cm_syscall(9,0,0,0,0)==-95 && cm_syscall(0x40000001,0,0,0,0)==-38 && p->linux_enosys==1);
+    kinfo("linux L1 fd verified: copy/errno/stat144/dirent64/openat/seek dup-shared-offset close/console-alias mmap=EOPNOTSUPP unknown=ENOSYS");
 cleanup:
     cm_sched_set_current(NULL);
     if(p){cm_proc_finish_exit(p,137);if(p->main && p->main->id)cm_thread_reap(p->main);if(cm_proc_release_elf(pid))failed++;}

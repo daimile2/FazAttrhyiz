@@ -346,6 +346,11 @@ void cm_usermode_run_elf(struct cm_proc *p)
           (unsigned long)p->elf->stack, cpu);
     cm_arch_ctx_set_cr3(th->ctx_slot, p->elf->cr3);
     cm_space_load(p->elf->cr3);
+    if(p->linux_resume) {
+        extern void cm_enter_user_regs(uint64_t,cm_linux_regs_t *,uint64_t);
+        cm_arch_user_fs_set(p->linux_fs);
+        cm_enter_user_regs(p->elf->shadow_cr3,&p->linux_regs,entry_top);
+    }
     cm_enter_user(p->elf->shadow_cr3, p->elf->entry, p->elf->stack, entry_top);
     cm_panic("exec: unexpected return from IRET");
 }
@@ -423,3 +428,31 @@ void cm_land_user(void)
 }
 
 #endif
+
+/* Only a committed Linux exec calls this, with interrupts masked at entry.
+ * Entry window/KPTI policy and per-thread kernel continuation stay unchanged. */
+void cm_usermode_replace_image(void)
+{
+    cm_proc_t *p=cm_proc_current();
+#ifndef CAPMIX_HOSTED
+    int cpu=cm_cpu_id();g_pcpu[cpu].full_cr3=p->elf->cr3;g_pcpu[cpu].user_cr3=p->elf->shadow_cr3;
+    g_pcpu[cpu].user_rsp=p->elf->stack;
+    cm_arch_ctx_set_cr3(p->main->ctx_slot,p->elf->cr3);cm_space_load(p->elf->cr3);
+#else
+    (void)p;
+#endif
+    cm_arch_user_fs_set(0);
+}
+int64_t cm_syscall_frame(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d,cm_linux_regs_t *frame)
+{
+    cm_proc_t *p=cm_proc_current();
+    if(p && p->abi==CM_ABI_LINUX) {
+        p->linux_frame=frame;memcpy(&p->linux_regs,frame,120);
+#ifndef CAPMIX_HOSTED
+        p->linux_regs.rsp=g_pcpu[cm_cpu_id()].user_rsp;
+#endif
+    }
+    int64_t result=cm_syscall(nr,a,b,c,d);
+    if(p)p->linux_frame=NULL;
+    return result;
+}

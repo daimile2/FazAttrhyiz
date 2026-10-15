@@ -1,5 +1,7 @@
 # Linux ABI L1：文件映射与定制静态 BusyBox 子集
 
+后续 COW fork、有界 brk 与替换式 execve 见 [L2](LINUX_ABI_L2.md)。本文保留本阶段快照；L2 默认关闭且不改变原生 ABI。
+
 L1 是 **「定制 musl 静态 BusyBox 子集 + 有界 BSS 分配」**。支持固定构建的
 BusyBox 1.36.0 的 `echo`、`cat`、`ls`，不代表通用 BusyBox、任意 musl 或 glibc
 静态程序兼容。本轮没有实现 mmap/brk、fork、execve 替换、socket、futex、动态链接。

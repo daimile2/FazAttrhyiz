@@ -44,3 +44,5 @@
 - [Linux ABI L0：双轨、开关、黄金ELF与边界](LINUX_ABI_L0.md)
 
 - [Linux ABI L1：定制 musl BusyBox 文件子集与有界 BSS](LINUX_ABI_L1.md)
+
+- [Linux ABI L2：驻留 COW fork、brk、替换式 execve 与记账](LINUX_ABI_L2.md)

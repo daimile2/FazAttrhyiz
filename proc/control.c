@@ -117,9 +117,9 @@ static int64_t spawn(cm_proc_t *p,uint64_t hid,uint64_t address,uint64_t output,
         }
         if(interactive)kinfo("user console delegated: parent=%llu child=%llu handle=1 rights=READ/WRITE cpu=0",(unsigned long)p->pid,(unsigned long)pid);
     } else cpu_next++;
-    cm_user_child_t out={.pid=pid,.handle=handle,.cpu=attr.cpu};
+    cm_user_child_t out={.pid=pid,.handle=handle,.cpu=child->elf_cpu};
     e=cm_copyout(p->elf,output,&out,sizeof(out));
-    kinfo("user spawn: parent=%llu child=%llu cpu=%d child-cap=%d",(unsigned long)p->pid,(unsigned long)pid,attr.cpu,handle);
+    kinfo("user spawn: parent=%llu child=%llu cpu=%d child-cap=%d",(unsigned long)p->pid,(unsigned long)pid,child->elf_cpu,handle);
 finish:for(unsigned i=0;i<2;i++)if(stdio[i])cm_obj_release(stdio[i]);
     if(console)cm_obj_release(console);
     cm_obj_release(authority);return e;
