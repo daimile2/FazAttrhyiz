@@ -27,6 +27,7 @@
 #include "../build/example_httpd.inc"
 #include "../build/linux_hello.inc"
 #include "../build/busybox_l1.inc"
+#include "../build/linux_l3.inc"
 static cm_error_t root_status;
 void cm_product_record_root(cm_error_t status) {root_status=status;}
 #ifndef CAPMIX_HOSTED
@@ -65,6 +66,7 @@ static cm_error_t provision(void)
     if(!e)e=install_missing("/bin/httpd.elf",cm_example_httpd_elf,sizeof(cm_example_httpd_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-hello.elf",cm_linux_hello_elf,sizeof(cm_linux_hello_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/busybox-l1.elf",cm_busybox_l1_elf,sizeof(cm_busybox_l1_elf));
+    if(!e && cm_linux_enabled())e=install_missing("/bin/linux-net.elf",cm_linux_l3_elf,sizeof(cm_linux_l3_elf));
     static const char sample[]="CapMix examples: persistent root ready\n";
     if(!e)e=install_missing("/example.txt",sample,sizeof(sample)-1);
     return e;
@@ -79,6 +81,10 @@ void cm_product_start(cm_error_t status)
         kerr("init: root mount failed=%d, product refused",status?status:root_status);cm_console_idle();return;
     }
     cm_smp_sched_disable(); /* publish PID1 and worker before opening AP scheduling */
+    /* Debug creates lo in its network test; product must not depend on that test. */
+    if(cm_linux_enabled() && cm_if_find("lo")<0 && cm_if_add("lo",CM_UDP_LO_ADDR)<0) {
+        kerr("init: Linux UDP loopback unavailable (interface table full)");
+    }
     cm_error_t prep=provision();
     cm_stat_t st;
     if(!prep){prep=cm_vfs_stat("/sbin",&st);if(prep==CM_ERR_NOENT)prep=cm_vfs_mkdir("/sbin");}

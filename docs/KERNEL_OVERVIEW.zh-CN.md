@@ -1074,3 +1074,11 @@ write/exit/arch_prctl分发、Linux auxv与FS基址上下文。产品默认关�
 fork 提前扣 commit 并预留潜在副本物理页，COW 页不参与压缩/swap。首版 Linux 固定 BSP，
 每镜像仍128页，产品默认关闭。原生 fork 保持 NOTSUP，原生 ELF SMP 并发保留。
 L1 的定制 BusyBox/64KiB BSS 分配器未替换，不代表通用 musl 或 sh 已可用；详见 [LINUX_ABI_L2](LINUX_ABI_L2.md)。
+
+### Linux ABI L3 网络续作
+
+默认关闭的 Linux persona 增加 IPv4 TCP/UDP socket 映射：主动连接、bind/listen/accept、
+read/write/close 与六参数 sendto/recvfrom。复用原生能力与网络后端；共享 fd 的最后引用
+负责关闭，fork/exec CLOEXEC 与回收可验证。仍无 DNS/TLS/通用 socket 兼容；
+有界等待、4096 字节 TCP 单次 I/O、1472 字节 UDP 与不支持项详见 [LINUX_ABI_L3](LINUX_ABI_L3.md)。
+原生 shell/httpd/nc/http-get 与文件 ABI 保留。

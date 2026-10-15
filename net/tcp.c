@@ -18,7 +18,7 @@ struct pending {
     uint64_t next,end;
 };
 struct connection {
-    unsigned used,state,busy,ack_pending,peer_fin;
+    unsigned used,state,busy,ack_pending,peer_fin,bound;
     int ifid;
     uint32_t local,remote,snd_una,snd_nxt,rcv_nxt;
     uint16_t sport,dport,peer_window,mss;
@@ -277,6 +277,40 @@ cm_error_t cm_tcp_open(cm_task_t *task,int *out)
     cm_object_t *obj=cm_obj_mint_owned(CM_OBJ_PORT,c,rights,destroy);if(!obj){destroy(c);return CM_ERR_NOSPC;}
     int hid=cm_handle_install(task,obj,rights);cm_obj_release(obj);if(hid<0)return hid;*out=hid;return CM_OK;
 }
+/* A CLOSED bound socket reserves a local port without changing transport
+ * state. Native unbound connect/listen retain their original behavior. */
+static int port_used(struct connection *self,int id,uint16_t port)
+{
+    for(unsigned i=0;i<CM_TCP_CONNECTIONS;i++) {
+        struct connection *x=&connections[i];
+        if(x!=self && x->used && x->ifid==id && x->sport==port &&
+           (x->bound || (x->state!=CLOSED && x->state!=ERROR)))return 1;
+    }
+    return 0;
+}
+cm_error_t cm_tcp_bind(cm_task_t *task,int hid,int id,uint16_t port)
+{
+    cm_iface_t *iface=cm_if_get(id);if(!iface || !iface->up)return CM_ERR_NOENT;
+    if(!iface->addr || iface->addr==CM_UDP_LO_ADDR)return CM_ERR_NOTSUP;
+    cm_object_t *o;int e=acquire(task,hid,CM_RIGHT_WRITE,&o);if(e)return e;
+    struct connection *c=o->payload;uint64_t f=lock();
+    if(c->state!=CLOSED || c->busy || c->bound)e=CM_ERR_INVAL;
+    if(!e && !port) {
+        for(unsigned i=0;i<16384;i++){if(next_port<49152)next_port=49152;uint16_t candidate=next_port++;if(!port_used(c,id,candidate)){port=candidate;break;}}
+        if(!port)e=CM_ERR_NOSPC;
+    }
+    if(!e && port_used(c,id,port))e=CM_ERR_EXIST;
+    if(!e){c->bound=1;c->ifid=id;c->local=iface->addr;c->sport=port;}
+    unlock(f);cm_obj_release(o);return e;
+}
+cm_error_t cm_tcp_endpoints(cm_task_t *task,int hid,cm_tcp_endpoints_t *out)
+{
+    if(!out)return CM_ERR_INVAL;
+    cm_object_t *o;int e=acquire(task,hid,CM_RIGHT_READ,&o);if(e)return e;
+    struct connection *c=o->payload;uint64_t f=lock();
+    *out=(cm_tcp_endpoints_t){c->ifid,c->local,c->remote,c->sport,c->dport};
+    unlock(f);cm_obj_release(o);return CM_OK;
+}
 cm_error_t cm_tcp_listen(cm_task_t *task,int hid,int id,uint16_t port,unsigned backlog)
 {
     if(!port || !backlog || backlog>CM_TCP_BACKLOG_MAX)return CM_ERR_INVAL;
@@ -286,10 +320,8 @@ cm_error_t cm_tcp_listen(cm_task_t *task,int hid,int id,uint16_t port,unsigned b
     cm_object_t *obj;cm_error_t e=acquire(task,hid,CM_RIGHT_WRITE,&obj);if(e)return e;
     struct connection *c=obj->payload;uint64_t f=lock();
     if(c->state!=CLOSED || c->busy)e=CM_ERR_BUSY;
-    for(unsigned i=0;!e && i<CM_TCP_CONNECTIONS;i++) {
-        struct connection *x=&connections[i];
-        if(x!=c && x->used && x->ifid==id && x->sport==port && x->state!=ERROR && x->state!=CLOSED)e=CM_ERR_BUSY;
-    }
+    if(!e && c->bound && (c->ifid!=id || c->sport!=port))e=CM_ERR_INVAL;
+    if(!e && port_used(c,id,port))e=CM_ERR_BUSY;
     if(!e){c->ifid=id;c->local=iface->addr;c->sport=port;c->backlog=backlog;c->state=LISTEN;}
     unlock(f);cm_obj_release(obj);
     if(!e)kinfo("tcp listen: if=%s port=%u backlog=%u slots=%u accept=nonblocking",iface->name,port,backlog,CM_TCP_CONNECTIONS);
@@ -399,8 +431,9 @@ cm_error_t cm_tcp_connect(cm_task_t *task,int hid,int id,uint32_t remote,uint16_
     cm_object_t *obj;cm_error_t e=acquire(task,hid,CM_RIGHT_WRITE,&obj);if(e)return e;
     struct connection *c=obj->payload;uint64_t f=lock();
     if(c->state!=CLOSED || c->busy){unlock(f);cm_obj_release(obj);return CM_ERR_BUSY;}
+    if(c->bound && c->ifid!=id){unlock(f);cm_obj_release(obj);return CM_ERR_INVAL;}
     c->ifid=id;c->local=iface->addr;c->remote=remote;c->dport=port;
-    int available=0;
+    int available=c->bound!=0;
     for(unsigned attempt=0;attempt<16384 && !available;attempt++) {
         if(next_port<49152)next_port=49152;
         c->sport=next_port++;available=1;

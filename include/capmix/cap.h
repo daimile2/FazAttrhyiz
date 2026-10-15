@@ -26,6 +26,7 @@ typedef enum {
     CM_OBJ_CONTROL,
     CM_OBJ_BOOT,
     CM_OBJ_CHILD,
+    CM_OBJ_LINUX_SOCKET,  /* Linux fd wrapper; native object ids stay fixed */
     CM_OBJ_NTYPES
 } cm_obj_type_t;
 

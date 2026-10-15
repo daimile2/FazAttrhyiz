@@ -36,7 +36,7 @@ SRC = \
 	cap/handle.c \
 	sched/eevdf.c \
 	ipc/channel.c \
-	proc/syscall.c proc/control.c proc/uaccess.c abi/linux.c abi/linux_file.c abi/linux_process.c \
+	proc/syscall.c proc/control.c proc/uaccess.c abi/linux.c abi/linux_file.c abi/linux_process.c abi/linux_socket.c \
 	proc/spawn.c proc/elf.c proc/elf_args.c proc/init.c user/shell.c \
 	fs/vfs.c \
 	fs/cowfs.c \
@@ -55,7 +55,7 @@ SRC = \
 	security/gate.c \
 	virt/job.c \
 	virt/kvm.c virt/hardware.c virt/vmcs.c virt/ept.c arch/x86_64/virt_probe.S arch/x86_64/vmcs.S \
-	boot/kernel.c boot/linux_l2_test.c boot/linux_l1_test.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
+	boot/kernel.c boot/linux_l3_test.c boot/linux_l2_test.c boot/linux_l1_test.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
 	boot/phase9_test.c boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c \
 	boot/phase3_test.c \
  
@@ -334,3 +334,11 @@ build/linux_l2.inc: build/linux-l2.elf scripts/embed-elf.py
 build/linux_l2_next.inc: build/linux-l2-next.elf scripts/embed-elf.py
 	python3 scripts/embed-elf.py $< $@ cm_linux_l2_next_elf
 $(HOST_BIN) $(FREE_BIN): build/linux_l2.inc build/linux_l2_next.inc
+
+build/linux-l3.elf: tests/linux_l3_start.S tests/linux_l3.c tests/linux_l3.ld scripts/mark-linux.py
+	mkdir -p build
+	$(CC) -std=c11 -Os -Wall -Wextra -ffreestanding -fno-builtin -fno-stack-protector -fno-pie -mno-red-zone -mgeneral-regs-only -nostdlib -static -no-pie -Wl,--build-id=none,-z,max-page-size=0x1000,-T,tests/linux_l3.ld -o $@ tests/linux_l3_start.S tests/linux_l3.c
+	python3 scripts/mark-linux.py $@
+build/linux_l3.inc: build/linux-l3.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_linux_l3_elf
+$(HOST_BIN) $(FREE_BIN): build/linux_l3.inc

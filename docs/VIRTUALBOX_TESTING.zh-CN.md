@@ -429,3 +429,13 @@ poweroff
 证据为 `/tmp/linux-l2-vbox-product.log`；同轮BusyBox cat、原生hello、ACPI关机通过。
 这是产品探针验证，不是VBox全量debug或网络全回归。首版Linux进程固定BSP；
 COW页常驻、不支持压缩/换出，产品Linux仍默认关闭，原生ELF SMP策略保留。
+
+### Linux L3 socket 产品路径（2026-10-15）
+
+可选 Linux persona 的固定 `/bin/linux-net.elf` 测法、NAT 端口转发与完整矩阵见
+[LINUX_ABI_L3](LINUX_ABI_L3.md)。产品仍默认关，安装盘配置需显式 `capmix.linux=1`。
+本轮实测 VirtualBox 7.2.20、UEFI、AHCI 安装盘无 ISO、e1000 NAT、4 CPU：
+UDP lo、TCP echo、fork/exec socket 别名、HTTP 客户端与 listen/accept 服务端全部 exit=0；
+宿主响应脚本 PASS，原生 cat 冷启动读回、ACPI poweroff 正常。没有重跑 VBox 全量 debug。
+启动横幅 link down 不一定是最终状态；后台 worker 会继续更新链路，不能用启动横幅
+代替网络调用结果。首次误用严格 `nonet` 探针的 exit=12 与最终成功运行分开记录。

@@ -1,4 +1,5 @@
 #include "capmix/abi.h"
+#include "capmix/linux_socket.h"
 #include "capmix/config.h"
 #include "capmix/boot.h"
 #include "capmix/proc.h"
@@ -60,6 +61,9 @@ static int64_t l_write(uint64_t fd,uint64_t address,uint64_t n,uint64_t unused)
     (void)unused;cm_proc_t *p=cm_proc_current();
     if(fd>=CM_FD_MAX || p->fd[fd]<0 || (fd==0 && !(p->stdio_mask&1u)))return -9; /* EBADF */
     if(!cm_user_access(p->elf,address,n,0))return -14; /* EFAULT */
+    if(cm_linux_socket_is(p,fd)) {
+        int64_t r=cm_linux_socket_io(p,fd,address,n,1);if(r>0)p->linux_write_bytes+=(uint64_t)r;return r;
+    }
     /* Preserve bound FILE/cap rights and byte accuracy, including binary output. */
     if(p->linux_console[fd]==1)return -9;
     int64_t result=p->linux_console[fd]?cm_native_console_write(address,n):cm_native_write(fd,address,n);
@@ -95,7 +99,8 @@ int64_t cm_linux_dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t 
     if(nr==59)return cm_linux_execve(a,b,c);
     if(nr==12)return (int64_t)cm_elf_brk(active->elf,a);
     if(nr==9)return -95; /* mmap unsupported: including file/MAP_SHARED */
-    int64_t result;if(cm_linux_file_call(nr,a,b,c,d,&result))return result;
+    int64_t result;if(cm_linux_socket_call(nr,a,b,c,d,&result))return result;
+    if(cm_linux_file_call(nr,a,b,c,d,&result))return result;
 #else
     (void)nr;(void)a;(void)b;(void)c;(void)d;
 #endif

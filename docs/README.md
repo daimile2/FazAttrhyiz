@@ -46,3 +46,5 @@
 - [Linux ABI L1：定制 musl BusyBox 文件子集与有界 BSS](LINUX_ABI_L1.md)
 
 - [Linux ABI L2：驻留 COW fork、brk、替换式 execve 与记账](LINUX_ABI_L2.md)
+
+- [Linux ABI L3：有界 IPv4 socket、能力生命周期与固定 ELF](LINUX_ABI_L3.md)

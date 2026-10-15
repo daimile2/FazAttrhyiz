@@ -12,6 +12,10 @@
 cm_error_t cm_tcp_init(void);
 cm_error_t cm_tcp_open(cm_task_t *,int *);
 cm_error_t cm_tcp_connect(cm_task_t *,int,int,uint32_t,uint16_t,unsigned);
+/* Local binding + metadata only; transport/RTO machinery is unchanged. */
+typedef struct {int ifid;uint32_t local,remote;uint16_t sport,dport;} cm_tcp_endpoints_t;
+cm_error_t cm_tcp_bind(cm_task_t *,int,int,uint16_t);
+cm_error_t cm_tcp_endpoints(cm_task_t *,int,cm_tcp_endpoints_t *);
 cm_error_t cm_tcp_listen(cm_task_t *,int,int,uint16_t,unsigned);
 /* Nonblocking: returns a new capability or AGAIN, never a borrowed queue slot. */
 int64_t cm_tcp_accept(cm_task_t *,int);

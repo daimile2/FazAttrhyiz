@@ -34,7 +34,7 @@ void cm_cap_init(void)
 
 static const char *names[] = {
     "invalid", "task", "thread", "channel", "endpoint",
-    "vmar", "vmo", "irq", "trace", "job", "port", "event", "file", "console", "control", "boot", "child"
+    "vmar", "vmo", "irq", "trace", "job", "port", "event", "file", "console", "control", "boot", "child", "linux-socket"
 };
 
 const char *cm_obj_type_name(cm_obj_type_t t)

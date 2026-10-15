@@ -22,7 +22,7 @@ L1 的 **定制 musl 静态 BusyBox 子集 + 有界 BSS 分配**（echo/cat/ls�
 | 61 | wait4(pid,status,options,rusage) | pid>0 或 -1，options=0 阻塞等待或 WNOHANG=1；未完成返回0，无子 ECHILD；只回收自己 fork 的子进程，status 是 exit_code低8位左移8位；rusage非NULL EOPNOTSUPP，其他选项 EINVAL |
 | 9 | mmap(...) | 本轮全部 EOPNOTSUPP（Linux95，也称 ENOTSUP），包括文件映射、MAP_SHARED 和匿名 mmap；选择 brk 作为有限匿名内存入口 |
 
-未实现的其他号继续 ENOSYS+计数。没有 clone/vfork、线程/futex、信号、socket 转译、
+未实现的其他号继续 ENOSYS+计数。没有 clone/vfork、线程/futex、信号、socket 转译（后续 L3 另见 [L3](LINUX_ABI_L3.md)）、
 动态链接、通用 TLS 或任意文件 mmap。wait4 的阻塞实现为让出调度器后重查，
 不是产品化的事件等待队列；kill_pending 时可结束等待，不实现完整信号语义。
 CPL3 自测有 5 秒上限；普通 wait4 不额外制造超时。

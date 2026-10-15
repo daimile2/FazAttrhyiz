@@ -15,6 +15,12 @@ typedef struct {
     int64_t unused[3];
 } cm_linux_stat_t;
 typedef struct {uint64_t ino;int64_t off;uint16_t reclen;uint8_t type;char name[];} cm_linux_dirent64_t;
+/* Linux v6.6 include/uapi/linux/in.h, socket.h: AF_INET sockaddr layout.
+ * Byte arrays make network endian explicit, independent of host libc. */
+typedef struct {uint16_t family;uint8_t port[2],address[4],zero[8];} cm_linux_sockaddr_in_t;
+_Static_assert(sizeof(cm_linux_sockaddr_in_t)==16 && offsetof(cm_linux_sockaddr_in_t,port)==2 && offsetof(cm_linux_sockaddr_in_t,address)==4,"Linux sockaddr_in layout");
+typedef uint32_t cm_linux_socklen_t;
+_Static_assert(sizeof(cm_linux_socklen_t)==4,"Linux socklen_t");
 typedef struct {uint64_t base,len;} cm_linux_iovec_t;
 typedef struct {char sysname[65],nodename[65],release[65],version[65],machine[65],domainname[65];} cm_linux_utsname_t;
 _Static_assert(sizeof(cm_linux_stat_t)==144,"Linux v6.6 x86-64 stat size");
