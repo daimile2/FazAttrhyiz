@@ -28,6 +28,8 @@ void cm_proc_finish_exit(cm_proc_t *p, int64_t code)
             if (p->aspace_pages) cm_commit_uncharge(p->aspace_pages);
             p->aspace_pages = 0;
         } /* ELF commit belongs to image until off-CPU reap. */
+        if(p->abi==CM_ABI_LINUX)kinfo("linux exit: pid=%llu write_bytes=%llu ENOSYS=%llu",
+            (unsigned long)p->pid,(unsigned long)p->linux_write_bytes,(unsigned long)p->linux_enosys);
         cm_fdio_close_all(p);
         cm_anon_free_owner(p->pid);
         cm_drv_process_exit(p->pid);
@@ -134,6 +136,25 @@ static int64_t sys_write(uint64_t fd,uint64_t address,uint64_t length,uint64_t u
     kinfo("user[%llu]: %s",(unsigned long)(p?p->pid:0),tmp);
     return (int64_t)length;
 }
+
+/* Linux uses raw stdout bytes, while native diagnostic formatting stays intact. */
+int64_t cm_native_write(uint64_t fd,uint64_t address,uint64_t length)
+{
+    cm_proc_t *p=cm_proc_current();
+    if(fd>2 || (p->stdio_mask&(1u<<fd)))return file_io(fd,address,length,1);
+    if(fd!=1 && fd!=2)return CM_ERR_INVAL;
+    char bytes[128];uint64_t done=0;
+    while(done<length) {
+        uint64_t n=CM_MIN(length-done,sizeof(bytes));
+        if(cm_copyin(p->elf,bytes,address+done,n))return done?(int64_t)done:CM_ERR_INVAL;
+        int held=cm_klog_lock();
+        for(uint64_t i=0;i<n;i++)cm_putchar(bytes[i]);
+        if(held)cm_klog_unlock();
+        done+=n;
+    }
+    return (int64_t)done;
+}
+int64_t cm_native_exit(uint64_t code){return sys_exit(code,0,0,0);}
 
 static void file_destroy(void *payload){(void)cm_vfs_close(payload);}
 
@@ -667,7 +688,7 @@ int64_t cm_syscall(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
     cm_proc_t *p=cm_proc_current();
     if(!p || !p->elf)return dispatch(nr,a,b,c,d);
     __atomic_add_fetch(&p->syscall_depth,1,__ATOMIC_ACQ_REL);
-    int64_t result=dispatch(nr,a,b,c,d);
+    int64_t result=p->abi==CM_ABI_LINUX?cm_linux_dispatch(nr,a,b,c,d):dispatch(nr,a,b,c,d);
     if(!p->exited && __atomic_load_n(&p->kill_pending,__ATOMIC_ACQUIRE))
         result=sys_exit(137,0,0,0);
     __atomic_sub_fetch(&p->syscall_depth,1,__ATOMIC_RELEASE);

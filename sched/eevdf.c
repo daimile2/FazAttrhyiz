@@ -477,12 +477,18 @@ cm_thread_t *cm_eevdf_pick(void)
          *           already be back in the buddy; entering it means running
          *           on recycled memory.
          *
+         * Wake may publish RUNNABLE before blocker's context save completes.
+         * The old CPU claim remains authoritative until it is back on its
+         * scheduler stack; checking state alone lets two CPUs enter one stack.
+         * Check claims for both ordinary and aging candidates.
+         *
          * Single-CPU behaviour is unchanged: cm_sched_tick() resets its
          * own previous thread to RUNNABLE after the swap returns, so it
          * stays eligible on the next pick. */
         for (int i = 0; i < g_rq_len[q] && nc < CM_MAX_THREADS; i++)
             if (g_rq[q][i]->state != CM_TH_RUNNING &&
                 g_rq[q][i]->state != CM_TH_DEAD &&
+                !thread_busy_elsewhere(g_rq[q][i],cm_cpu_id()) &&
                 cm_proc_task_cpu_allowed(g_rq[q][i]->task, cm_cpu_id()) &&
                 thread_slot_sane(g_rq[q][i])) cand[nc++] = g_rq[q][i];
 
@@ -491,6 +497,7 @@ cm_thread_t *cm_eevdf_pick(void)
             for (int i = 0; i < g_rq_len[q2] && nc < CM_MAX_THREADS; i++)
                 if (g_rq[q2][i]->state != CM_TH_RUNNING &&
                     g_rq[q2][i]->state != CM_TH_DEAD &&
+                    !thread_busy_elsewhere(g_rq[q2][i],cm_cpu_id()) &&
                     cm_proc_task_cpu_allowed(g_rq[q2][i]->task, cm_cpu_id()) &&
                     thread_slot_sane(g_rq[q2][i])) cand[nc++] = g_rq[q2][i];
         }
@@ -758,4 +765,29 @@ void cm_sched_dump(void)
                   (long)th->lag, (unsigned long)th->run_ticks);
         }
     }
+}
+static void claim_fixture(void *arg){CM_UNUSED(arg);}
+int cm_sched_claim_selftest(void)
+{
+    /* Deterministic early-wake model: runnable, but another CPU still owns
+     * its outgoing continuation. AP scheduling is parked during selftests. */
+    if(cm_cpu_count()>=CM_MAX_CPUS) {
+        kinfo("sched early-wake synthetic claim skipped: no offline CPU slot");return 0;
+    }
+    cm_task_t *task=cm_task_create("wake-claim",CM_QOS_USER_INTERACTIVE);
+    if(!task)return 1;
+    cm_thread_t *th=cm_thread_create(task,claim_fixture,NULL,CM_QOS_USER_INTERACTIVE);
+    if(!th){cm_obj_release(task->self_obj);memset(task,0,sizeof(*task));return 1;}
+    uint64_t flags=cm_irq_save();sched_lock();
+    int other=CM_MAX_CPUS-1; /* offline slot cannot be cleared by an idle AP */
+    th->lag=(1ll<<62);th->vdeadline=-(1ll<<62); /* wins whenever eligible */
+    cm_thread_t *saved=g_current[other];g_current[other]=th;
+    int failed=cm_eevdf_pick()==th;
+    g_current[other]=saved;
+    failed|=cm_eevdf_pick()!=th; /* now the saved context is available */
+    sched_unlock();cm_irq_restore(flags);
+    th->state=CM_TH_DEAD;cm_thread_reap(th);
+    cm_obj_release(task->self_obj);memset(task,0,sizeof(*task));
+    if(!failed)kinfo("sched early-wake claim verified: RUNNABLE on other CPU cannot enter before context handoff");
+    return failed;
 }

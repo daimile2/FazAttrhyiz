@@ -1,6 +1,7 @@
 #ifndef CAPMIX_ELF_H
 #define CAPMIX_ELF_H
 #include "types.h"
+#include "abi.h"
 
 #define CM_ELF_MAX_PHDRS 16u
 #define CM_ELF_MAX_PAGES 128u
@@ -34,6 +35,9 @@ typedef struct {
 typedef struct cm_elf_image {
     uint64_t *root, *shadow;
     uint64_t cr3, shadow_cr3, entry, stack;
+    cm_abi_t abi;
+    uint64_t phdr;
+    uint16_t phnum,phent;
     unsigned npages,argc,envc;
     uint64_t charged;
     char path[CM_ELF_PATH_MAX];

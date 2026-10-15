@@ -111,6 +111,47 @@ static cm_error_t build_shadow(cm_elf_image_t *im)
 #endif
     return CM_OK;
 }
+/* Only explicit ABI evidence changes persona; SYSV=0 alone stays legacy native.
+ * Notes are bounded and streamed, never trusted as an in-memory pointer. */
+static cm_error_t persona(cm_file_t *file,const cm_elf64_ehdr_t *eh,
+                          const cm_elf64_phdr_t *ph,uint64_t size,cm_abi_t *abi)
+{
+    int linux_tag=eh->ident[7]==3,native_tag=0;
+    if(eh->ident[7]!=0 && eh->ident[7]!=3)return CM_ERR_NOTSUP;
+    for(unsigned i=0;i<eh->phnum;i++) {
+        const cm_elf64_phdr_t *p=&ph[i];
+        if(p->type!=4)continue;
+        if(p->filesz>4096 || p->offset>size || p->filesz>size-p->offset)return CM_ERR_INVAL;
+        uint64_t at=0;
+        while(at<p->filesz) {
+            uint32_t h[3];
+            if(p->filesz-at<sizeof(h) || read_exact(file,h,sizeof(h),p->offset+at))return CM_ERR_INVAL;
+            at+=sizeof(h);
+            uint64_t names=CM_ALIGN_UP((uint64_t)h[0],4),desc=CM_ALIGN_UP((uint64_t)h[1],4);
+            if(names>p->filesz-at || desc>p->filesz-at-names)return CM_ERR_INVAL;
+            char name[8]={0};
+            if(h[0]<=sizeof(name) && read_exact(file,name,h[0],p->offset+at))return CM_ERR_IO;
+            if(h[0]==4 && !memcmp(name,"GNU",4) && h[2]==1) {
+                uint32_t os;
+                if(h[1]!=16 || read_exact(file,&os,sizeof(os),p->offset+at+names))return CM_ERR_INVAL;
+                if(os)return CM_ERR_NOTSUP;
+                linux_tag=1;
+            }
+            if(h[0]==7 && !memcmp(name,"CapMix",7) && h[2]==1) {
+                uint32_t version;
+                if(h[1]!=4 || read_exact(file,&version,4,p->offset+at+names) || version!=0)return CM_ERR_INVAL;
+                native_tag=1;
+            }
+            at+=names+desc;
+        }
+    }
+    if(linux_tag && native_tag){kinfo("elf rejected: conflicting CapMix/Linux ABI markers");return CM_ERR_INVAL;}
+    *abi=linux_tag?CM_ABI_LINUX:CM_ABI_CAPMIX;
+    if(linux_tag && !cm_linux_enabled()) {
+        kinfo("linux persona disabled: static Linux ELF refused; native ABI unchanged");return CM_ERR_NOTSUP;
+    }
+    return CM_OK;
+}
 cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
 {
     if (!path || !out) return CM_ERR_INVAL;
@@ -123,6 +164,8 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     cm_elf64_ehdr_t eh;
     cm_elf64_phdr_t ph[CM_ELF_MAX_PHDRS];
     cm_stat_t st;
+    cm_abi_t abi=CM_ABI_CAPMIX;
+    uint64_t user_phdr=0;
     uint64_t pages = CM_ELF_STACK_PAGES;
     int executable_entry = 0, loads = 0;
     /* Pin file contents against concurrent VFS mutations for the whole load. */
@@ -139,8 +182,12 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
         eh.phoff > st.size || (uint64_t)eh.phnum * sizeof(ph[0]) > st.size - eh.phoff) {
         err = CM_ERR_INVAL; goto done;
     }
-    if (eh.type != 2) { err = CM_ERR_NOTSUP; goto done; }
     if (read_exact(file, ph, eh.phnum * sizeof(ph[0]), eh.phoff)) { err = CM_ERR_IO; goto done; }
+    for(unsigned i=0;i<eh.phnum;i++)if(ph[i].type==3) {
+        kinfo("elf rejected: PT_INTERP dynamic loader unsupported (Linux L4 deferred)");err=CM_ERR_NOTSUP;goto done;
+    }
+    if (eh.type != 2) { kinfo("elf rejected: only static ET_EXEC supported (no ET_DYN)");err = CM_ERR_NOTSUP; goto done; }
+    err=persona(file,&eh,ph,st.size,&abi);if(err)goto done;
     for (unsigned i = 0; i < eh.phnum; i++) {
         cm_elf64_phdr_t *p = &ph[i];
         if (p->type == 2 || p->type == 3 || p->type == 7) { err = CM_ERR_NOTSUP; goto done; } /* DYNAMIC/INTERP/TLS */
@@ -166,10 +213,19 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
         loads++;
     }
     if (!loads || !executable_entry) { err = CM_ERR_INVAL; goto done; }
+    for(unsigned i=0;i<eh.phnum;i++)if(ph[i].type==1 && eh.phoff>=ph[i].offset &&
+        eh.phoff-ph[i].offset<=ph[i].filesz &&
+        (uint64_t)eh.phnum*eh.phentsize<=ph[i].filesz-(eh.phoff-ph[i].offset)) {
+        user_phdr=ph[i].vaddr+(eh.phoff-ph[i].offset);break;
+    }
+    if(abi==CM_ABI_LINUX && !user_phdr) {
+        kinfo("linux ELF rejected: PHDR must be contained in a readable PT_LOAD");err=CM_ERR_NOTSUP;goto done;
+    }
     im = cm_page_alloc(0);
     if (!im) { err = CM_ERR_NOMEM; goto done; }
     memset(im, 0, CM_PAGE_SIZE);
     memcpy(im->path, path, path_len + 1);
+    im->abi=abi;im->phdr=user_phdr;im->phnum=eh.phnum;im->phent=eh.phentsize;
     err = cm_commit_charge(pages);
     if (err) goto done;
     im->charged = pages; im->entry = eh.entry; im->stack = CM_ELF_STACK_TOP;
@@ -204,6 +260,7 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     *out = im;
     kinfo("elf load: path=%s ET_EXEC entry=%llx PT_LOAD=%d pages=%u BSS zeroed",
           im->path, (unsigned long)im->entry, loads, im->npages);
+    if(im->abi==CM_ABI_LINUX)kinfo("linux static ELF: persona=LINUX phdr=%llx phnum=%u",(unsigned long)im->phdr,im->phnum);
     im = NULL;
 done:
     if (file) cm_vfs_close(file);

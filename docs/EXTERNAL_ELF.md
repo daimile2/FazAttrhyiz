@@ -144,3 +144,5 @@ CAPMIX_TEST_DISK=/path/capmix-system.img python3 tests/test_copy_to_disk.py
 SDK分块处理短写，`cm_report`摘要走fd2。SPAWN扩展和前台重定向见 [SHELL](SHELL.md)。
 
 服务端扩展提供listen/accept syscall40/41与SDK包装，完整ABI及最小httpd用法见 [HTTPD.md](HTTPD.md)。
+
+Linux静态ELF是独立可关闭persona，不能套用原生crt/syscall号；L0识别与构建见 [LINUX_ABI_L0.md](LINUX_ABI_L0.md)。新原生软件建议 `.cmx` 或 `/bin/cm/`，已有 `.elf` 不强制改名。

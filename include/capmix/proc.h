@@ -2,6 +2,7 @@
 #define CAPMIX_PROC_H
 
 #include "types.h"
+#include "abi.h"
 #include "sched.h"
 
 /* User process + posix_spawn.
@@ -31,6 +32,8 @@ struct cm_elf_image;
 
 typedef struct cm_proc {
     int           used;
+    cm_abi_t abi;
+    uint64_t linux_enosys,linux_write_bytes;
     cm_id_t       pid;
     cm_task_t    *task;
     cm_thread_t  *main;

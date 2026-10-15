@@ -103,6 +103,7 @@ static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
     cm_proc_t *p = alloc_proc();
     if (!p) { cm_elf_destroy(im); cm_irq_restore(irq); return CM_ERR_NOSPC; }
     p->pid = g_pid_next++; p->path = im->path; p->user_mode = 1;
+    p->abi=im->abi;
     p->elf = im; p->aspace_pages = im->charged; p->elf_cpu = cpu;
     p->task = cm_task_create(p->path, attr->qos);
     if (!p->task || !p->task->self_obj) {

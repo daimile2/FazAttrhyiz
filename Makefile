@@ -7,7 +7,8 @@ LIMINE_CONFIG ?= boot/limine.conf
 
 CC      ?= gcc
 CFLAGS  ?= -std=c11 -Wall -Wextra -Wshadow -O2 -g
-INCLUDES = -Iinclude
+LINUX_ABI ?= 1
+INCLUDES = -Iinclude -DCM_LINUX_ABI=$(LINUX_ABI)
 
 SRC = \
 	console/fb.c console/ps2.c \
@@ -35,7 +36,7 @@ SRC = \
 	cap/handle.c \
 	sched/eevdf.c \
 	ipc/channel.c \
-	proc/syscall.c proc/control.c proc/uaccess.c \
+	proc/syscall.c proc/control.c proc/uaccess.c abi/linux.c \
 	proc/spawn.c proc/elf.c proc/elf_args.c proc/init.c user/shell.c \
 	fs/vfs.c \
 	fs/cowfs.c \
@@ -54,7 +55,7 @@ SRC = \
 	security/gate.c \
 	virt/job.c \
 	virt/kvm.c virt/hardware.c virt/vmcs.c virt/ept.c arch/x86_64/virt_probe.S arch/x86_64/vmcs.S \
-	boot/kernel.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
+	boot/kernel.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
 	boot/phase9_test.c boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c \
 	boot/phase3_test.c \
  
@@ -275,3 +276,32 @@ build/example_%.inc: build/example-%.elf scripts/embed-elf.py
 	python3 scripts/embed-elf.py $< $@ cm_example_$(subst -,_,$*)_elf
 
 $(HOST_BIN) $(FREE_BIN): $(EXAMPLE_INCS)
+
+# Switching personas must rebuild both kernels even when only make flags change.
+build/linux-abi-$(LINUX_ABI).stamp:
+	@mkdir -p build
+	@rm -f build/linux-abi-*.stamp
+	@touch $@
+$(HOST_BIN) $(FREE_BIN): build/linux-abi-$(LINUX_ABI).stamp build/linux_hello.inc
+
+build/linux-hello.elf: tests/fixtures/linux-l0.elf tests/fixtures/linux-l0.sha256
+	@mkdir -p build
+	sha256sum -c tests/fixtures/linux-l0.sha256
+	cp $< $@
+.PHONY: linux-golden-verify
+linux-golden-verify: tests/linux_hello.S tests/linux_hello.ld scripts/mark-linux.py
+	@mkdir -p build
+	$(CC) -c -nostdlib -fno-pie -o build/linux-golden.o tests/linux_hello.S
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none,-z,max-page-size=0x1000,-T,tests/linux_hello.ld -o build/linux-hello-rebuilt.elf build/linux-golden.o
+	python3 scripts/mark-linux.py build/linux-hello-rebuilt.elf
+	cmp tests/fixtures/linux-l0.elf build/linux-hello-rebuilt.elf
+build/linux_hello.inc: build/linux-hello.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_linux_hello_elf
+
+build/linux-probe.elf: tests/linux_probe.S tests/linux_hello.ld scripts/mark-linux.py
+	@mkdir -p build
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none,-z,max-page-size=0x1000,-T,tests/linux_hello.ld -o $@ $<
+	python3 scripts/mark-linux.py $@
+build/linux_probe.inc: build/linux-probe.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_linux_probe_elf
+$(HOST_BIN) $(FREE_BIN): build/linux_probe.inc

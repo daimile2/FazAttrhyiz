@@ -77,6 +77,7 @@ struct cm_thread {
 };
 
 void         cm_sched_init(void);
+int cm_sched_claim_selftest(void);
 cm_task_t   *cm_task_create(const char *name, cm_qos_t qos);
 cm_thread_t *cm_thread_create(cm_task_t *task, cm_th_entry_t entry, void *arg, cm_qos_t qos);
 /* Prepare a wait atomically with an IPC queue; never switches contexts. */

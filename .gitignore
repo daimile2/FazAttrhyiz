@@ -2,3 +2,6 @@ capmix.iso
 *.o
 *.elf
 build/
+
+# Fixed, source-backed Linux ABI L0 golden fixture.
+!tests/fixtures/linux-l0.elf

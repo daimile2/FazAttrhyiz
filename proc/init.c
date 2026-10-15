@@ -25,6 +25,7 @@
 #include "../build/example_ls.inc"
 #include "../build/example_http-get.inc"
 #include "../build/example_httpd.inc"
+#include "../build/linux_hello.inc"
 static cm_error_t root_status;
 void cm_product_record_root(cm_error_t status) {root_status=status;}
 #ifndef CAPMIX_HOSTED
@@ -61,6 +62,7 @@ static cm_error_t provision(void)
     if(!e)e=install_missing("/bin/ls.elf",cm_example_ls_elf,sizeof(cm_example_ls_elf));
     if(!e)e=install_missing("/bin/http-get.elf",cm_example_http_get_elf,sizeof(cm_example_http_get_elf));
     if(!e)e=install_missing("/bin/httpd.elf",cm_example_httpd_elf,sizeof(cm_example_httpd_elf));
+    if(!e && cm_linux_enabled())e=install_missing("/bin/linux-hello.elf",cm_linux_hello_elf,sizeof(cm_linux_hello_elf));
     static const char sample[]="CapMix examples: persistent root ready\n";
     if(!e)e=install_missing("/example.txt",sample,sizeof(sample)-1);
     return e;
@@ -90,6 +92,7 @@ void cm_product_start(cm_error_t status)
     if(e){cm_control_process_exit(p);p->exited=1;p->main->state=CM_TH_DEAD;cm_thread_reap(p->main);
         (void)cm_proc_release_child(0,pid);kerr("init: bootstrap capabilities failed=%d",e);cm_console_idle();return;}
     if(cm_blk_installed())kinfo("disk install: system ELF provisioning synced; root=disk base_lba=%llu ready",(unsigned long)cm_blk_root_base());
+    kinfo("linux persona: compiled=%u enabled=%u product default=off native files retained",CM_LINUX_ABI,cm_linux_enabled());
     kinfo("init: kernel bootstrap -> /sbin/init.elf PID1 (user ELF)");
     (void)cm_net_bg_start();
     cm_smp_sched_enable();

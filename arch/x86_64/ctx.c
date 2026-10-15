@@ -1,5 +1,7 @@
 #include "capmix/arch.h"
 #include "capmix/config.h"
+#include "capmix/sched.h"
+#include "capmix/abi.h"
 #include "capmix/klog.h"
 
 #include <string.h>
@@ -16,6 +18,7 @@ typedef struct {
     uint64_t cr3;
     int      ready;
     int      done;
+    uint64_t fs_base; /* appended: switch.S register offsets remain fixed */
 } cm_ctx_t;
 
 static uint64_t g_host_cr3;
@@ -237,6 +240,13 @@ static void ctx_swap_locked(int from_tid, int to_tid)
         cm_tss_reset_rsp0(cpu);
 #endif
 
+#ifndef CAPMIX_HOSTED
+    uint32_t fs_lo,fs_hi;
+    __asm__ volatile("rdmsr":"=a"(fs_lo),"=d"(fs_hi):"c"(0xc0000100));
+    g_ctx[f].fs_base=((uint64_t)fs_hi<<32)|fs_lo;
+    uint64_t fs_next=g_ctx[t].fs_base;
+    __asm__ volatile("wrmsr"::"c"(0xc0000100),"a"((uint32_t)fs_next),"d"((uint32_t)(fs_next>>32)):"memory");
+#endif
     cm_usermode_context_switch(from_tid,to_tid);
     cm_ctx_switch_asm(&g_ctx[f], &g_ctx[t]);
 }
@@ -253,4 +263,23 @@ int cm_arch_ctx_done(int tid)
 {
     if (tid < 0 || tid >= CM_MAX_THREADS) return 1;
     return g_ctx[tid].done;
+}
+/* Called only in a live syscall context. Hosted keeps a model in the slot and
+ * never touches libc/pthread's FS base. Real switches save hardware, not a cache. */
+uint64_t cm_arch_user_fs_get(void)
+{
+#ifdef CAPMIX_HOSTED
+    cm_thread_t *th=cm_sched_current();return th?g_ctx[th->ctx_slot].fs_base:0;
+#else
+    uint32_t lo,hi;__asm__ volatile("rdmsr":"=a"(lo),"=d"(hi):"c"(0xc0000100));
+    return ((uint64_t)hi<<32)|lo;
+#endif
+}
+void cm_arch_user_fs_set(uint64_t base)
+{
+#ifdef CAPMIX_HOSTED
+    cm_thread_t *th=cm_sched_current();if(th)g_ctx[th->ctx_slot].fs_base=base;
+#else
+    __asm__ volatile("wrmsr"::"c"(0xc0000100),"a"((uint32_t)base),"d"((uint32_t)(base>>32)):"memory");
+#endif
 }

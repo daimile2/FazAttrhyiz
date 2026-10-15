@@ -1054,3 +1054,9 @@ IPC RTT、计数、压力测试提供的是具体测试证据，不能外推出�
 已补 listen/accept syscall40/41与 `/bin/httpd.elf`，支持通过宿主端口转发读取HTTP/1.0 200。
 accept非阻塞，连接池8槽、监听backlog≤4；支持队列满拒绝及close/kill回收。
 不做本机TCP回环、TLS、线程池或完整HTTP解析，详见 [HTTPD.md](HTTPD.md)。
+
+### Linux ABI L0 双轨续作
+
+新增可关闭的Linux静态persona，仅对明确标记的Linux静态x86-64 ET_EXEC启用独立
+write/exit/arch_prctl分发、Linux auxv与FS基址上下文。产品默认关闭，原生工具不删除、不改名；
+新原生软件建议`.cmx`或`/bin/cm/`。不是任意静态glibc兼容层，详见 [LINUX_ABI_L0.md](LINUX_ABI_L0.md)。

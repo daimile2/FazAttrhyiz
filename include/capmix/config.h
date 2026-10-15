@@ -10,6 +10,11 @@
 #define CAPMIX_VERSION     "0.8.0-phase8"
 #define CAPMIX_BANNER      "CapMix " CAPMIX_VERSION " — capability hybrid kernel"
 
+/* Translation code is optional; product runtime additionally requires capmix.linux=1. */
+#ifndef CM_LINUX_ABI
+#define CM_LINUX_ABI 1
+#endif
+
 /* KPTI defaults on, including hosted structural tests. Override with -DCM_KPTI=0. */
 #ifndef CM_KPTI
 #define CM_KPTI 1
