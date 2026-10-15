@@ -33,7 +33,8 @@ struct cm_elf_image;
 typedef struct cm_proc {
     int           used;
     cm_abi_t abi;
-    uint64_t linux_enosys,linux_write_bytes;
+    uint64_t linux_enosys,linux_write_bytes,linux_last_syscall,linux_calls;
+    uint8_t linux_console[CM_FD_MAX],linux_cloexec[CM_FD_MAX];
     cm_id_t       pid;
     cm_task_t    *task;
     cm_thread_t  *main;

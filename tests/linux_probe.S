@@ -78,7 +78,7 @@ aux_done:
     syscall
     cmpq $-38,%rax
     jne fail
-    movl $2,%eax /* native WRITE number must never leak into Linux persona */
+    movl $0x40000000,%eax /* unsupported x32 ABI must not enter native dispatch */
     syscall
     cmpq $-38,%rax
     jne fail

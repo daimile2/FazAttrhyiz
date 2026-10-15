@@ -780,7 +780,7 @@ HTTP客户端不做TLS/DNS/自动重定向/chunked解码；正文最多1MiB并dr
 |---|---|---|
 | phase0 | boot、4/5-level folding、KPTI、node0 路径 | 任意架构/任意内存规模支持 |
 | phase1 | VMO/VMAR 零拷贝 IPC，共享写、生命周期、rollback | 完整用户 mmap/pager 或所有权限组合 |
-| phase2及续作 | 静态ET_EXEC、CPL3抢占、argv/envp、多ELF固定亲和并发、回收/畸形拒绝 | 无迁移、Linux ABI、替换式execve、动态链接或完整NX |
+| phase2及续作 | 静态ET_EXEC、CPL3抢占、argv/envp、多ELF固定亲和并发、回收/畸形拒绝 | 无迁移、通用Linux兼容、替换式execve、动态链接或完整NX |
 | phase3 | 内存压力管线、真实匿名页内容、COW/snapshot/checksum/scrub | 完整 APFS/Btrfs/XFS/生产无限卷 |
 | phase4 | IRQ→用户 driver channel，背压/合并、阻塞唤醒、peer-close/offline/crash 隔离 | 所有硬件驱动用户态化、PCI/DMA runtime 完整产品 |
 | phase5及P1续作 | lo/NIC UDP、DHCP、主动TCP用户ABI/RTO、IRQ后台RX | 无完整BSD socket、TCP服务端、拥塞控制、完整路由/NAT |
@@ -1000,7 +1000,7 @@ make iso                           # 恢复默认 product
 | 优先方向 | 要补的关键工作 | 完成前的限制 |
 |---|---|---|
 | 多用户进程/SMP | CPU迁移/负载均衡、容量扩展与更多退出同步压力覆盖 | 已支持多个 ELF、固定亲和与双 ELF overlap；尚无用户迁移 |
-| 用户SDK/ABI | 扩展libc/VMO/channel/poll接口与ABI版本管理 | 已有GCC SDK、argv、文件/网络syscall；无Linux ABI或完整POSIX |
+| 用户SDK/ABI | 扩展libc/VMO/channel/poll接口与ABI版本管理 | 已有GCC SDK、argv、文件/网络syscall；可选Linux L0/L1文件子集；无通用Linux兼容或完整POSIX |
 | 完整故障隔离 | user page fault 转进程失败、异常栈/信号/恢复、更多负面测试 | 不能保证任意坏 ELF 只伤自己 |
 | 用户服务管理 | 在现有用户init/shell之上扩展console/input服务、fd/IPC及服务生命周期 | 已是静态用户 ELF；尚无动态链接/完整服务管理 |
 | 驱动 runtime | DMA/IOMMU 授权、设备资源对象、真实 IRQ/完成与用户服务 | 当前硬件驱动是内核最小实现 |
@@ -1060,3 +1060,10 @@ accept非阻塞，连接池8槽、监听backlog≤4；支持队列满拒绝及cl
 新增可关闭的Linux静态persona，仅对明确标记的Linux静态x86-64 ET_EXEC启用独立
 write/exit/arch_prctl分发、Linux auxv与FS基址上下文。产品默认关闭，原生工具不删除、不改名；
 新原生软件建议`.cmx`或`/bin/cm/`。不是任意静态glibc兼容层，详见 [LINUX_ABI_L0.md](LINUX_ABI_L0.md)。
+
+### Linux ABI L1 文件续作
+
+增加可关闭的文件 syscall 翻译、固定 Linux v6.6 stat/dirent64 布局与偏移断言。
+仅承诺「定制 musl 静态 BusyBox 子集 + 有界 BSS 分配」的 echo/cat/ls；
+每进程 64 KiB arena、标量整数 printf 配置，未实现 mmap/brk/fork/socket/动态链接。
+产品默认关闭，原生 ABI 与已有 /bin 不删除不改名，详见 [LINUX_ABI_L1](LINUX_ABI_L1.md)。

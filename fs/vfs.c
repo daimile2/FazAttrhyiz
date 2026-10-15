@@ -37,6 +37,7 @@ struct cm_file {
     cm_id_t  ino;
     uint64_t off;
     uint32_t mode;     /* CM_O_* access mode + APPEND */
+    char path[VFS_PATH_MAX]; /* stable absolute path for bounded openat */
 };
 
 static vfs_mount_t g_mnt[VFS_MAX_MOUNTS];
@@ -212,6 +213,7 @@ cm_error_t cm_vfs_open(const char *path, uint32_t oflags, cm_file_t **out)
     f->ino = ino;
     f->off = 0;
     f->mode = oflags & (CM_O_ACCMODE | CM_O_APPEND);
+    size_t plen=strlen(path);memcpy(f->path,path,plen+1);
     *out = f;
     cm_vfs_unlock();
     return CM_OK;
@@ -244,13 +246,15 @@ int64_t cm_vfs_pwrite(cm_file_t *f, const void *buf, uint64_t len, uint64_t off)
 
 int64_t cm_vfs_read(cm_file_t *f, void *buf, uint64_t len)
 {
+    cm_vfs_lock();
     int64_t r = cm_vfs_pread(f, buf, len, f ? f->off : 0);
     if (r > 0) f->off += (uint64_t)r;
-    return r;
+    cm_vfs_unlock();return r;
 }
 
 int64_t cm_vfs_write(cm_file_t *f, const void *buf, uint64_t len)
 {
+    cm_vfs_lock();
     if (f && (f->mode & CM_O_APPEND)) {
         cm_stat_t st;
         cm_vfs_lock();
@@ -260,7 +264,7 @@ int64_t cm_vfs_write(cm_file_t *f, const void *buf, uint64_t len)
     }
     int64_t r = cm_vfs_pwrite(f, buf, len, f ? f->off : 0);
     if (r > 0) f->off += (uint64_t)r;
-    return r;
+    cm_vfs_unlock();return r;
 }
 
 cm_error_t cm_vfs_fsync(cm_file_t *f)
@@ -406,4 +410,55 @@ cm_error_t cm_vfs_init(void)
     e = cm_vfs_mount("/", cm_cowfs_ops(), NULL);
     kinfo("vfs: '/' = cowfs (in-kernel, no IPC hop); snapshots under /.snap");
     return e;
+}
+
+/* FILE-object operations used by Linux fd translation; no new native ABI. */
+cm_error_t cm_vfs_fstat(cm_file_t *f,cm_stat_t *st)
+{
+    if(!f || !f->used || !st)return CM_ERR_INVAL;
+    cm_vfs_lock();int e=g_mnt[f->mnt].ops->getattr(g_mnt[f->mnt].inst,f->ino,st);cm_vfs_unlock();return e;
+}
+int64_t cm_vfs_seek(cm_file_t *f,int64_t offset,int whence)
+{
+    if(!f || !f->used || whence<0 || whence>2)return CM_ERR_INVAL;
+    cm_vfs_lock();uint64_t base=0;cm_stat_t st;
+    if(whence==1)base=f->off;
+    if(whence==2) {
+        int e=g_mnt[f->mnt].ops->getattr(g_mnt[f->mnt].inst,f->ino,&st);
+        if(e){cm_vfs_unlock();return e;}base=st.size;
+    }
+    uint64_t result;
+    if(offset<0) {
+        uint64_t amount=0-(uint64_t)offset;
+        if(base<amount){cm_vfs_unlock();return CM_ERR_INVAL;}result=base-amount;
+    } else {
+        if(base>0x7fffffffffffffffull-(uint64_t)offset){cm_vfs_unlock();return CM_ERR_INVAL;}
+        result=base+(uint64_t)offset;
+    }
+    f->off=result;cm_vfs_unlock();return (int64_t)result;
+}
+cm_error_t cm_vfs_nextdir(cm_file_t *f,cm_dirent_t *entry,uint64_t *next)
+{
+    if(!f || !f->used || !entry || !next)return CM_ERR_INVAL;
+    cm_vfs_lock();cm_stat_t st;int e=g_mnt[f->mnt].ops->getattr(g_mnt[f->mnt].inst,f->ino,&st);
+    if(!e && st.kind!=CM_INO_DIR)e=CM_ERR_NOTDIR;
+    if(!e && f->off>0xffffffffu)e=CM_ERR_NOENT;
+    if(!e && f->off<2) {
+        memset(entry,0,sizeof(*entry));entry->ino=f->ino;entry->kind=CM_INO_DIR;
+        memcpy(entry->name,f->off?"..":".",f->off?3:2);
+        if(f->off) {
+            char parent[VFS_PATH_MAX];memcpy(parent,f->path,strlen(f->path)+1);
+            size_t n=strlen(parent);while(n>1 && parent[n-1]!='/')n--;
+            if(n>1)n--;
+            parent[n]=0;
+            cm_stat_t pst;if(!cm_vfs_stat(parent,&pst))entry->ino=pst.ino;
+        }
+    } else if(!e)e=g_mnt[f->mnt].ops->readdir(g_mnt[f->mnt].inst,f->ino,(uint32_t)(f->off-2),entry);
+    if(!e){f->off++;*next=f->off;}cm_vfs_unlock();return e;
+}
+cm_error_t cm_vfs_file_path(cm_file_t *f,char *out,size_t size)
+{
+    if(!f || !f->used || !out)return CM_ERR_INVAL;
+    size_t n=strlen(f->path)+1;if(n>size)return CM_ERR_NOSPC;
+    memcpy(out,f->path,n);return CM_OK;
 }

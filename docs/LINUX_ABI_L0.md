@@ -1,5 +1,8 @@
 # Linux ABI L0：可关闭的静态 persona，与原生 ABI 并存
 
+后续文件映射与定制 BusyBox 子集见 [L1](LINUX_ABI_L1.md)。本文保留 L0 验收快照；
+L1 已实现 open(nr=2)，未知调用探针改用保留号 0x40000000，黄金 write/exit ELF 不变。
+
 本轮只实现一个明确标记的静态 x86-64 Linux ET_EXEC 进程的 write、exit 和
 arch_prctl。它不是 Linux 内核、不是容器，也不意味着任意 `gcc -static` 的 glibc
 程序已经可用。内核仍为 capability 模型，原生 syscall 号、现有 `/bin/*.elf` 工具、

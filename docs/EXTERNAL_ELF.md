@@ -146,3 +146,7 @@ SDK分块处理短写，`cm_report`摘要走fd2。SPAWN扩展和前台重定向�
 服务端扩展提供listen/accept syscall40/41与SDK包装，完整ABI及最小httpd用法见 [HTTPD.md](HTTPD.md)。
 
 Linux静态ELF是独立可关闭persona，不能套用原生crt/syscall号；L0识别与构建见 [LINUX_ABI_L0.md](LINUX_ABI_L0.md)。新原生软件建议 `.cmx` 或 `/bin/cm/`，已有 `.elf` 不强制改名。
+
+Linux 文件兼容轨的固定 BusyBox echo/cat/ls 构建、64KiB BSS 限制及来源见
+[LINUX_ABI_L1](LINUX_ABI_L1.md)。这是定制子集，不表示任意宿主 musl 静态程序可用；
+原生 SDK、`.cmx` 或 `/bin/cm/` 约定继续保留。

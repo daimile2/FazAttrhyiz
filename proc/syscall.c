@@ -3,6 +3,7 @@
 #include "capmix/tcp.h"
 #include "capmix/syscall.h"
 #include "capmix/cap.h"
+#include "capmix/cap_internal.h"
 #include "capmix/ipc.h"
 #include "capmix/proc.h"
 #include "capmix/io.h"
@@ -92,6 +93,7 @@ static int64_t close_fd(cm_proc_t *p, cm_task_t *t, int fd)
 void cm_fdio_close_all(cm_proc_t *p)
 {
     if (!p || !p->task) return;
+    if(p->abi==CM_ABI_LINUX)for(int fd=0;fd<CM_FD_MAX;fd++)if(p->linux_console[fd])p->fd[fd]=-1;
     for (int fd = 0; fd < CM_FD_MAX; fd++)
         if ((fd>=3 || (p->stdio_mask&(1u<<fd))) && p->fd[fd] >= 0) (void)close_fd(p, p->task, fd);
 }
@@ -143,6 +145,11 @@ int64_t cm_native_write(uint64_t fd,uint64_t address,uint64_t length)
     cm_proc_t *p=cm_proc_current();
     if(fd>2 || (p->stdio_mask&(1u<<fd)))return file_io(fd,address,length,1);
     if(fd!=1 && fd!=2)return CM_ERR_INVAL;
+    return cm_native_console_write(address,length);
+}
+int64_t cm_native_console_write(uint64_t address,uint64_t length)
+{
+    cm_proc_t *p=cm_proc_current();
     char bytes[128];uint64_t done=0;
     while(done<length) {
         uint64_t n=CM_MIN(length-done,sizeof(bytes));
@@ -167,6 +174,10 @@ static int64_t sys_open(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     uint32_t flags = (uint32_t)a1;
     if((flags & CM_O_ACCMODE)==CM_O_ACCMODE ||
        (flags & ~(CM_O_ACCMODE|CM_O_CREAT|CM_O_TRUNC|CM_O_APPEND|CM_O_NOCOW)))return CM_ERR_INVAL;
+    return cm_native_open_path(path,flags);
+}
+int64_t cm_native_open_path(const char *path,uint32_t flags)
+{
     cm_proc_t *p = cm_proc_current();
     cm_thread_t *th = cm_sched_current();
     if (!p || !th || !th->task) return CM_ERR_INVAL;
@@ -693,4 +704,26 @@ int64_t cm_syscall(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
         result=sys_exit(137,0,0,0);
     __atomic_sub_fetch(&p->syscall_depth,1,__ATOMIC_RELEASE);
     return result;
+}
+
+int64_t cm_native_read(uint64_t fd,uint64_t address,uint64_t n){return file_io(fd,address,n,0);}
+int64_t cm_native_close(uint64_t fd){return sys_close(fd,0,0,0);}
+int cm_native_file_acquire(int fd,uint32_t need,cm_object_t **out)
+{
+    cm_proc_t *p=cm_proc_current();
+    if(!p || fd<0 || fd>=CM_FD_MAX || p->fd[fd]<0 || (fd<3 && !(p->stdio_mask&(1u<<fd))))return CM_ERR_INVAL;
+    return cm_handle_acquire(p->task,p->fd[fd],CM_OBJ_FILE,need,out);
+}
+int64_t cm_native_dup2(int old,int target)
+{
+    cm_proc_t *p=cm_proc_current();cm_object_t *obj=NULL;
+    int e=cm_native_file_acquire(old,CM_RIGHT_DUPLICATE,&obj);if(e)return e;
+    cm_obj_release(obj);
+    if(old==target)return target;
+    uint64_t f=cm_cap_lock();cm_handle_t *h=cm_handle_lookup(p->task,p->fd[old]);
+    cm_rights_t rights=h?h->rights:0;cm_cap_unlock(f);int hid;
+    e=cm_handle_duplicate(p->task,p->fd[old],p->task,&hid,rights);if(e)return e;
+    if(p->fd[target]>=0 && !p->linux_console[target])(void)sys_close((uint64_t)target,0,0,0);
+    p->fd[target]=hid;p->linux_console[target]=0;if(target<3)p->stdio_mask|=1u<<target;
+    return target;
 }

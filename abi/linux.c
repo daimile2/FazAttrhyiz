@@ -36,10 +36,16 @@ void cm_linux_random16(uint8_t out[16])
         kinfo("linux AT_RANDOM: RDRAND unavailable; TSC/counter SHA256 fallback, not cryptographic entropy");
 }
 #if CM_LINUX_ABI
-static int64_t linux_error(int64_t e)
+int64_t cm_linux_errno(int64_t e)
 {
     switch(e) {
     case CM_ERR_INVAL:return -22;
+    case CM_ERR_EXIST:return -17;
+    case CM_ERR_NOTDIR:return -20;
+    case CM_ERR_ISDIR:return -21;
+    case CM_ERR_ROFS:return -30;
+    case CM_ERR_NOTEMPTY:return -39;
+    case CM_ERR_BUSY:return -16;
     case CM_ERR_DENIED:return -13;
     case CM_ERR_AGAIN:return -11;
     case CM_ERR_NOMEM:return -12;
@@ -55,9 +61,10 @@ static int64_t l_write(uint64_t fd,uint64_t address,uint64_t n,uint64_t unused)
     if(fd>=CM_FD_MAX || p->fd[fd]<0 || (fd==0 && !(p->stdio_mask&1u)))return -9; /* EBADF */
     if(!cm_user_access(p->elf,address,n,0))return -14; /* EFAULT */
     /* Preserve bound FILE/cap rights and byte accuracy, including binary output. */
-    int64_t result=cm_native_write(fd,address,n);
+    if(p->linux_console[fd]==1)return -9;
+    int64_t result=p->linux_console[fd]?cm_native_console_write(address,n):cm_native_write(fd,address,n);
     if(result>0)p->linux_write_bytes+=(uint64_t)result;
-    return linux_error(result);
+    return cm_linux_errno(result);
 }
 static int64_t l_exit(uint64_t status,uint64_t b,uint64_t c,uint64_t d)
 {(void)b;(void)c;(void)d;return cm_native_exit(status&255u);}
@@ -78,10 +85,12 @@ static int64_t l_arch_prctl(uint64_t code,uint64_t address,uint64_t c,uint64_t d
 int64_t cm_linux_dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
 {
 #if CM_LINUX_ABI
+    cm_proc_t *active=cm_proc_current();if(active){active->linux_last_syscall=nr;active->linux_calls++;}
     static const struct {uint32_t nr;int64_t (*fn)(uint64_t,uint64_t,uint64_t,uint64_t);} calls[]={
         {1,l_write},{60,l_exit},{158,l_arch_prctl}
     };
     for(unsigned i=0;i<sizeof(calls)/sizeof(calls[0]);i++)if(calls[i].nr==nr)return calls[i].fn(a,b,c,d);
+    int64_t result;if(cm_linux_file_call(nr,a,b,c,d,&result))return result;
 #else
     (void)nr;(void)a;(void)b;(void)c;(void)d;
 #endif

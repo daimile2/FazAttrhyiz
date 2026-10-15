@@ -114,6 +114,10 @@ int64_t    cm_vfs_pread(cm_file_t *f, void *buf, uint64_t len, uint64_t off);
 int64_t    cm_vfs_pwrite(cm_file_t *f, const void *buf, uint64_t len, uint64_t off);
 cm_error_t cm_vfs_fsync(cm_file_t *f);
 cm_error_t cm_vfs_close(cm_file_t *f);
+cm_error_t cm_vfs_fstat(cm_file_t *,cm_stat_t *);
+int64_t cm_vfs_seek(cm_file_t *,int64_t,int);
+cm_error_t cm_vfs_nextdir(cm_file_t *,cm_dirent_t *,uint64_t *);
+cm_error_t cm_vfs_file_path(cm_file_t *,char *,size_t);
 uint32_t   cm_vfs_file_mode(const cm_file_t *f);
 
 cm_error_t cm_vfs_stat(const char *path, cm_stat_t *out);

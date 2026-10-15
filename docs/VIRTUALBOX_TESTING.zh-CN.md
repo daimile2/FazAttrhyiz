@@ -401,3 +401,20 @@ ISO配置、是否nested、是否真冷启动、完整串口路径、FAIL/skip�
 写入→ACPI关机→同盘无ISO冷启动读回，内容断言PASS。e1000型号82540EM已枚举，
 启动link down，网络未据此宣称通过。复现、权限与输出副作用见 [SHELL](SHELL.md)。
 本机VBox与KVM/QEMU应串行运行，避免硬件虚拟化资源冲突。
+
+### Linux L1 定制文件子集（2026-10-15）
+
+仅对启用 `capmix.linux=1` 的 Linux 静态 ELF 生效；默认产品关闭，原生工具保留。
+使用 `boot/limine-linux.conf` 构建/安装后，无 ISO 的 UEFI/AHCI 盘可运行：
+
+```text
+run /bin/busybox-l1.elf echo vbox-l1 > /vbox-l1
+run /bin/busybox-l1.elf cat /vbox-l1
+run /bin/busybox-l1.elf ls /
+poweroff
+```
+
+再次冷启动后执行 cat，核对 `vbox-l1` 仍在。此配置为**定制 musl 静态 BusyBox 子集 +
+有界 BSS 分配（64KiB）**，不支持任意 musl/BusyBox。详细 ABI、哈希和开关见
+[LINUX_ABI_L1](LINUX_ABI_L1.md)。本轮 VBox7.2.20 SMP4 实测文件/重定向/冷启动读回；
+新 VM 的 e1000 启动为 link-down，网络未记通过，也未运行 VBox 全量 debug。

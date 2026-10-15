@@ -93,7 +93,7 @@ int cm_linux_selftest(void)
     CHECK(cm_posix_spawn(&a,&pid[0])==CM_OK);p[0]=cm_proc_lookup(pid[0]);CHECK(p[0] && p[0]->abi==CM_ABI_LINUX);
 #ifdef CAPMIX_HOSTED
     cm_sched_set_current(p[0]->main);
-    CHECK(cm_syscall(9999,0,0,0,0)==-38 && cm_syscall(2,0,0,0,0)==-38);
+    CHECK(cm_syscall(9999,0,0,0,0)==-38 && cm_syscall(0x40000000,0,0,0,0)==-38);
     CHECK(cm_syscall(1,1,UINT64_MAX,1,0)==-14 && cm_syscall(1,100,0,0,0)==-9);
     CHECK(cm_syscall(158,0x1002,0xffff800000000000ull,0,0)==-1);
     CHECK(cm_syscall(158,0x1003,0x400000,0,0)==-14);

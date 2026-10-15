@@ -111,6 +111,7 @@ static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
         cm_elf_destroy(im); memset(p,0,sizeof(*p)); cm_irq_restore(irq);return CM_ERR_NOSPC;
     }
     p->fd[0] = 0; p->fd[1] = 1; p->fd[2] = 2;
+    if(p->abi==CM_ABI_LINUX)for(unsigned i=0;i<3;i++)p->linux_console[i]=(uint8_t)(i+1);
     for(unsigned fd=0;fd<2;fd++)if(attr->stdio[fd]) {
         int h=cm_handle_install(p->task,attr->stdio[fd],fd?CM_RIGHT_WRITE:CM_RIGHT_READ);
         if(h<0) {
@@ -118,7 +119,7 @@ static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
             memset(p->task,0,sizeof(*p->task));cm_elf_destroy(im);memset(p,0,sizeof(*p));
             cm_irq_restore(irq);return h;
         }
-        p->fd[fd]=h;p->stdio_mask|=1u<<fd;
+        p->fd[fd]=h;p->stdio_mask|=1u<<fd;p->linux_console[fd]=0;
     }
     /* The affinity gate excludes this task until main/id are installed. */
     p->main = cm_thread_create(p->task, elf_entry_wrap, p, attr->qos);
