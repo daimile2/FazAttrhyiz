@@ -1,5 +1,8 @@
 # 阶段 2：静态 ELF64 加载与 path-based posix_spawn
 
+> 历史阶段记录：保留当时实现与验收边界；后续功能可能已扩展。当前状态见
+> [内核总览](../KERNEL_OVERVIEW.zh-CN.md)，操作测试见 [VirtualBox手册](../VIRTUALBOX_TESTING.zh-CN.md)。
+
 ## 使用方式与支持边界
 
 保留原 `entry != NULL` 的 C 入口 spawn。新增 ELF 分支：
@@ -143,4 +146,4 @@ timeout 30 qemu-system-x86_64 -enable-kvm -m 512 -cpu host -smp 4 \
 真实 ELF 抢占验收使用 KVM；hosted 继续明确跳过 ring3 执行，验证加载、拒绝与回收。
 
 后续已解除单 pending/BSP 串行限制；并发容量、CPU 亲和、双 ELF overlap 和
-同 CPU 阻塞 syscall 现场隔离见 [ELF_CONCURRENCY.md](ELF_CONCURRENCY.md)。
+同 CPU 阻塞 syscall 现场隔离见 [ELF_CONCURRENCY.md](../ELF_CONCURRENCY.md)。

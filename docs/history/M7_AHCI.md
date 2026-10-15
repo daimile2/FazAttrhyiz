@@ -1,5 +1,8 @@
 # M7：AHCI / SATA 最小存储
 
+> 历史阶段记录：保留当时实现与验收边界；后续功能可能已扩展。当前状态见
+> [内核总览](../KERNEL_OVERVIEW.zh-CN.md)，操作测试见 [VirtualBox手册](../VIRTUALBOX_TESTING.zh-CN.md)。
+
 新增原始自包含驱动，按 [Intel AHCI 1.3.1](https://www.intel.com/content/dam/www/public/us/en/documents/technical-specifications/serial-ata-ahci-spec-rev1-3-1.pdf)
 实现 PCI class 01/06/01 枚举、ABAR 不可缓存映射、BIOS/OS ownership
 handoff、SATA signature 检测与 IDENTIFY。首版选择第一个受支持的 AHCI

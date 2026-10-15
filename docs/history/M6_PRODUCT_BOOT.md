@@ -1,5 +1,8 @@
 # M6：产品启动与 VMware UEFI
 
+> 历史阶段记录：保留当时实现与验收边界；后续功能可能已扩展。当前状态见
+> [内核总览](../KERNEL_OVERVIEW.zh-CN.md)，操作测试见 [VirtualBox手册](../VIRTUALBOX_TESTING.zh-CN.md)。
+
 默认 `make iso` 使用 `boot/limine.conf`，直接挂根、启动 PID1、进入
 `capmix>`，不执行 phase 测试。完整回归必须选择：
 

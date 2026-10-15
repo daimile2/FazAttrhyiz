@@ -1,5 +1,8 @@
 # M5: PID1 and the product shell
 
+> 历史阶段记录：保留当时实现与验收边界；后续功能可能已扩展。当前状态见
+> [内核总览](../KERNEL_OVERVIEW.zh-CN.md)，操作测试见 [VirtualBox手册](../VIRTUALBOX_TESTING.zh-CN.md)。
+
 `make iso` now boots the product path by default (`capmix.mode=product`). It
 initializes the platform, mounts the existing COW root, and starts PID1 without
 running the phase selftests. With a supported virtio-blk device the root stays on

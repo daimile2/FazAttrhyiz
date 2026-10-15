@@ -1,5 +1,8 @@
 # Phase 6: SHA-256 content verification
 
+> 历史阶段记录：保留当时实现与验收边界；后续功能可能已扩展。当前状态见
+> [内核总览](../KERNEL_OVERVIEW.zh-CN.md)，操作测试见 [VirtualBox手册](../VIRTUALBOX_TESTING.zh-CN.md)。
+
 `lib/sha256.c` is an original, allocation-free implementation of SHA-256 from
 [FIPS 180-4](https://doi.org/10.6028/NIST.FIPS.180-4), not copied third-party code.
 `cm_sha256_init/update/final` supports streaming; `cm_sha256` is the one-shot API.

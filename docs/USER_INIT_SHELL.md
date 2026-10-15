@@ -84,3 +84,7 @@ exit
 网络 echo 仍需宿主 `scripts/tcp-echo.py` / `scripts/udp-echo.py` 和 QEMU user netdev；无网卡行为继承原程序的 skip/NOENT。二次启动再跑 filetest 可观察 `p1a previous boot payload verified`。默认产品不跑完整 phase；debug PASS 应从独立 debug 日志判断。
 
 普通 `run /bin/shell.elf` 不委派管理 bundle，该镜像检查缺失控制台能力后 exit=1；不会进入无限 DENIED 轮询。
+
+标准I/O续作：SPAWN的a3可选指向16B `cm_user_stdio_t`，a3=0保持旧调用。
+父FILE经DUPLICATE与READ/WRITE检查，在子线程发布前绑定；仅普通spawn接受。
+前台重定向语法、FILE最后引用析构与环境矩阵见 [SHELL.md](SHELL.md)。

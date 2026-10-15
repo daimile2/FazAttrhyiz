@@ -24,6 +24,7 @@ typedef struct {
     const char *const *argv; /* trusted native vectors; copied before ELF publication */
     const char *const *envp;
     int cpu_set, cpu; /* optional fixed ELF affinity; default BSP */
+    cm_object_t *stdio[2]; /* trusted retained FILE objects, installed before publish */
 } cm_spawn_attr_t;
 
 struct cm_elf_image;
@@ -39,6 +40,7 @@ typedef struct cm_proc {
     int64_t       exit_code;
     uint64_t      aspace_pages;
     int           fd[CM_FD_MAX]; /* posix fd → capability handle, -1 empty */
+    unsigned stdio_mask; /* bound fd0/1; a closed binding never falls back to console */
     cm_object_t  *vmar;
     cm_object_t  *vmo;
     struct cm_elf_image *elf;

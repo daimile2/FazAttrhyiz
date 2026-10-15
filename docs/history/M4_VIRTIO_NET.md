@@ -1,5 +1,8 @@
 # M4: virtio-net, static IPv4, off-loopback TX/RX
 
+> 历史阶段记录：保留当时实现与验收边界；后续功能可能已扩展。当前状态见
+> [内核总览](../KERNEL_OVERVIEW.zh-CN.md)，操作测试见 [VirtualBox手册](../VIRTUALBOX_TESTING.zh-CN.md)。
+
 The kernel supports the first PCI vendor 1af4/device 1000 NIC with a usable
 legacy I/O BAR (revision 0, MSI-X disabled). Modern-only device 1041 is skipped.
 The implementation follows the [OASIS Virtio specification](https://docs.oasis-open.org/virtio/virtio/v1.2/virtio-v1.2.html),
@@ -14,7 +17,7 @@ Header and Ethernet data use separate descriptors: the legacy net header is
 or mergeable-buffer offload, packed rings or multiqueue is implemented. RX now
 uses legacy INTx on verified i440FX routes; TX remains synchronous with interrupt
 suppression. Unknown/shared routes retain polling fallback. See
-[NET_RX_IRQ.md](NET_RX_IRQ.md) for IRQ entry, wakeup, teardown and tests.
+[NET_RX_IRQ.md](../NET_RX_IRQ.md) for IRQ entry, wakeup, teardown and tests.
 
 Each queue uses a 16 KiB buddy allocation. RX buffers and TX bounce buffer are
 individual owned 4 KiB pages; arbitrary user/kernel stack addresses never go

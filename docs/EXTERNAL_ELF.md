@@ -139,3 +139,6 @@ CAPMIX_TEST_DISK=/path/capmix-system.img python3 tests/test_copy_to_disk.py
 真实验收使用上述 shell run，检查 argv 和 exit=0；hosted 自测不能替代 ring3 运行。
 
 更多可安装的 `nc`、`cat`、`ls` 示例见 [EXAMPLES.md](EXAMPLES.md)。
+
+标准I/O续作：未绑定fd1/fd2时上述诊断流语义保留；绑定fd1后WRITE走FILE，
+SDK分块处理短写，`cm_report`摘要走fd2。SPAWN扩展和前台重定向见 [SHELL](SHELL.md)。

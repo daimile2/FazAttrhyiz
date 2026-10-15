@@ -16,6 +16,9 @@
 #define CM_WAIT_NONBLOCK 1u
 /* ELF syscall 3: (controller_handle, request*, result*, 0). */
 typedef struct {uint64_t path,argv,envp;uint32_t flags;int32_t cpu;} cm_user_spawn_t;
+/* Optional SPAWN a3: size=16, flags=0, source fd or -1 for default.
+ * Only ordinary child spawn accepts it; copied/validated before publication. */
+typedef struct {uint32_t size,flags;int32_t input_fd,output_fd;} cm_user_stdio_t;
 typedef struct {uint64_t pid;int32_t handle,cpu;} cm_user_child_t;
 typedef struct {uint64_t pid;int64_t exit_code;uint64_t preempts;int32_t cpu,reserved;} cm_user_wait_t;
 typedef struct {uint32_t disk,cpus;char backend[24],nic[16];uint32_t nic_up,version;} cm_user_boot_t;

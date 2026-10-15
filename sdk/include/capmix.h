@@ -18,12 +18,14 @@ static inline long cm_call(unsigned nr,uint64_t a,uint64_t b,uint64_t c,uint64_t
 }
 /* stdout/stderr are diagnostic log streams, each write <=127 bytes. Return
  * 0 on complete output, negative error otherwise; syscall WRITE returns bytes. */
-static inline long cm_print(const char *text)
+static inline long cm_print_fd(unsigned fd,const char *text)
 {
     while(*text){size_t n=0;while(n<127 && text[n])n++;
-        long e=cm_call(CM_WRITE,1,(uintptr_t)text,n,0);if(e<0)return e;text+=n;}
+        long e=cm_call(CM_WRITE,fd,(uintptr_t)text,n,0);if(e<=0)return e?e:-11;text+=(size_t)e;}
     return 0;
 }
+
+static inline long cm_print(const char *text){return cm_print_fd(1,text);}
 
 #define CM_EAGAIN (-5L)
 #define CM_ENOENT (-12L)
@@ -54,7 +56,7 @@ static inline long cm_close(long fd){return cm_call(CM_CLOSE,fd,0,0,0);}
 static inline long cm_output(const void *data,size_t n)
 {
     const unsigned char *p=data;
-    while(n){size_t part=n<127?n:127;long e=cm_call(CM_WRITE,1,(uintptr_t)p,part,0);if(e<0)return e;p+=part;n-=part;}
+    while(n){size_t part=n<127?n:127;long e=cm_call(CM_WRITE,1,(uintptr_t)p,part,0);if(e<=0)return e?e:-11;p+=(size_t)e;n-=(size_t)e;}
     return 0;
 }
 static inline long cm_console_write(const void *p,size_t n)
@@ -75,7 +77,7 @@ static inline long cm_report(const char *label,long error)
     b[n++]='=';if(error<0){b[n++]='-';v=0-v;}
     do{digits[k++]=(char)('0'+v%10);v/=10;}while(v);
     while(k)b[n++]=digits[--k];
-    b[n++]='\n';b[n]=0;return cm_print(b);
+    b[n++]='\n';b[n]=0;return cm_print_fd(2,b);
 }
 typedef struct {uint32_t ifid,address;uint16_t port,reserved;uint32_t timeout_ms;} cm_sdk_tcp_request_t;
 typedef struct {uint64_t ino;uint32_t kind;char name[58];} cm_sdk_dirent_t;

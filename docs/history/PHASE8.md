@@ -1,5 +1,8 @@
 # Phase 8: static tracepoints and capability reads
 
+> 历史阶段记录：保留当时实现与验收边界；后续功能可能已扩展。当前状态见
+> [内核总览](../KERNEL_OVERVIEW.zh-CN.md)，操作测试见 [VirtualBox手册](../VIRTUALBOX_TESTING.zh-CN.md)。
+
 `include/capmix/trace.h` declares the compile-time catalog: sched switch/enqueue/
 dequeue, anonymous soft fault, filesystem COW block split, channel send/receive,
 UDP tx/rx, deferred IRQ delivery and sign accept/reject. Every entry has a stable

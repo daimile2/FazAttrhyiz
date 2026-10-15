@@ -165,3 +165,11 @@ run /bin/http-get.elf 10.0.2.2 8000 /hello.txt
 54B正文完整显示；5124B正文仅显示1024B但完整接收，均 exit0；404 exit4；
 非法 path exit2。日志 `/tmp/httpget-product.log`，hosted 与 QEMU debug 全量 PASS
 分别见 `/tmp/httpget-hosted.log`、`/tmp/httpget-debug.log`。
+
+## 标准I/O重定向续作
+
+前台shell已支持 `>`、`>>`、`<`，如 `run /bin/ls.elf /bin > /listing.txt`、
+`run /bin/cat.elf < /example.txt > /copy.txt`。cat可省略路径读fd0；SDK的
+`cm_report`摘要走fd2，其余 `cm_print/cm_output`走可重定向fd1。
+`run -i`及后台`&`不与重定向混用；nc仍用交互方式，无新增batch/pipe语义。
+覆盖/追加、权限、失败副作用、冷启动和QEMU/VBox验收见 [SHELL.md](SHELL.md)。

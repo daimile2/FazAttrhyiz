@@ -1,5 +1,8 @@
 # 阶段 5：lo IPv4 UDP 与用户可见 datagram 收发
 
+> 历史阶段记录：保留当时实现与验收边界；后续功能可能已扩展。当前状态见
+> [内核总览](../KERNEL_OVERVIEW.zh-CN.md)，操作测试见 [VirtualBox手册](../VIRTUALBOX_TESTING.zh-CN.md)。
+
 ## 支持范围
 
 新增的是有界 IPv4 UDP datagram API，不是完整 BSD socket API。仅支持本地

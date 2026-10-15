@@ -53,9 +53,9 @@ static cm_error_t vector(cm_proc_t *p,uint64_t address,char strings[][256],const
     if(address>UINT64_MAX-256 || cm_copyin(p->elf,&end,address+256,8) || end)return CM_ERR_NOSPC;
     out[32]=NULL;return CM_OK;
 }
-static int64_t spawn(cm_proc_t *p,uint64_t hid,uint64_t address,uint64_t output)
+static int64_t spawn(cm_proc_t *p,uint64_t hid,uint64_t address,uint64_t output,uint64_t io_address)
 {
-    cm_object_t *authority=NULL,*console=NULL;int e=acquire(p,hid,CM_OBJ_CONTROL,CM_RIGHT_EXEC,&authority);if(e)return e;
+    cm_object_t *authority=NULL,*console=NULL,*stdio[2]={NULL,NULL};int e=acquire(p,hid,CM_OBJ_CONTROL,CM_RIGHT_EXEC,&authority);if(e)return e;
     cm_user_spawn_t req;char path[128];
     if(cm_copyin(p->elf,&req,address,sizeof(req)) || cm_copyinstr(p->elf,path,req.path,sizeof(path)) ||
        !cm_user_access(p->elf,output,sizeof(cm_user_child_t),1)){e=CM_ERR_INVAL;goto finish;}
@@ -67,6 +67,19 @@ static int64_t spawn(cm_proc_t *p,uint64_t hid,uint64_t address,uint64_t output)
     }
     if(shell && (p->pid!=1 || !equal(path,"/bin/shell.elf") ||
        !(cm_handle_lookup(p->task,(int)hid)->rights&CM_RIGHT_DUPLICATE))){e=CM_ERR_DENIED;goto finish;}
+    if(io_address) {
+        cm_user_stdio_t io;
+        if(req.flags || cm_copyin(p->elf,&io,io_address,sizeof(io)) ||
+           io.size!=sizeof(io) || io.flags){e=CM_ERR_INVAL;goto finish;}
+        int fds[2]={io.input_fd,io.output_fd};
+        for(unsigned i=0;i<2;i++) {
+            if(fds[i]==-1)continue;
+            if(fds[i]<3 || fds[i]>=CM_FD_MAX){e=CM_ERR_INVAL;goto finish;}
+            e=cm_handle_acquire(p->task,cm_fdio_lookup(p,fds[i]),CM_OBJ_FILE,
+                CM_RIGHT_DUPLICATE|(i?CM_RIGHT_WRITE:CM_RIGHT_READ),&stdio[i]);
+            if(e)goto finish;
+        }
+    }
     /* The snapshot is private kernel memory; never pass nested user pointers to spawn. */
     char (*strings)[256]=cm_page_alloc(3);if(!strings){e=CM_ERR_NOMEM;goto finish;}
     const char *argv[33],*envp[33];
@@ -79,7 +92,8 @@ static int64_t spawn(cm_proc_t *p,uint64_t hid,uint64_t address,uint64_t output)
     int handle=cm_handle_install(p->task,obj,CM_RIGHT_WAIT|CM_RIGHT_SIGNAL);cm_obj_release(obj);
     if(handle<0){cm_page_free(strings,3);e=handle;goto finish;}
     cm_spawn_attr_t attr={.path=path,.argv=argv,.envp=envp,.qos=CM_QOS_USER_INTERACTIVE,
-        .cpu_set=1,.cpu=(shell||interactive)?0:req.cpu<0?(int)(cpu_next%(unsigned)cm_cpu_count()):req.cpu};
+        .cpu_set=1,.cpu=(shell||interactive)?0:req.cpu<0?(int)(cpu_next%(unsigned)cm_cpu_count()):req.cpu,
+        .stdio={stdio[0],stdio[1]}};
     cm_id_t pid=0;e=cm_posix_spawn(&attr,&pid);cm_page_free(strings,3);
     if(e){cm_handle_drop(p->task,handle);goto finish;}
     record->pid=pid;cm_proc_t *child=cm_proc_lookup(pid);child->parent_pid=p->pid;
@@ -106,7 +120,9 @@ static int64_t spawn(cm_proc_t *p,uint64_t hid,uint64_t address,uint64_t output)
     cm_user_child_t out={.pid=pid,.handle=handle,.cpu=attr.cpu};
     e=cm_copyout(p->elf,output,&out,sizeof(out));
     kinfo("user spawn: parent=%llu child=%llu cpu=%d child-cap=%d",(unsigned long)p->pid,(unsigned long)pid,attr.cpu,handle);
-finish:if(console)cm_obj_release(console);cm_obj_release(authority);return e;
+finish:for(unsigned i=0;i<2;i++)if(stdio[i])cm_obj_release(stdio[i]);
+    if(console)cm_obj_release(console);
+    cm_obj_release(authority);return e;
 }
 static int child_done(cm_proc_t *p)
 {
@@ -140,8 +156,8 @@ void cm_control_process_exit(cm_proc_t *p)
 int64_t cm_control_syscall(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
 {
     cm_proc_t *p=cm_proc_current();if(!p || !p->elf)return CM_ERR_NOTSUP;
+    if(nr==CM_SYS_SPAWN)return spawn(p,a,b,c,d);
     if(d)return CM_ERR_INVAL;
-    if(nr==CM_SYS_SPAWN)return spawn(p,a,b,c);
     if(nr==CM_SYS_CHILD_WAIT)return wait_child(p,a,b,c);
     if(nr==CM_SYS_TSC_HZ){if(a||b||c)return CM_ERR_INVAL;return (int64_t)cm_tsc_hz();}
     if(nr==CM_SYS_CHILD_KILL) {

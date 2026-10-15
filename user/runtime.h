@@ -13,5 +13,6 @@ int ueq(const char *,const char *);
 unsigned ulen(const char *);
 int ucpl(void);
 long uspawn(const char *,const char *const *,const char *const *,unsigned,cm_user_child_t *);
+long uspawn_stdio(const char *,const char *const *,const char *const *,unsigned,cm_user_child_t *,int,int);
 long uwait(int,cm_user_wait_t *,unsigned);
 #endif

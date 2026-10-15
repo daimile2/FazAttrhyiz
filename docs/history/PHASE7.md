@@ -1,5 +1,8 @@
 # Phase 7: hardware virtualization minimum initialization
 
+> 历史阶段记录：保留当时实现与验收边界；后续功能可能已扩展。当前状态见
+> [内核总览](../KERNEL_OVERVIEW.zh-CN.md)，操作测试见 [VirtualBox手册](../VIRTUALBOX_TESTING.zh-CN.md)。
+
 `cm_virt_hw_probe()` (declared via `capmix/virt.h`) detects CPUID VMX and SVM.
 Hosted builds only detect and return `CM_VIRT_HW_HOSTED`. Freestanding probes
 are synchronous, BSP-only, with local interrupts disabled throughout; they do

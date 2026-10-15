@@ -1,6 +1,6 @@
 # CapMix 内核总览：设计理念、接口定义、能力边界与当前状态
 
-**记录日期：2026-10-13；覆盖代码阶段：phase0–9、NUMA、最小 EPT、M2–M8。**
+**更新日期：2026-10-15；覆盖 phase0–9、NUMA/EPT、M2–M8、P0a/P0b、P1a–P1d及后续用户态产品功能。**
 
 本文面向使用者、内核开发者和评审者，回答四个问题：CapMix 想构建什么，
 现在真正能做什么，各接口代表什么，以及当前实现的下限与上限在哪里。
@@ -8,6 +8,13 @@
 
 当前版本宏仍是 `0.8.0-phase8`，属于历史命名，不代表 phase9 或 M8 尚未完成。
 本文不修改内核版本号，也不把里程碑编号当作稳定 ABI 版本。
+
+本次更新纳入：buddy SMP soak、定时器标定、文件 syscall/copyin/out、后台 NIC UDP、
+DHCP、主动 TCP及RTO、用户网络 ABI、argv/envp、ELF并发/run&、用户态 init/shell、
+无 ISO 磁盘安装、kill/有界关机、外部 GCC SDK、e1000/virtio-net RX IRQ、
+hello/nc/cat/ls/http-get 示例。以下状态、边界和接口均按这些续作修订；验收证据见第9节。
+
+文档分类见 [docs导航](README.md)，VBox实操见 [VirtualBox测试手册](VIRTUALBOX_TESTING.zh-CN.md)。
 
 ## 阅读导航
 
@@ -32,10 +39,11 @@ CapMix 是一个用 C11 实现的 x86_64 capability 混合内核，提供两种�
 | 运行方式 | 含义 | 能验证什么 | 不能据此证明什么 |
 |---|---|---|---|
 | hosted | 子系统在宿主进程中运行，`make test` | 对象、内存记账、IPC、文件系统、协议编解码等软件逻辑 | 真实 CPL3、CR3 隔离、硬件 DMA、VMX 指令、实际 PS/2 输入 |
-| freestanding | Limine 引导的独立内核，生成 ISO 在 QEMU/兼容虚拟机中运行 | ring3、KPTI、抢占、中断、真实设备模拟器收发、VMX/EPT、产品启动 | 全部真实硬件兼容性、生产安全认证、无限规模运行 |
+| freestanding | Limine引导的独立内核，支持ISO或安装盘，在QEMU/兼容虚拟机中运行 | ring3、KPTI、抢占、中断、真实设备模拟器收发、VMX/EPT、产品启动 | 全部真实硬件兼容性、生产安全认证、无限规模运行 |
 
 **当前下限**指已经连通并验收的基本使用闭环：引导 → 挂根 → PID1 →
-文本 shell → 加载 CapMix ABI 静态 ELF → 用户态执行/退出 → 同步/关机。
+用户态文本 shell → 加载带 argv 的 CapMix ABI 静态 ELF → 并发执行/退出/回收 → 同步/关机。
+安装盘可不挂 ISO 冷启动；用户程序已能操作持久文件，使用 UDP/TCP，并运行 HTTP GET 示例。
 它不是声称已经测出的最低 RAM、最低 CPU 频率或最便宜硬件规格。
 
 **当前上限**有三层，必须分开：
@@ -129,7 +137,7 @@ resident 表示数据当前在 RAM 中。压力管线可以回收 clean cache、
 | 调度/进程 | `sched/`、`proc/` | EEVDF、QoS、task/thread/proc、ELF、PID1、syscall 分发 |
 | 文件系统 | `fs/` | VFS、COW、snapshot/clone、checksum、scrub、fsync |
 | 设备 I/O | `io/` | DriverKit 演示、IRQ、blk、uring、virtio-blk、AHCI |
-| 网络 | `net/` | iface、包解析、lo UDP、XDP/nft、virtio-net、e1000、ARP/ICMP 探测 |
+| 网络 | `net/` | iface、lo/NIC UDP、主动 TCP/RTO、DHCP、XDP/nft、两类 NIC、IRQ/后台 RX |
 | 安全 | `security/`、`lib/sha256.c` | capability gate、策略覆盖、一次授权、摘要验证 |
 | 虚拟化 | `virt/` | job、VM/vCPU/VFIO 对象，VMX/VMCS/EPT 最小真实路径 |
 | 观测/控制台 | `obs/`、`console/` | per-CPU trace、授权读取、FB 文本、PS/2 输入 |
@@ -137,11 +145,11 @@ resident 表示数据当前在 RAM 中。压力管线可以回收 clean cache、
 ### 3.2 产品启动路径
 
 ```text
-Limine → 串口与 cmdline/内存/FB 快照 → 内核自有页表
+ISO或安装盘ESP中的 Limine → 串口与 cmdline/内存/FB 快照 → 内核自有页表
        → 内存/NUMA/ACPI、cap/sched/proc/syscall、块设备与 COW 根
        → 网络/安全/虚拟化基础初始化、LAPIC/AP 启动
-       → bootstrap 供应缺失 ELF → CPL3 PID1 init 正式挂根 → CPL3 shell
-       → run PATH → 真实 CPL3 静态 ELF → exit → off-CPU 回收
+       → bootstrap 供应缺失 ELF → CPL3 PID1 init 正式挂根/配置网络 → CPL3 shell
+       → run PATH [ARGS] [&] → 真实 CPL3 静态 ELF → exit/kill → off-CPU 回收
 ```
 
 默认产品模式不依赖先跑完整 phase 测试。初始化基础子系统不等于执行其
@@ -150,7 +158,8 @@ Limine → 串口与 cmdline/内存/FB 快照 → 内核自有页表
 
 产品 PID1 和 shell 已分别是 `/sbin/init.elf`、`/bin/shell.elf`，均真实 CPL=3。
 用户 init/shell 固定 BSP；产品打开 AP 调度，shell
-将 ELF round-robin 固定到 online CPU，`run ... &` 可后台运行。入口隔离、
+将普通 ELF round-robin 固定到 online CPU，`run ... &` 可后台运行；
+`run -i` 交互子进程固定 BSP并获受限控制台权限，禁止与 `&` 组合。入口隔离、
 overlap 与回收语义见 [ELF 并发说明](ELF_CONCURRENCY.md)；启动与 capability ABI 见 [用户 init/shell](USER_INIT_SHELL.md)。
 
 ### 3.3 四条重要数据路径
@@ -160,7 +169,7 @@ overlap 与回收语义见 [ELF 并发说明](ELF_CONCURRENCY.md)；启动与 ca
 | 用户 ELF | VFS 读取 → PT_LOAD 校验/分配 → 用户页表 → iretq → syscall/抢占 → 回收 | 多个 ELF，固定 CPU 亲和；不是替换式 execve |
 | VMO IPC | 创建页 → sender 映射/写入 → channel 传 handle → receiver 映射 | 相同 backing；任务局部 handle 数值可能不同 |
 | IRQ 驱动 | top half 记录 → bottom half 投递 channel → 唤醒 BLOCKED → ring3 recv | 可合并/背压，生命周期检查；不是任意硬件 DMA 驱动全栈 |
-| 硬件网络 probe | DMA TX → QEMU user peer ARP/echo → DMA RX → XDP/nft → 协议/内容校验 | 当前主要是 debug 中 BSP 轮询，不是产品后台 socket 服务 |
+| 硬件网络 | UDP/TCP capability syscall → DMA TX → 对端 → RX IRQ → BLOCKED worker唤醒 → ARP/UDP/TCP ingress → 用户 recv | 已有产品后台路径；未知/冲突IRQ路由回退轮询，非完整BSD socket |
 
 ## 4. 当前能运行的最小系统与硬件条件
 
@@ -200,16 +209,18 @@ selftest 自动等价 PASS。无 VMX 路径与“整套 TCG 工作负载已验�
 
 | 功能 | 可直接使用的状态 |
 |---|---|
-| shell | PS/2 输入；FB + serial 输出；help/echo/ls/cat/run/exit/poweroff/shutdown |
-| 静态应用 | CapMix syscall ABI 的 little-endian x86_64 ET_EXEC，可抢占，正常 exit/reclaim |
-| 文件持久化 | virtio-blk 或 AHCI 上的 COW 根，已验 sync/remount/跨启动读取 |
-| 网络 | lo/NIC UDP syscall；后台 RX 线程、DHCP/静态回退；debug ARP/ICMP/UDP payload 验证 |
+| shell | CPL3 ELF，PS/2输入、FB/serial输出；help/echo/ls/cat/run/run -i/run &/kill/exit/poweroff |
+| 静态应用 | little-endian x86_64 ET_EXEC，argv/envp、可抢占、多ELF固定亲和并发、off-CPU reap |
+| 文件持久化 | virtio-blk/AHCI COW根，用户ELF open/read/write/close/mkdir/unlink/fsync，跨启动读取 |
+| 网络 | lo/NIC UDP、主动TCP用户syscall、连接级RTO、DHCP/静态回退、e1000/virtio-net RX IRQ与后台线程 |
+| 安装/引导 | blank-only宿主安装工具，Limine BIOS/UEFI + 独立COW根，AHCI/virtio盘无ISO冷启动 |
+| 开发/示例 | 宿主GCC + CapMix crt/链接脚本；hello、nc、cat、ls、http-get可安装并shell run |
 | 用户驱动 | 测试 ELF 已验 IRQ channel 收取、阻塞/唤醒、崩溃隔离 |
 | 观测 | 授权 session 的 ring3 trace read/config；无权限拒绝 |
 | 虚拟机 | 一次真实 VMLAUNCH → VMCALL / EPT violation → 完整 teardown 演示 |
 
-没有完整 shell 作业控制、进程管道、用户应用 SDK、动态链接器、桌面、
-guest 内图形安装器、完整网络服务或 Linux 客户机。
+已有最小 freestanding SDK；没有完整 libc、shell作业控制、进程管道、动态链接器、
+桌面、guest内图形安装器、通用TCP服务端或Linux客户机。
 
 ## 5. 当前代码的容量上限
 
@@ -252,9 +263,11 @@ guest 内图形安装器、完整网络服务或 Linux 客户机。
 | ELF program headers | 16 | `elf.h` |
 | ELF backing 映射页 | 128 页，含栈 | 还要额外付出页表/内核栈等资源 |
 | ELF 地址窗口 | 0x400000..0x800000 | PT_LOAD 上界为栈起点 0x7fc000；不是任意地址 ET_EXEC |
-| ELF 用户栈 | 4 页 = 16 KiB | 栈顶 0x800000，初始 RSP 0x7fffe0 |
+| ELF 用户栈 | 4 页 = 16 KiB | 栈顶0x800000；初始RSP随argv/envp大小变化并保持16B对齐 |
+| argv/envp | 各最多32项，每项255B+NUL，总字符串4096B含NUL | argc≥1；缺argv时默认镜像路径；不自动继承任意环境 |
 | ELF 并发 | 全局 32 proc 槽，包含 PID1/退出记录 | shell 最多 8 后台 + 1 前台；受任务/页/commit 等约束 |
-| 每 proc fd | 32 槽 | fd 适配到 capability，表大小不等于开放给 ELF 的完整文件 API |
+| 每 proc fd | 32 槽 | FILE capability适配；标准fd保留，非完整POSIX描述符功能 |
+| 文件单次read/write | 1 MiB含 | 完整用户范围先校验，再用4KiB临时页分块copyin/out；实际映射限制可更小 |
 | VFS mount 槽 | 16 | `fs/vfs.c` |
 | VFS open-file 槽 | 64 | 全局池 |
 | VFS 路径缓冲 | 128 字节 | 不保证 128 个可见字符都可用，需留 NUL/内部处理空间 |
@@ -264,7 +277,8 @@ guest 内图形安装器、完整网络服务或 Linux 客户机。
 | 文件系统块 | 4 KiB | `FS_BS` |
 | 单文件寻址粗上界 | 268 块 = 1,097,728 字节 | 12 direct + 256 indirect；磁盘实际空闲/快照占用会先限制 |
 
-块后端目前暴露前 **8 MiB、16384 个 512B 扇区** 的固定卷布局：
+块层向根服务暴露 **8 MiB、16384个512B扇区** 的固定逻辑卷；RAM/旧数据盘base=0，
+安装盘base=2048。下表是卷内逻辑LBA，不是安装盘物理LBA：
 
 | 区域 | 起始 LBA | 扇区数 | 大小 |
 |---|---:|---:|---:|
@@ -274,7 +288,9 @@ guest 内图形安装器、完整网络服务或 Linux 客户机。
 
 因此“64 MiB SATA 盘已挂载”不表示获得 64 MiB 文件系统，也不表示全部
 3.97 MiB 都可做文件内容：superblock、DUP metadata、目录、快照等占用空间。
-没有分区解析，也没有自动扩大文件系统。
+已实现专用固定MBR安装布局解析，不是任意GPT/MBR分区发现器，也没有自动扩大文件系统。
+安装镜像默认/最小128MiB：LBA2048起8MiB CapMix卷，LBA18432起64MiB FAT32 ESP。
+COW物理起点为10304；ESP只供引导，运行期VFS根为COW。详见 [安装布局](INSTALL_DISK.md)。
 
 ### 5.3 网络、I/O、trace 和虚拟化
 
@@ -282,9 +298,14 @@ guest 内图形安装器、完整网络服务或 Linux 客户机。
 |---|---|---|
 | iface 表 | 4 | lo、硬件 NIC、测试 iface 共享 |
 | 包缓冲池/单帧 | 64 / 1518B | `net.h`；不提供 jumbo/VLAN 全栈 |
-| lo UDP endpoint | 16 | 原生 PORT capability |
+| UDP endpoint | 16 | lo/vnet0/enet0共用，原生PORT capability |
 | 每 UDP 队列 | 8 个 datagram | 非阻塞，满/空按错误码返回 |
-| 每 UDP payload | 1472B | lo/vnet0/enet0，非阻塞，静态邻居/网关；非完整 BSD socket |
+| 每 UDP payload | 1472B | lo/vnet0/enet0，非阻塞；NIC地址可用DHCP lease，非完整BSD socket |
+| TCP连接槽 / RX窗口 | 8 / 每连接4096B | 主动连接，无listen/accept；无窗口缩放 |
+| TCP MSS / 单次用户I/O | 536B / 4096B | MSS可受对端更小值限制；一次仅一段待确认 |
+| TCP重传 | 初始200ms，最大1600ms，最多4次重传 | SYN/数据/FIN；指数退避，API总期限可能先终止，无拥塞控制 |
+| RX预算/等待 | 16帧/接口，idle BLOCKED | 已路由IRQ通知为主；10ms推进RTO/回退，100ms IRQ watchdog |
+| NIC IRQ路由 | 0x42 e1000、0x43 virtio-net | 已验证i440FX INTx；共享GSI后注册者回退，无MSI-X/共享fanout |
 | 受限 BPF | 64 条指令，4 个程序 | 简化 ISA，无 JIT |
 | nft 规则 | 16 | 简化规则模型 |
 | blk queues / depth | 4 / 每队列 32 | 当前硬件仍同步单 in-flight；不是 128 个硬件并发命令 |
@@ -313,7 +334,7 @@ guest 内图形安装器、完整网络服务或 Linux 客户机。
 | fd | proc.fd 中的索引，指向 FILE capability handle | 不是另一个无需 capability 的原生资源 ID |
 
 对象种类在 `cap.h` 中包括 TASK、THREAD、CHANNEL、ENDPOINT、VMAR、VMO、
-IRQ、TRACE、JOB、PORT、EVENT、FILE。枚举存在不证明每种对象都有完整
+IRQ、TRACE、JOB、PORT、EVENT、FILE，以及CONSOLE、CONTROL、BOOT、CHILD。枚举存在不证明每种对象都有完整
 用户 API；部分初始化对象仍是 placeholder，具体接口会检查 backing/type。
 
 ### 6.2 rights 的定义
@@ -394,6 +415,11 @@ AGAIN 不是“自动睡眠”，DENIED 不是“暂时忙”，NOTSUP 不是“
 | `cm_commit_charge/uncharge/add_backing` | 按页数承诺/释放，或增加 backing limit | 与 buddy 物理空闲页不是同一统计 |
 | `cm_pressure_reclaim/tick` | 触发/推进压力回收 | clean cache → 压缩匿名页 → swap → jetsam/OOM 策略 |
 
+buddy 的 free-list、split/coalesce、arena注册、RR cursor及计数由同一IRQ-safe自旋锁
+串行化；不是每CPU缓存方案，不用于NMI。P0a的4 CPU soak为每CPU10000轮、
+总160000次分配/释放，以页owner与内容标记检查重复、损坏和泄漏，并核对逐节点快照。
+hosted单CPU测试不能替代此SMP证据。详见 [P0a](P0A_BUDDY_SMP.md)。
+
 commit 成功不保证随后任意高阶连续块都能分配：碎片、节点严格绑定和
 设备 DMA 地址限制仍会导致分配失败，调用者必须处理 NOMEM/INVAL 等返回。
 
@@ -444,12 +470,16 @@ VMAR 作为 kernel-facing inactive space builder，也没有自动变成完整�
 | turnstile | 沿 blocked_on 等等待关系传播优先级，缓解优先级反转 |
 | `cm_posix_spawn` | `entry!=NULL` 为既有 C 入口；`entry==NULL` 从 path 加载 ELF |
 | `cm_proc_reap_elf` | off-CPU 后回收镜像、页表和 commit；保留退出记录 |
-| `cm_proc_release_product_elf` | 产品 PID1 专用，进一步回收完成的 proc/task 槽 |
+| `cm_proc_release_child` | 校验parent/child关系后，回收off-CPU的子进程记录、task与入口栈资源 |
+| `cm_proc_request_kill` | 发布终止请求；不直接远程释放活跃栈/页表 |
 | `cm_fork_compat` | 固定 NOTSUP，不能用于创建进程 |
 
 ELF 支持 ET_EXEC、PT_LOAD、BSS 清零、入口校验、权限/范围拒绝，IF=1 时
-真实 timer 可抢占。它并不支持 ET_DYN、PT_INTERP、ld.so、TLS、完整 auxv、
-argv/envp 字符串或并行多个 ELF。初始 argc=0，argv/envp 为终止项。
+真实timer可抢占；已支持argv/envp栈布局、argc≥1、多个ELF执行时间重叠和
+同CPU阻塞syscall现场隔离。每镜像固定CPU亲和，不做运行期迁移；
+用户SPAWN经CONTROL capability授权和嵌套指针快照，父进程等待/回收走CHILD handle。
+它不支持ET_DYN、PT_INTERP、ld.so、完整TLS/auxv或替换式execve。
+argv/envp、crt与并发容量见 [ELF_ARGV](ELF_ARGV.md)、[ELF_CONCURRENCY](ELF_CONCURRENCY.md)。
 拒绝 W+X 声明并对非 writable 段清 W，但尚无完整数据/栈 NX，不能声称
 完整硬件 W^X。普通恶意用户故障的隔离/恢复也还不完整。
 
@@ -469,7 +499,8 @@ argv/envp 字符串或并行多个 ELF。初始 argc=0，argv/envp 为终止项�
 | `cm_blk_is_disk/backend_name` | 如实识别非 RAM 根及具体设备后端 |
 
 后端优先级是 virtio-blk → AHCI → RAM。检测到真实盘后，不因卷无法识别
-就把它静默覆盖。当前自动 mkfs 前扫描保留 8 MiB 区域，确认全空才格式化。
+就把它静默覆盖。自动mkfs前扫描所选逻辑卷的8MiB窗口，确认全空才格式化；
+安装盘的窗口先经专用MBR严格校验再加base偏移，不扫描/覆盖ESP来冒充空卷。
 
 COW 使用 A/B superblock generation、对象/块指针 checksum、metadata DUP、
 snapshot/clone 和 scrub。数据通常是 single-copy：能检测损坏，不能无中
@@ -500,22 +531,37 @@ kernel_alive；这不覆盖内核态 AHCI/NIC 驱动自身出现任意程序错�
 
 | 接口层 | 当前意义 | 用户可见边界 |
 |---|---|---|
-| `cm_if_add/get/find` | 内核 iface 注册与查询 | 不是 POSIX ifconfig/netlink |
-| `cm_net_primary_iface` | 已注册 vnet0 优先，否则 enet0 | 不实现运行期自动 failover/路由 |
-| `cm_net_rx` | 包解析、计数、XDP/nft 分类入口 | ICMP probe 在分类之后再验证内容 |
-| `cm_udp_open/bind/sendto/recv/close` | lo datagram capability | ≤1472B、lo/NIC 非阻塞，无 TCP/BSD socket 全家桶 |
-| virtio/e1000 transmit/receive | 真实 NIC DMA 发送/轮询取帧 | kernel-facing，不是直接开放给任意 ELF 的 raw NIC syscall |
-| `cm_net_probe(ifid,label,send,recv)` | 单邻居 ARP + ICMP echo 和 payload 校验 | BSP 有界 selftest，状态每次调用独立 |
-| BPF/nft load/attach/rule API | 受限包策略和 verifier | 没有通用 eBPF JIT、动态 attach 或完整 nft 语言 |
+| `cm_if_add/get/find` | 内核iface注册/查询 | 非POSIX ifconfig/netlink |
+| `cm_net_primary_iface` | vnet0优先，否则enet0 | TCP AUTO选up的可用主接口；非完整运行期路由/failover |
+| `cm_udp_open/bind/sendaddr/recv/close` | lo/NIC datagram capability | ≤1472B；RECV非阻塞，空队列AGAIN |
+| `cm_tcp_open/connect/send/recv/close` | 主动TCP PORT capability | CONNECT/SEND/CLOSE有限等待；RECV非阻塞、EOF=0 |
+| `cm_net_bg_start/stop` | EEVDF线程消费DMA RX，推进协议及RTO | 产品启动常驻；无需应用直接poll NIC |
+| `cm_net_rx_notify` | IRQ原子发布接口通知bit | deferred hook在rq锁外唤醒BLOCKED worker；ISR不解析包/取协议锁 |
+| virtio/e1000 transmit/receive | NIC同步TX和有界RX drain | 不向任意ELF开放raw DMA地址 |
+| DHCP boot configure | DISCOVER→OFFER→REQUEST→ACK | lease地址/掩码/网关；超时保留原静态配置 |
+| BPF/nft API | 受限verifier/包策略 | 非完整eBPF ISA、JIT或nft语言 |
+| `cm_net_probe` | ARP/ICMP硬件自测 | 原有BSP有界probe仍保留，不代表产品RX仍只靠手动轮询 |
 
-virtio-net 只支持已实现的 legacy/transitional PCI；e1000 支持明确名单
-82540EM/82545EM/82574L。注册并存时首选 vnet0，即使它报告 down 也如实
-显示，不声称有自动故障切换。
+virtio-net仍为legacy/transitional PCI；e1000支持82540EM/82545EM/82574L名单。
+e1000和virtio-net在已验证i440FX路由上使用真实INTx；top half确认设备中断、
+计数、notify、EOI，worker处理ARP/UDP/TCP/DHCP并入队。virtio IRQ模式下TX/RX
+轮询不再读取read-to-clear ISR，防止误清RX通知；TX仍同步并请求抑制中断。
+未知平台路由、无IOAPIC或GSI冲突时明确fallback，后注册设备不覆盖已有IRQ路由。
+worker空闲BLOCKED，约10ms唤醒推进RTO/无IRQ轮询；IRQ接口另有100ms健康检查。
+这不代表整机AP scheduler或shell已完全停止轮询。详见 [RX IRQ](NET_RX_IRQ.md)。
 
-硬件 NIC 当前固定 10.0.2.15/24 和 peer 10.0.2.2，适合隔离的 QEMU user
-network。VMware NAT/桥接网段可能不同；link up 不等价于互联网可用。
-产品初始化网卡但没有持续轮询/协议处理服务，lo UDP 不因此自动扩展到
-真实 NIC。单次成功 probe 不是完整 TCP/IP 栈。
+默认静态回退为10.0.2.15/24、网关10.0.2.2；成功DHCP ACK后使用lease配置。
+`capmix.net=static`/`capmix.net=dhcp`用于选择策略（见 [P1c](P1C_DHCP.md)）。
+无网卡skip，超时fallback；没有完整续租/到期调度、DNS或完整路由/NAT。
+VMware NAT/桥接网段可能不同，link up不保证互联网可达。
+
+TCP状态子集包括SYN_SENT、ESTABLISHED、FIN_WAIT_1/2、CLOSING、TIME_WAIT、
+CLOSE_WAIT、LAST_ACK及错误/关闭态。SYN、数据、FIN保存一个待确认段，初始RTO
+200ms，退避至1600ms；原始发送加最多4次重传，耗尽/总期限失败并尽力RST，
+CLOSE或最后引用/进程退出回收。部分SEND返回已确认字节，不能无条件重发整个请求。
+无RTT自适应、拥塞控制、fast retransmit、SACK、乱序队列、完整零窗口探测、
+IPv6或listen/accept；TIME_WAIT=100ms，并非完整互联网TCP实现。
+详见 [TCP ABI](USER_NETWORK_ABI.md)、[RTO](TCP_RTO.md)、[UDP](P1B_UDP_NIC.md)。
 
 ### 7.8 安全、trace 与虚拟化接口
 
@@ -553,13 +599,26 @@ EPT guest 使用独立一级 identity 页表和二级 EPT，不再共用 host CR
 
 ### 7.9 控制台与关机
 
+用户shell已支持前台 `>`、`>>`、`<` 和普通ELF标准I/O绑定；
+重定向与 `run -i`/后台`&`互斥，暂不提供pipe。覆盖/追加、权限与冷启动验收见
+[SHELL](SHELL.md)。提示符/reap日志不写入重定向文件，应用stdout单独走FILE。
+
+
 FB 是 Limine framebuffer 上的 CPU 文本绘制；保留串口镜像。无 GPU 加速、
-鼠标、用户态输入栈。PS/2 是 i8042/IRQ1/scancode 到字符队列；shell 消费
+鼠标、完整用户态输入服务。PS/2 是 i8042/IRQ1/scancode 到字符队列；shell 消费
 该队列，串口目前只有输出镜像，没有 serial shell input。输入是受支持 scancode
 转换的 ASCII 字符，尚无 Unicode/输入法或完整终端协议。
 
-`exit` 同步根后进入控制台 idle，不是断电。`poweroff/shutdown` 同步失败
-留在 shell；成功后尝试受支持 ACPI S5，失败/不可用时安全 halt。
+`kill PID` 仅查本shell保存的后台任务，以CHILD/SIGNAL发终止请求；PID本身不是授权。
+用户死循环由tick抢占后终止；若在syscall中，等continuation展开再处理请求，
+不远程free活跃栈。正常强制终止exit=137，并非完整POSIX signal。
+
+`exit`/`poweroff`/`shutdown`先正常等待后台最多5秒，超时发kill再等最多2秒。
+全部reap后正常sync；`exit`仍未收尾则BUSY留在shell，poweroff则明确FORCE降级：
+保留活跃现场、跳过可能等待锁的sync并关机，不保证未同步数据持久。
+正常sync失败留在shell；成功尝试ACPI S5，失败/不可用时安全halt。
+时间使用原TSC与syscall39 Hz，各等待阶段另有迭代上限。正常exit结束shell、
+由PID1等待回收后退出并回到内核idle，不自动断电。详见 [kill/关机](KILL_SHUTDOWN.md)。
 S5 parser 仅支持可可靠识别的根静态 `_S5` Package 和 16-bit SystemIO PM1，
 不执行完整 AML `_PTS/_GTS`；hardware-reduced/MMIO/动态对象等降级。
 
@@ -599,11 +658,11 @@ C 分发器形式为 `cm_syscall(nr,a0,a1,a2,a3)`。
 | 11 | OPEN | VFS open → FILE cap → fd | 允许；fd/FILE 权限及 copyin/out 校验 |
 | 12 | READ | fd 适配读文件 | 允许；fd/FILE 权限及 copyin/out 校验 |
 | 13 | CLOSE | fd 适配关闭 | 允许；fd/FILE 权限及 copyin/out 校验 |
-| 14 | MKDIR | 创建目录 | 允许；fd/FILE 权限及 copyin/out 校验 |
-| 15 | UNLINK | 删除路径 | 允许；fd/FILE 权限及 copyin/out 校验 |
+| 14 | MKDIR | 创建目录 | 允许；路径copyinstr和VFS检查 |
+| 15 | UNLINK | 删除路径 | 允许；路径copyinstr和VFS检查 |
 | 16 | FSYNC | 提交文件 | 允许；fd/FILE 权限及 copyin/out 校验 |
-| 17 | UDP_OPEN | 创建 lo UDP endpoint handle | 允许进入原生处理器，受对象/资源条件限制 |
-| 18 | UDP_BIND | lo/port 绑定 | 允许，权限/参数检查 |
+| 17 | UDP_OPEN | 创建 lo/NIC UDP endpoint handle | 允许进入原生处理器，受对象/资源条件限制 |
+| 18 | UDP_BIND | lo/vnet0/enet0与端口绑定 | 允许，权限/参数检查 |
 | 19 | UDP_SEND | 发送 bounded payload | 允许，≤1472B，统一 copyin/out |
 | 20 | UDP_RECV | 收取 datagram | 允许，无数据 AGAIN，校验目标用户范围 |
 | 21 | UDP_CLOSE | 关闭 UDP handle | 允许 |
@@ -612,13 +671,15 @@ C 分发器形式为 `cm_syscall(nr,a0,a1,a2,a3)`。
 | 25 | UDP_SENDADDR | 指定目标 IPv4/端口的 UDP 发送 | 允许；有类型 endpoint capability + copyin |
 | 26–30 | TCP_OPEN/CONNECT/SEND/RECV/CLOSE | 主动 TCP capability | 允许；copyin/out，单次≤4096B，有限等待/非阻塞 recv |
 | 24 | DRV_RECV_WAIT | 注册驱动睡眠等待 IRQ 消息 | 受注册/endpoint/lifecycle 条件限制 |
-| 31–37 | console/child wait/yield/readdir/boot/poweroff | 用户 init/shell 控制 ABI | 类型/right/owner 校验；见 USER_INIT_SHELL.md |
+| 31–37 | console/child wait/yield/readdir/boot/poweroff | 用户init/shell控制ABI | 类型/right/owner校验；console可显式受限委托 |
+| 38 | CHILD_KILL | 子进程终止请求 | CHILD/SIGNAL + owner/parent校验，0表示请求已接受 |
+| 39 | TSC_HZ | 查询已有标定TSC频率 | 无参数，返回Hz；0表示不可用，不是重新标定 |
 | 128 | FORK | POSIX compat 占位 | NOTSUP |
 | 129 | EXECVE | 替换式 execve 编号占位 | 没有对应实现，NOTSUP |
 
 “表中存在函数”与“ring3 可用”之间还有 `proc/syscall.c` 的 ELF whitelist。
 旧 C-entry/嵌入 ring3 测试入口保留历史接口，不应当作任意不可信 ELF 的
-可用 SDK。VMO 创建/VMAR map 也还没有在这里作为完整用户 syscall 集合开放。
+接口。已有独立CapMix SDK，见8.4；VMO创建/VMAR map仍没有完整用户syscall集合。
 
 当前 stdout/stderr WRITE 是日志适配：内部显示缓冲最多 127B，可能截断显示，
 但返回请求长度；它不是完整字节流 TTY/标准 POSIX write 语义。
@@ -635,7 +696,7 @@ C 分发器形式为 `cm_syscall(nr,a0,a1,a2,a3)`。
 | WRITE | fd=1/2 | 可读 user buffer | byte length | 0 | 请求长度；日志可能只显示前 127B |
 | CLOCK | 0 | 0 | 0 | 0 | 原始 TSC tick，不是 LAPIC tick 计数 |
 | UDP_OPEN | 0 | 0 | 0 | 0 | task-local endpoint handle |
-| UDP_BIND | handle | lo iface ID | port 1..65535 | 0 | CM_OK |
+| UDP_BIND | handle | lo/NIC iface ID | port 1..65535 | 0 | CM_OK |
 | UDP_SEND | handle | destination port | readable user buffer | length 1..1472 | 已发送 byte length |
 | UDP_RECV | handle | writable/readable `cm_udp_datagram_t` buffer | 0 | 0 | payload length；空队列 AGAIN |
 | UDP_CLOSE | handle | 0 | 0 | 0 | CM_OK |
@@ -665,6 +726,49 @@ message:
 message_end:
 ```
 
+### 8.4 SDK、用户控制与可运行示例
+
+`sdk/crt0.S`、`sdk/capmix.ld`、`sdk/include/capmix.h`可由宿主GCC构建静态ET_EXEC：
+`-static -nostdlib -no-pie`，使用CapMix编号和寄存器约定，不链接Linux/glibc。
+crt从栈读argc/argv/envp，以SysV C约定调用main，返回后syscall EXIT。
+禁用red-zone、SIMD/FPU依赖、栈保护与PIE；没有printf/malloc、ld.so或完整libc。
+直接 `gcc -static hello.c` 生成的Linux程序不能因此运行。详见 [外部ELF](EXTERNAL_ELF.md)。
+
+| 用户接口 | 定义和权限 |
+|---|---|
+| SPAWN 3 | CONTROL/EXEC + 32B request(path/argv/envp指针、flags、cpu)，返回16B child结果 |
+| CHILD_WAIT 33 | CHILD/WAIT + 32B结果；非阻塞flag=1；完成后消耗handle并reap |
+| CHILD_KILL 38 | CHILD/SIGNAL + owner；接受请求不等于已完成回收 |
+| CONSOLE_READ/WRITE 31/32 | CONSOLE READ/WRITE；READ空队列AGAIN，WRITE受4096B上限与copyin检查 |
+| BOOT_CONTROL 36 | PID1专用挂根/网络配置；普通子程序无BOOT管理权 |
+| POWEROFF 37 | BOOT/DESTROY；flags0正常、2为受控FORCE |
+| READDIR 35 / TSC_HZ 39 | 目录项查询 / 已有时钟频率；仍有用户范围与参数校验 |
+
+用户PID1获CONTROL/CONSOLE/BOOT bootstrap能力，shell获受限管理组合。
+普通run不自动获得这些管理权限；`run -i PATH`通过spawn flags=2显式委托
+CONSOLE READ|WRITE到子进程handle1，不带DUPLICATE/CONTROL/BOOT，并固定BSP。
+shell要求前台使用，拒绝 `run -i ... &`；父进程需console DUPLICATE权。
+诊断fd1/fd2与原始console能力不同，普通程序可打印但不能默认读键盘。
+
+| 用户ELF | 作用与边界 |
+|---|---|
+| `/bin/hello-sdk.elf` | 外部GCC约定及argv打印；原`hello.elf`保留测试用途 |
+| `/bin/nc.elf` | `run -i`后主动TCP连接、逐行键盘发送、网络回显；`/quit`关闭，空闲30秒退出124 |
+| `/bin/cat.elf` | FILE syscall流式读持久根文本，最多显示1MiB，非文本替换为`.` |
+| `/bin/ls.elf` | READDIR列目录，最多256项 |
+| `/bin/http-get.elf` | 数字IPv4+端口+path，HTTP/1.0 GET，状态行与前1024B正文 |
+
+HTTP客户端不做TLS/DNS/自动重定向/chunked解码；正文最多1MiB并drain至EOF，
+头最多8192B，接收总10秒/空闲3秒超时；2xx退出0，3xx–5xx退出4，
+参数错误2、协议/网络错误1、超时124。不等于通用浏览器或完整HTTP栈。
+示例与SDK输出分块避免诊断WRITE的127B显示截断。详见 [EXAMPLES](EXAMPLES.md)。
+
+`make examples iso`构建并嵌入初始示例；产品仅provision缺失文件并fsync，
+已有磁盘文件不覆盖。`make install-disk DISK_IMAGE=新路径`准备空盘引导，
+首次无ISO启动生成COW根/系统ELF，第二次冷启动读已有文件。另可关闭VM后用
+`scripts/copy-to-disk.py`导入新路径到已初始化安装RAW盘：staging、锁、重挂读回，
+拒绝覆盖/未知布局，不改ESP或安装布局。外部程序不必编进内核才能被run。
+
 ## 9. 阶段与产品里程碑状态
 
 ### 9.1 phase 是机制阶段，M 是产品里程碑
@@ -676,10 +780,10 @@ message_end:
 |---|---|---|
 | phase0 | boot、4/5-level folding、KPTI、node0 路径 | 任意架构/任意内存规模支持 |
 | phase1 | VMO/VMAR 零拷贝 IPC，共享写、生命周期、rollback | 完整用户 mmap/pager 或所有权限组合 |
-| phase2 | 静态 ET_EXEC，从 VFS 启动、CPL3、抢占、exit/reclaim、畸形拒绝 | 多 ELF 并发、Linux ABI、execve 替换、动态链接、完整 NX |
+| phase2及续作 | 静态ET_EXEC、CPL3抢占、argv/envp、多ELF固定亲和并发、回收/畸形拒绝 | 无迁移、Linux ABI、替换式execve、动态链接或完整NX |
 | phase3 | 内存压力管线、真实匿名页内容、COW/snapshot/checksum/scrub | 完整 APFS/Btrfs/XFS/生产无限卷 |
 | phase4 | IRQ→用户 driver channel，背压/合并、阻塞唤醒、peer-close/offline/crash 隔离 | 所有硬件驱动用户态化、PCI/DMA runtime 完整产品 |
-| phase5 | lo IPv4 UDP、用户 syscall、payload 与 tx/rx | 硬件 NIC 上通用 socket/TCP、路由/NAT |
+| phase5及P1续作 | lo/NIC UDP、DHCP、主动TCP用户ABI/RTO、IRQ后台RX | 无完整BSD socket、TCP服务端、拥塞控制、完整路由/NAT |
 | phase6 | SHA-256、NIST vectors、trusted digest accept/reject | 公钥签名/证书/公证/verified boot/真 KASLR |
 | phase7 | VMX/SVM 探测，Intel VMXON/OFF、fault rollback、skip | SVM guest、VFIO 实际透传、Linux VM |
 | phase8 | 静态 TP、per-CPU 原子环、trace_id、cap 门控 read/config、ring3 授权/拒绝 | 无损 trace、NMI、全局时间总序、动态探针 |
@@ -691,14 +795,38 @@ message_end:
 | M2 | FB 文本 console、PS/2 键回显、无 GOP skip、serial 保留 |
 | M3 | virtio-blk、COW 真实盘持久，sync/remount/重启读回 |
 | M4 | virtio-net、静态 IP、off-lo ARP/ICMP payload 校验 |
-| M5 | 默认 product、原生 PID1/shell、命令、真实 ELF run、debug 独立 |
+| M5及续作 | 默认product、CPL3 init/shell、run/&/-i/kill、安装盘冷启动，debug独立 |
 | M6 | product/debug 清晰、状态横幅、ACPI shutdown/safe-hlt、UEFI 文档 |
 | M7 | AHCI/SATA 同步读写/restore、COW 根、virtio→AHCI→RAM |
 | M8 | e1000/e1000e、静态 IP、ARP/ICMP、环复用、virtio→e1000 首选 NIC |
 
+| 续作 | 当前交付与边界 |
+|---|---|
+| P0a/P0b | buddy SMP一致性soak；BSP/AP共用PIT/TSC标定，周期tick目标1ms |
+| P1a | 用户文件syscall、全范围copyin/out、持久根跨启动内容校验 |
+| P1b/P1c | NIC UDP≤1472B、后台入队、DHCP ACK或静态fallback；无续租产品化 |
+| P1d/RTO | 主动TCP、用户syscall26–30，SYN/数据/FIN有限重传及失败回收 |
+| 用户进程 | argv/envp、同CPU阻塞现场隔离、双ELF overlap、off-CPU reap、run& |
+| 产品控制 | 用户PID1/shell、CHILD kill、5+2秒关机等待/应急FORCE |
+| 磁盘安装 | 宿主blank-only BIOS/UEFI安装；AHCI/virtio无ISO两次冷启动，不覆盖未知盘 |
+| 外部SDK/示例 | GCC crt/链接脚本、离线导入；hello/nc/cat/ls/http-get |
+| RX IRQ | e1000/virtio-net真实INTx、deferred wake、worker BLOCKED；未知/冲突路由fallback |
+
 ### 9.2 最新已观察到的验收证据
 
-M8 完成时的 hosted、e1000、e1000e、双 NIC、82545EM 双节点、无 NIC 日志
+本次仅更新文档，没有重新编译或启动虚拟机。以下为先前实际运行的记录，
+并已读取当前工作区仍存在的最新日志核对；不存在的旧日志只按阶段文档引用。
+
+| 最新记录 | 已观察到的证据 |
+|---|---|
+| `/tmp/vnetirq-hosted.log`、`vnetirq-single.log`、`vnetirq-numa.log` | hosted/单节点/双NUMA全量PASS；vnet IRQ硬件delta=4、IRQ入队UDP=3、payload=1730 |
+| `/tmp/vnetirq-e1000.log`、`vnetirq-fallback.log` | e1000独立IRQ回归、q35明确IRQ skip+轮询fallback，全量PASS |
+| `/tmp/vnetirq-product.log` | 无ISO virtio盘、DHCP ACK、nc tx/rx各16B、exit0/reap、cat和关机 |
+| `/tmp/httpget-hosted.log`、`httpget-debug.log` | hosted与QEMU debug全量PASS |
+| `/tmp/httpget-product.log` | Python HTTP服务200，54B正文和5124B正文预览1024B均exit0；404 exit4、非法path exit2 |
+| `/tmp/examples-product.log`、`examples-cold.log` | 无ISO盘四示例；nc 21B往返；冷启动读回73B持久文件，无NIC失败后仍可关机 |
+
+M8完成时的hosted、e1000、e1000e、双NIC、82545EM双节点、无NIC日志
 均出现 `selftest result: PASS (0 failures)`。硬件 NIC 回卷测试出现
 `probes=9 tx_delta=18 rx_delta=18`。双 NIC 日志出现 `net primary: vnet0`。
 UEFI 产品路径出现 `nic=enet0/up`、`hello from elf`、`exit=0 reclaim=0`、
@@ -738,7 +866,7 @@ PASS 的含义是这次配置下测试断言通过；skip 的含义是相应能�
 | 公钥签名 | 无 signer authentication、X.509、吊销、公证、根信任链 |
 | Secure Boot/SSV | 未建立 verified boot/签名系统卷链，VMware/OVMF 测试关闭 Secure Boot |
 | POSIX ACL/SBPL | 有 DAC/Seatbelt 等覆盖层，没有完整 ACL/SBPL 编译器 |
-| 恶意应用隔离 | 不完整的用户 fault 恢复、SDK/copyin/out 覆盖；不承诺运行任意不可信 ELF |
+| 恶意应用隔离 | 文件/网络/控制ABI已有copyin/out，但用户fault恢复与完整接口覆盖仍不足；不承诺任意不可信ELF |
 | 真实驱动完全隔离 | AHCI/virtio/e1000 驱动在内核，错误可影响内核；用户 blockd 演示不覆盖它们 |
 | IOMMU/VFIO | attach/记账对象不是已实现 DMA 隔离/透传 |
 | 生产认证 | 无形式化验证或独立安全审计，不以自测 PASS 替代 |
@@ -784,7 +912,9 @@ qemu-system-x86_64 -enable-kvm -m 512 -cpu host -smp 4 \
 ```text
 help
 ls /bin
-run /bin/hello.elf
+run /bin/hello-sdk.elf first second
+run /bin/ls.elf /bin
+run /bin/cat.elf /example.txt
 poweroff
 ```
 
@@ -804,6 +934,24 @@ AHCI 改用以下盘参数：
 网卡可改为 `virtio-net-pci` 或 `e1000e`。双 NIC 各接独立 user netdev、
 不同 MAC；两套 QEMU user network 才能同时使用固定地址而不混淆邻居。
 宿主文件格式 raw/VMDK 与客户机控制器 SATA/virtio 是不同层次，不能互相替代。
+
+已有磁盘可继续作为ISO启动的数据根；完整从盘启动另用安装器，**不要把已有数据盘传给格式化工具**：
+
+```bash
+make install-disk DISK_IMAGE=/tmp/capmix-new-system.img
+qemu-system-x86_64 -enable-kvm -m 512 -cpu host -smp 4 \
+  -drive file=/tmp/capmix-new-system.img,if=virtio,format=raw \
+  -netdev user,id=n0 -device virtio-net-pci,netdev=n0 \
+  -serial stdio -display gtk -no-reboot
+```
+
+无 `-cdrom`；关机后同命令冷启动，检查从盘读取`/sbin/init.elf`与`root=disk`。
+安装器仅接受新路径或全零普通镜像，拒绝已安装/非空未知盘；运行期不自动覆盖旧shell。
+
+宿主 `python3 scripts/tcp-echo.py` 后可 `run -i /bin/nc.elf 10.0.2.2 9998`。
+宿主 `python3 -m http.server 8000 --bind 127.0.0.1` 后可
+`run /bin/http-get.elf 10.0.2.2 8000 /`；只用`run`，不需交互控制台授权。
+外部程序构建/离线导入及请求限制见 [SDK](EXTERNAL_ELF.md)、[示例](EXAMPLES.md)。
 
 ### 11.3 debug 标准验收
 
@@ -836,23 +984,28 @@ make iso                           # 恢复默认 product
 对硬件路径要增加相应盘/NIC 参数，并确认出现 tx/rx、persist、vmexit=real
 等具体日志；只看到一个总 PASS 不足以证明每个可选硬件路径都执行过。
 
+启用实际UDP/TCP echo与RTO丢包测试时，先启动宿主UDP/TCP echo服务，
+使用 `boot/limine-tcp-rto-selftest.conf` 并添加实际NIC参数；确认
+`irq rx verified`、`tcp rto loss recovery`、用户TCP ELF与全量PASS。
+该配置依赖服务，不能把连不上服务改算skip。详细命令见 [TCP_RTO](TCP_RTO.md)。
+
 ## 12. 后续发展的上限与优先事项
 
 ### 12.1 设计路线可以继续走向什么
 
-现有骨架允许继续扩展为支持多个原生用户进程、真实用户驱动服务、持续
-网络收发、较完整资源控制与隔离 VM 的系统。这需要实现层和 ABI 持续演进，
+现有骨架可在已经具备的并发用户进程、持续网络收发和磁盘启动基础上，
+继续完善真实用户驱动服务、资源控制与隔离VM。这需要实现层和 ABI 持续演进，
 而不是单纯把容量宏改大或加几个 syscall 编号。
 
 | 优先方向 | 要补的关键工作 | 完成前的限制 |
 |---|---|---|
-| 多用户进程/SMP | 多独立地址空间、每 CPU user-entry 状态、调度/迁移/退出同步 | 已支持多个 ELF、固定亲和与双 ELF overlap；尚无用户迁移 |
-| 用户 SDK/ABI | 安全 copyin/out、完整文件/VMO/channel 用户接口、参数启动、libc 子集 | 不能运行普通 Linux ELF，也不能从 ELF 自行调用全套 VFS |
+| 多用户进程/SMP | CPU迁移/负载均衡、容量扩展与更多退出同步压力覆盖 | 已支持多个 ELF、固定亲和与双 ELF overlap；尚无用户迁移 |
+| 用户SDK/ABI | 扩展libc/VMO/channel/poll接口与ABI版本管理 | 已有GCC SDK、argv、文件/网络syscall；无Linux ABI或完整POSIX |
 | 完整故障隔离 | user page fault 转进程失败、异常栈/信号/恢复、更多负面测试 | 不能保证任意坏 ELF 只伤自己 |
-| init/shell 用户态化 | 用户 console/input 服务与 fd/IPC 接口、原生 init ELF | 已是静态用户 ELF；尚无动态链接/完整服务管理 |
+| 用户服务管理 | 在现有用户init/shell之上扩展console/input服务、fd/IPC及服务生命周期 | 已是静态用户 ELF；尚无动态链接/完整服务管理 |
 | 驱动 runtime | DMA/IOMMU 授权、设备资源对象、真实 IRQ/完成与用户服务 | 当前硬件驱动是内核最小实现 |
-| 网络产品化 | 后台 RX、邻居超时、路由、真实 NIC UDP socket，之后 TCP 可靠性/续租 | 已具备后台 RX/NIC UDP；邻居无到期、无完整路由；最小主动 TCP 内核 API 和用户 ELF syscall 26–30 已支持，无重传/拥塞控制；DHCP 无续租 |
-| 文件系统规模 | 可变卷布局、更多寻址、并发元数据、断电/恢复覆盖 | 固定前 8 MiB，自有小 COWFS |
+| 网络产品化 | TCP流控/拥塞、listen/accept、邻居到期、路由、DHCP续租及平台IRQ路由扩展 | 已有NIC IRQ、UDP/TCP用户ABI、有限RTO和HTTP示例；仍非完整互联网协议栈 |
+| 文件系统规模 | 可变卷/扩容、更多寻址、并发元数据、断电/恢复覆盖 | 旧盘base0或安装盘base2048的8MiB卷，自有小COWFS |
 | 安全链 | 公钥认证、可信 manifest/签名门控、NX、KASLR、审核策略覆盖 | digest 不能认证发布者，现有策略并非全覆盖 |
 | NUMA | 使用更多真实 RAM、负载观测、页迁移、热插拔与调度协同 | 当前 RR 新分配与耗尽回退 |
 | 虚拟化 | 持续 VM-exit loop、guest interrupts/device model、vCPU 调度、IOMMU | 当前单次 tiny guest，不是可用 Linux hypervisor |
@@ -873,19 +1026,22 @@ IPC RTT、计数、压力测试提供的是具体测试证据，不能外推出�
 | 主题 | 接口/实现 | 详细记录 |
 |---|---|---|
 | 配置/上限 | [config.h](../include/capmix/config.h)、[types.h](../include/capmix/types.h) | 本文第 5 节 |
-| cap/IPC | [cap.h](../include/capmix/cap.h)、[ipc.h](../include/capmix/ipc.h)、`cap/`、`ipc/channel.c` | [phase1](PHASE1.md) |
-| VMO/VMAR | [vm.h](../include/capmix/vm.h)、`mm/vm.c` | [phase1](PHASE1.md) |
-| paging/KPTI | `arch/x86_64/paging.c`、入口汇编 | [phase0](PHASE0.md) |
+| cap/IPC | [cap.h](../include/capmix/cap.h)、[ipc.h](../include/capmix/ipc.h)、`cap/`、`ipc/channel.c` | [phase1](history/PHASE1.md) |
+| VMO/VMAR | [vm.h](../include/capmix/vm.h)、`mm/vm.c` | [phase1](history/PHASE1.md) |
+| paging/KPTI | `arch/x86_64/paging.c`、入口汇编 | [phase0](history/PHASE0.md) |
 | NUMA | [numa.h](../include/capmix/numa.h)、`mm/numa.c`、`mm/buddy.c` | [NUMA](NUMA.md) |
-| ELF/ABI | [proc.h](../include/capmix/proc.h)、[syscall.h](../include/capmix/syscall.h)、`proc/elf.c`、`proc/syscall.c` | [phase2](PHASE2.md) |
-| init/shell | `proc/init.c`、`user/shell.c`、Limine 配置 | [M5](M5_INIT_SHELL.md) |
-| FS/storage | [fs.h](../include/capmix/fs.h)、[io.h](../include/capmix/io.h)、`fs/`、`io/blk.c` | [M3](M3_PERSIST.md)、[M7](M7_AHCI.md) |
-| IRQ/用户驱动 | `io/driverkit.c`、`io/irq.c`、`boot/phase4_test.c` | [phase4](PHASE4.md)，含 blocking continuation |
-| 网络 | [net.h](../include/capmix/net.h)、`net/` | [phase5](PHASE5.md)、[M4](M4_VIRTIO_NET.md)、[M8](M8_E1000.md) |
-| SHA/政策 | [security.h](../include/capmix/security.h)、`security/`、`lib/sha256.c` | [phase6](PHASE6.md) |
-| VMX/EPT | [virt.h](../include/capmix/virt.h)、`virt/hardware.c`、`virt/vmcs.c`、`virt/ept.c` | [phase7](PHASE7.md)、[phase9](PHASE9.md)、[EPT](EPT.md) |
-| trace | [trace.h](../include/capmix/trace.h)、`obs/static_trace.c` | [phase8](PHASE8.md) |
-| FB/PS2/power | `console/`、`arch/x86_64/power.c` | [M2](M2_CONSOLE.md)、[M6](M6_PRODUCT_BOOT.md) |
+| ELF/ABI | [proc.h](../include/capmix/proc.h)、[syscall.h](../include/capmix/syscall.h)、`proc/elf.c`、`proc/syscall.c` | [phase2](history/PHASE2.md) |
+| init/shell/control | `proc/init.c`、`user/init_main.c`、`user/shell_main.c`、`proc/control.c` | [用户init/shell](USER_INIT_SHELL.md)、[kill/关机](KILL_SHUTDOWN.md) |
+| FS/storage | [fs.h](../include/capmix/fs.h)、[io.h](../include/capmix/io.h)、`fs/`、`io/blk.c` | [M3](history/M3_PERSIST.md)、[M7](history/M7_AHCI.md) |
+| IRQ/用户驱动 | `io/driverkit.c`、`io/irq.c`、`boot/phase4_test.c` | [phase4](history/PHASE4.md)，含 blocking continuation |
+| 网络 | [net.h](../include/capmix/net.h)、[tcp.h](../include/capmix/tcp.h)、`net/` | [UDP](P1B_UDP_NIC.md)、[DHCP](P1C_DHCP.md)、[TCP用户ABI](USER_NETWORK_ABI.md)、[RTO](TCP_RTO.md)、[RX IRQ](NET_RX_IRQ.md) |
+| 用户文件/参数/并发 | `proc/uaccess.c`、`proc/elf_args.c`、`proc/spawn.c` | [文件ABI](P1A_ELF_FILES.md)、[argv](ELF_ARGV.md)、[并发](ELF_CONCURRENCY.md) |
+| buddy/timer | `mm/buddy.c`、`arch/x86_64/lapic.c` | [SMP soak](P0A_BUDDY_SMP.md)、[标定](P0B_TIMER.md) |
+| 安装/SDK/示例 | `scripts/install-disk.py`、`scripts/copy-to-disk.py`、`sdk/`、`examples/` | [安装](INSTALL_DISK.md)、[外部ELF](EXTERNAL_ELF.md)、[示例](EXAMPLES.md) |
+| SHA/政策 | [security.h](../include/capmix/security.h)、`security/`、`lib/sha256.c` | [phase6](history/PHASE6.md) |
+| VMX/EPT | [virt.h](../include/capmix/virt.h)、`virt/hardware.c`、`virt/vmcs.c`、`virt/ept.c` | [phase7](history/PHASE7.md)、[phase9](history/PHASE9.md)、[EPT](EPT.md) |
+| trace | [trace.h](../include/capmix/trace.h)、`obs/static_trace.c` | [phase8](history/PHASE8.md) |
+| FB/PS2/power | `console/`、`arch/x86_64/power.c` | [M2](history/M2_CONSOLE.md)、[M6](history/M6_PRODUCT_BOOT.md) |
 
 更新本总览时，应同时更新数值来源、ring3 whitelist、最新运行限制和验收
 证据，不能只把状态表全部改成 PASS。阶段早期文档可能保留历史限制，

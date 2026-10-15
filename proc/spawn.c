@@ -110,11 +110,20 @@ static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
         cm_elf_destroy(im); memset(p,0,sizeof(*p)); cm_irq_restore(irq);return CM_ERR_NOSPC;
     }
     p->fd[0] = 0; p->fd[1] = 1; p->fd[2] = 2;
+    for(unsigned fd=0;fd<2;fd++)if(attr->stdio[fd]) {
+        int h=cm_handle_install(p->task,attr->stdio[fd],fd?CM_RIGHT_WRITE:CM_RIGHT_READ);
+        if(h<0) {
+            cm_fdio_close_all(p);cm_obj_release(p->task->self_obj);
+            memset(p->task,0,sizeof(*p->task));cm_elf_destroy(im);memset(p,0,sizeof(*p));
+            cm_irq_restore(irq);return h;
+        }
+        p->fd[fd]=h;p->stdio_mask|=1u<<fd;
+    }
     /* The affinity gate excludes this task until main/id are installed. */
     p->main = cm_thread_create(p->task, elf_entry_wrap, p, attr->qos);
     if (!p->main) {
         /* This task has not been published to any caller and has no thread. */
-        cm_obj_release(p->task->self_obj);
+        cm_fdio_close_all(p);cm_obj_release(p->task->self_obj);
         memset(p->task, 0, sizeof(*p->task));
         cm_elf_destroy(im); p->elf = NULL; p->path = NULL; p->used = 0;
         cm_irq_restore(irq); return CM_ERR_NOSPC;

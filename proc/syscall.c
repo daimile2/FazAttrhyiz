@@ -70,6 +70,7 @@ static cm_file_t *fd_file(int fd, cm_rights_t need, int64_t *err)
     cm_thread_t *th = cm_sched_current();
     *err = CM_ERR_INVAL;
     if (!p || !th || !th->task) return NULL;
+    if(fd<3 && !(p->stdio_mask&(1u<<fd)))return NULL;
     cm_handle_t *h = cm_handle_lookup(th->task, cm_fdio_lookup(p, fd));
     if (!h || !h->obj || h->obj->type != CM_OBJ_FILE) return NULL;
     if ((h->rights & need) != need) { *err = CM_ERR_DENIED; return NULL; }
@@ -81,19 +82,16 @@ static int64_t close_fd(cm_proc_t *p, cm_task_t *t, int fd)
     int hid = cm_fdio_lookup(p, fd);
     cm_handle_t *h = cm_handle_lookup(t, hid);
     if (!h || h->obj->type != CM_OBJ_FILE) return CM_ERR_INVAL;
-    cm_object_t *obj = h->obj;
-    cm_file_t *f = (cm_file_t *)obj->payload;
-    cm_handle_drop(t, hid);
+    cm_handle_drop(t, hid); /* FILE owned destructor closes VFS on last reference */
     p->fd[fd] = -1;
-    if (obj->type == CM_OBJ_INVALID) cm_vfs_close(f);   /* last reference */
     return 0;
 }
 
 void cm_fdio_close_all(cm_proc_t *p)
 {
     if (!p || !p->task) return;
-    for (int fd = 3; fd < CM_FD_MAX; fd++)
-        if (p->fd[fd] >= 0) (void)close_fd(p, p->task, fd);
+    for (int fd = 0; fd < CM_FD_MAX; fd++)
+        if ((fd>=3 || (p->stdio_mask&(1u<<fd))) && p->fd[fd] >= 0) (void)close_fd(p, p->task, fd);
 }
 
 static const cm_elf_image_t *caller_image(void)
@@ -124,7 +122,8 @@ static int64_t sys_write(uint64_t fd,uint64_t address,uint64_t length,uint64_t u
 {
     CM_UNUSED(unused);
     if(fd>=CM_FD_MAX)return CM_ERR_INVAL;
-    if(fd>2)return file_io(fd,address,length,1);
+    cm_proc_t *caller=cm_proc_current();
+    if(fd>2 || (caller && (caller->stdio_mask&(1u<<fd))))return file_io(fd,address,length,1);
     const cm_elf_image_t *im=caller_image();
     if(!cm_user_access(im,address,length,0))return CM_ERR_INVAL;
     char tmp[128];uint64_t n=length<sizeof(tmp)-1?length:sizeof(tmp)-1;
@@ -135,6 +134,8 @@ static int64_t sys_write(uint64_t fd,uint64_t address,uint64_t length,uint64_t u
     kinfo("user[%llu]: %s",(unsigned long)(p?p->pid:0),tmp);
     return (int64_t)length;
 }
+
+static void file_destroy(void *payload){(void)cm_vfs_close(payload);}
 
 static int64_t sys_open(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
@@ -157,15 +158,14 @@ static int64_t sys_open(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     uint32_t acc = flags & CM_O_ACCMODE;
     if (acc != CM_O_WRONLY) r |= CM_RIGHT_READ;
     if (acc != CM_O_RDONLY) r |= CM_RIGHT_WRITE;
-    cm_object_t *obj = cm_obj_mint(CM_OBJ_FILE, f, r);
+    cm_object_t *obj = cm_obj_mint_owned(CM_OBJ_FILE, f, r, file_destroy);
     if (!obj) { cm_vfs_close(f); return CM_ERR_NOMEM; }
     int hid = cm_handle_install(th->task, obj, r);
     cm_obj_release(obj);                     /* the handle owns it now */
-    if (hid < 0) { cm_vfs_close(f); return hid; }
+    if (hid < 0) return hid;
     int fd = cm_fdio_install(p, hid);
     if (fd < 0) {
         cm_handle_drop(th->task, hid);
-        cm_vfs_close(f);
         return CM_ERR_NOSPC;
     }
     return fd;
@@ -182,7 +182,8 @@ static int64_t sys_close(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
     cm_proc_t *p = cm_proc_current();
     cm_thread_t *th = cm_sched_current();
-    if (!p || !th || !th->task || a0 <= 2 || a0 >= CM_FD_MAX) return CM_ERR_INVAL;
+    if (!p || !th || !th->task || a0 >= CM_FD_MAX ||
+        (a0<=2 && !(p->stdio_mask&(1u<<a0)))) return CM_ERR_INVAL;
     return close_fd(p, th->task, (int)a0);
 }
 

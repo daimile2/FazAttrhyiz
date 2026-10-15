@@ -21,6 +21,8 @@
 
 详细说明见 [内核总览：理念、接口、上限/下限与当前状态](docs/KERNEL_OVERVIEW.zh-CN.md)。其中明确区分已实现机制、用户可调用接口、容量限制和后续目标。
 
+当前文档入口：[文档导航](docs/README.md) · [VirtualBox测试手册](docs/VIRTUALBOX_TESTING.zh-CN.md) · [用户示例](docs/EXAMPLES.md)。早期阶段/M里程碑记录已整理到 [docs/history](docs/history/README.md)。
+
 ## 现在能跑什么
 
 ```
