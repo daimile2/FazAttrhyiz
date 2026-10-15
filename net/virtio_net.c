@@ -8,6 +8,11 @@
  * descriptors, no mergeable buffers or checksum/GSO offload. */
 static _Atomic int available;
 static int iface_id=-1;
+static unsigned irq_enabled;
+#ifndef CAPMIX_HOSTED
+static unsigned config_pending;
+#endif
+static uint64_t irq_hits;
 #ifndef CAPMIX_HOSTED
 #define RX_BUFFERS 8u
 #define NET_HEADER 10u
@@ -77,6 +82,8 @@ static int reset(void)
 static void stop(void)
 {
     available=0;
+    if(irq_enabled)cm_ioapic_pci_mask_vector(0x43);
+    __atomic_store_n(&irq_enabled,0,__ATOMIC_RELEASE);
     cm_iface_t *iface=cm_if_get(iface_id);if(iface)iface->up=0;
     int ack=reset();command_write((uint16_t)((pci_command|0x400)&~4u));
     if(ack) {
@@ -99,7 +106,7 @@ static cm_error_t queue_init(struct queue *q,unsigned index)
     memset(q->memory,0,4*CM_PAGE_SIZE);
     q->desc=(void *)q->memory;q->avail=(void *)(q->memory+16*q->size);
     q->used=(void *)(q->memory+CM_ALIGN_UP(16*q->size+6+2*q->size,4096));
-    q->avail[0]=1; /* no interrupts; PCI INTx disabled too */
+    q->avail[0]=1; /* suppress until RX INTx route is installed; TX stays polled */
     out32(port+8,(uint32_t)(physical(q->memory)>>12));
     return in32(port+8)==(uint32_t)(physical(q->memory)>>12)?CM_OK:CM_ERR_IO;
 }
@@ -160,8 +167,21 @@ cm_error_t cm_virtio_net_init(void)
     cm_iface_t *iface=cm_if_get(iface_id);
     memcpy(iface->mac,mac,6);iface->netmask=0xffffff00u;iface->gateway=0x0a000202u;
     iface->up=link_up();available=1;out16(port+16,0);
-    kinfo("virtio-net ready: RXq=%u TXq=%u rx_buffers=%u link=%s MAC=%x:%x:%x:%x:%x:%x polling INTx=off",
-          rxq.size,txq.size,rx_count,iface->up?"up":"down",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+    extern void cm_irq_stub_vnet(void);
+    unsigned line=config(pci_address,0x3c)&255;
+    uint32_t bridge=config(0x80000000u,0);
+    int routed=bridge==0x12378086u?cm_ioapic_pci_route(line,0x43,cm_irq_stub_vnet):CM_ERR_NOTSUP;
+    if(!routed) {
+        (void)in8(port+19); /* clear stale status before arming */
+        __atomic_store_n(&irq_enabled,1,__ATOMIC_RELEASE);
+        rxq.avail[0]=0; /* VIRTQ_AVAIL_F_NO_INTERRUPT cleared, no EVENT_IDX */
+        __atomic_thread_fence(__ATOMIC_SEQ_CST);
+        command_write((uint16_t)((pci_command|5)&~0x400u));
+        cm_net_rx_notify(iface_id); /* drain any completion predating arm */
+        kinfo("virtio-net irq rx enabled: INTx line=%u vector=0x43 RX interrupt TX suppressed top=ack+notify",line);
+    } else kinfo("virtio-net irq rx skipped: bridge=%x line=%u route=%d fallback=poll-10ms",bridge,line,routed);
+    kinfo("virtio-net ready: RXq=%u TXq=%u rx_buffers=%u link=%s MAC=%x:%x:%x:%x:%x:%x irq=%u",
+          rxq.size,txq.size,rx_count,iface->up?"up":"down",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],irq_enabled);
     kinfo("virtio-net ip: vnet0=10.0.2.15/24 gateway=10.0.2.2 status_feature=%u",!!(features&(1u<<16)));
     unguard(flags);return CM_OK;
 #endif
@@ -185,7 +205,7 @@ cm_error_t cm_virtio_net_transmit(const uint8_t *frame,uint16_t length)
     unsigned spin;
     for(spin=0;spin<20000000;spin++) {
         if(__atomic_load_n(&txq.used[1],__ATOMIC_ACQUIRE)!=txq.ui)break;
-        if(!(spin&4095))(void)in8(port+19);
+        if(!irq_enabled && !(spin&4095))(void)in8(port+19);
         __asm__ volatile("pause" ::: "memory");
     }
     if(spin==20000000)err=CM_ERR_IO;
@@ -194,7 +214,7 @@ cm_error_t cm_virtio_net_transmit(const uint8_t *frame,uint16_t length)
         if(txq.used[1]!=(uint16_t)(txq.ui+1) || entry[0]!=0)err=CM_ERR_IO;
         else {txq.ui++;__sync_fetch_and_add(&cm_if_get(iface_id)->tx,1);}
     }
-    (void)in8(port+19);
+    if(!irq_enabled)(void)in8(port+19);
     if(err){kerr("virtio-net TX timeout/invalid completion");stop();}
     unguard(flags);return err;
 #endif
@@ -207,10 +227,11 @@ cm_error_t cm_virtio_net_receive(uint8_t *frame,uint16_t *length)
 #else
     uint64_t flags=guard();
     if(!available){unguard(flags);return CM_ERR_DEAD;}
+    if(__atomic_exchange_n(&config_pending,0,__ATOMIC_ACQ_REL))cm_if_get(iface_id)->up=link_up();
     uint16_t count=(uint16_t)(__atomic_load_n(&rxq.used[1],__ATOMIC_ACQUIRE)-rxq.ui);
     if(!count) {
         static unsigned empty_polls;
-        if(!(empty_polls++&1023) && (in8(port+19)&2))cm_if_get(iface_id)->up=link_up();
+        if(!irq_enabled && !(empty_polls++&1023) && (in8(port+19)&2))cm_if_get(iface_id)->up=link_up();
         unguard(flags);return CM_ERR_AGAIN;
     }
     volatile uint32_t *entry=(void *)((volatile uint8_t *)rxq.used+4+8*(rxq.ui%rxq.size));
@@ -222,7 +243,23 @@ cm_error_t cm_virtio_net_receive(uint8_t *frame,uint16_t *length)
     cm_error_t err=CM_OK;
     if((buffer[0]&1) || buffer[1])err=CM_ERR_NOTSUP; /* offload was not negotiated */
     else {*length=(uint16_t)(bytes-NET_HEADER);memcpy(frame,buffer+64,*length);}
-    rxq.ui++;memset(buffer,0,NET_HEADER);publish(&rxq,(uint16_t)head);out16(port+16,0);(void)in8(port+19);
+    rxq.ui++;memset(buffer,0,NET_HEADER);publish(&rxq,(uint16_t)head);out16(port+16,0);if(!irq_enabled)(void)in8(port+19);
     unguard(flags);return err;
+#endif
+}
+
+int cm_virtio_net_irq_enabled(void){return (int)__atomic_load_n(&irq_enabled,__ATOMIC_ACQUIRE);}
+uint64_t cm_virtio_net_irq_count(void){return __atomic_load_n(&irq_hits,__ATOMIC_RELAXED);}
+void cm_virtio_net_irq_isr(void)
+{
+#ifndef CAPMIX_HOSTED
+    /* ISR read deasserts INTx. Never take the DMA/driver or scheduler lock. */
+    uint8_t cause=port?in8(port+19):0;
+    if(cause&2)__atomic_store_n(&config_pending,1,__ATOMIC_RELEASE);
+    if((cause&3) && __atomic_load_n(&irq_enabled,__ATOMIC_ACQUIRE)) {
+        __atomic_fetch_add(&irq_hits,1,__ATOMIC_RELAXED);
+        cm_net_rx_notify(iface_id);
+    }
+    cm_lapic_eoi();
 #endif
 }

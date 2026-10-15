@@ -52,6 +52,10 @@ int cm_p1b_selftest(void)
     for(selected=0;selected<2;selected++) {
         int id=selected?cm_e1000_ifid():cm_virtio_net_ifid();
         if(!(selected?cm_e1000_available():cm_virtio_net_available()))continue;
+        for(unsigned step=0;step<128 && !cm_net_bg_is_parked();step++)(void)cm_sched_run_until_idle(1);
+        CHECK(cm_net_bg_is_parked());
+        uint64_t hw_before=selected?cm_e1000_irq_count():cm_virtio_net_irq_count();
+        uint64_t irq_udp_before=cm_net_bg_irq_udp_queued(id);
         cm_iface_t *iface=cm_if_get(id);uint64_t rx_before=cm_net_bg_frames(),tx_before=iface->tx;
         CHECK(cm_udp_open(client,&handle)==CM_OK && cm_udp_bind(client,handle,id,(uint16_t)ports[selected])==CM_OK);
         result=0;bytes_checked=0;
@@ -62,6 +66,12 @@ int cm_p1b_selftest(void)
         CHECK(cm_net_bg_frames()>rx_before && iface->tx>tx_before);
         if(echo_enabled) {
             CHECK(bytes_checked==1730);
+            if(selected?cm_e1000_irq_enabled():cm_virtio_net_irq_enabled()) {
+                uint64_t hw_after=selected?cm_e1000_irq_count():cm_virtio_net_irq_count();
+                CHECK(hw_after>hw_before && cm_net_bg_irq_udp_queued(id)>irq_udp_before);
+                kinfo("irq rx verified: %s slept=1 hardware_delta=%llu irq_udp_queued=%llu payload=1730 queue-before-recv=1",
+                    iface->name,(unsigned long)(hw_after-hw_before),(unsigned long)(cm_net_bg_irq_udp_queued(id)-irq_udp_before));
+            }
             kinfo("p1b UDP %s queue-before-recv verified: background ingress, no raw RX by client",iface->name);
         }
         kinfo("p1b UDP %s bg RX verified: tx_delta=%llu bg_rx_delta=%llu bytes=%u echo=%s",

@@ -64,8 +64,8 @@ DHCP 核心、buddy 锁、时钟、shell/FB 和 AHCI/COW 没有修改。
 
 ## 明确缺失
 
-- **没有 TCP SYN/数据/FIN 重传**、RTO/RTT 估计、指数退避、fast retransmit。
-  ARP 未解析时重试 wire-send，属于发送前地址解析，不是 TCP 重传。
+- 已补 SYN/数据/FIN 待确认段、固定 RTO 与指数退避，见 [TCP_RTO.md](TCP_RTO.md)。
+  仍无 RTT 自适应估计和 fast retransmit；ARP 重试单独处理。
 - 没有拥塞控制、cwnd/ssthresh、慢启动；stop-and-wait 不是拥塞控制实现。
 - 只使用未缩放的 peer window，最大接收窗口 4 KiB；没有 window scaling、
   完整 WL1/WL2 更新规则、persist/zero-window probe。零窗口有限等待后失败。
@@ -74,8 +74,8 @@ DHCP 核心、buddy 锁、时钟、shell/FB 和 AHCI/COW 没有修改。
   不表示对应扩展被启用。
 - 无主动安全 ISN 生成器（当前 TSC 取值），无 SYN cookies、完整挑战 ACK/
   RST 防护、端口复用的完整 TIME_WAIT 隔离。
-- ACK 失败的重试依赖后续输入/API 活动，没有独立 TCP 定时器。
-- 无被动监听、TCP 用户 syscall/ELF、BSD socket、HTTP/TLS。
+- 纯 ACK 失败的重试依赖后续输入/API 活动；待确认段 RTO 由后台 RX/API 等待推进。
+- 无被动监听、BSD socket、HTTP/TLS；后续已提供 TCP 用户 syscall/ELF，原 ABI 沿用。
 
 这是受控 QEMU 网络的机制验证与原型，不能作为可靠互联网 TCP 栈发布。
 

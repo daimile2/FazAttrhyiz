@@ -7,11 +7,13 @@
 static cm_task_t *client;
 static int interface_id,handle,result;
 static unsigned completed;
+static unsigned drop_test;
 static void echo_client(void *arg)
 {
     CM_UNUSED(arg);uint8_t sent[2049],got[2049];int readonly=-1;
     for(unsigned i=0;i<sizeof(sent);i++)sent[i]=(uint8_t)(i*19u+7u);
     result=cm_tcp_open(client,&handle);if(result)goto done;
+    if(drop_test){result=cm_tcp_test_drop(client,handle,7);if(result)goto close;}
     result=cm_tcp_connect(client,handle,interface_id,0x0a000202,9998,3000);if(result)goto close;
     if(cm_handle_duplicate(client,handle,client,&readonly,CM_RIGHT_READ) ||
        cm_tcp_send(client,readonly,sent,1,100)!=CM_ERR_DENIED){result=CM_ERR_IO;goto close;}
@@ -76,18 +78,30 @@ int cm_p1d_selftest(void)
         if(!(which?cm_e1000_available():cm_virtio_net_available()))continue;
         interface_id=which?cm_e1000_ifid():cm_virtio_net_ifid();handle=-1;result=0;completed=0;
         cm_iface_t *iface=cm_if_get(interface_id);uint32_t address=iface->addr,mask=iface->netmask,gateway=iface->gateway;
+        drop_test=cm_boot_has_option("capmix.tcp_drop=1");
+        uint64_t retry_before=cm_tcp_retransmits();
         sender=cm_thread_create(client,echo_client,NULL,CM_QOS_USER_INTERACTIVE);
         if(!sender){failed++;break;}
         uint64_t end=cm_rdtsc()+cm_tsc_hz()*15;
         while(sender->id && cm_rdtsc()<end)(void)cm_sched_run_until_idle(1);
         if(sender->id || result || completed!=2049){kerr("p1d TCP echo failed result=%d bytes=%u",result,completed);failed++;break;}
         sender=NULL;
+        if(drop_test){uint64_t retries=cm_tcp_retransmits()-retry_before;
+            if(retries<3)failed++;
+            kinfo("tcp rto loss recovery: dropped=SYN/data/FIN retransmits=%llu payload=2049 close=ok live=%u",(unsigned long)retries,cm_tcp_live());}
         /* Refused connection must reclaim resources and leave other protocols alive. */
         int bad=-1;cm_error_t e=cm_tcp_open(client,&bad);
         if(!e)e=cm_tcp_connect(client,bad,interface_id,0x0a000202,9997,300);
         if(!e || (e!=CM_ERR_DEAD && e!=CM_ERR_AGAIN)){failed++;}
         if(bad>=0)(void)cm_tcp_close(client,bad,100);
-        if(cm_tcp_live()!=before || iface->addr!=address || iface->netmask!=mask || iface->gateway!=gateway)failed++;
+        /* A concurrent RX/RTO worker can still hold a transient slot pin
+         * after the last capability closes. Let that continuation finish. */
+        uint64_t quiesce=cm_rdtsc()+cm_tsc_hz();
+        while(cm_tcp_live()!=before && cm_rdtsc()<quiesce)(void)cm_sched_run_until_idle(1);
+        if(cm_tcp_live()!=before || iface->addr!=address || iface->netmask!=mask || iface->gateway!=gateway) {
+            kerr("tcp failure cleanup mismatch: live=%u/%u address=%x/%x mask=%x/%x gateway=%x/%x",cm_tcp_live(),before,
+                iface->addr,address,iface->netmask,mask,iface->gateway,gateway);failed++;
+        }
         failed+=udp_after_failure(interface_id,(unsigned)which);
         kinfo("tcp failed-connect cleanup verified: error=%d live=%u DHCP address/mask/gateway unchanged",e,cm_tcp_live());
     }

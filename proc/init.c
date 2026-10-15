@@ -12,12 +12,18 @@
 #include <string.h>
 #include "../build/user_init.inc"
 #include "../build/user_shell.inc"
+#include "../build/spin_elf.inc"
 #include "../build/hello_elf.inc"
 #include "../build/file_elf.inc"
 #include "../build/wire_elf.inc"
 #include "../build/tcp_elf.inc"
 #include "../build/argv_elf.inc"
 #include "../build/concurrent_elf.inc"
+#include "../build/example_hello.inc"
+#include "../build/example_nc.inc"
+#include "../build/example_cat.inc"
+#include "../build/example_ls.inc"
+#include "../build/example_http-get.inc"
 static cm_error_t root_status;
 void cm_product_record_root(cm_error_t status) {root_status=status;}
 #ifndef CAPMIX_HOSTED
@@ -41,12 +47,21 @@ static cm_error_t provision(void)
     else if(!e && stat.kind!=CM_INO_DIR)e=CM_ERR_NOTDIR;
     if(e)return e;
     e=install_missing("/bin/shell.elf",cm_user_shell_elf,sizeof(cm_user_shell_elf));
+    if(!e)e=install_missing("/bin/spin.elf",cm_spin_elf,sizeof(cm_spin_elf));
     if(!e)e=install_missing("/bin/hello.elf",cm_test_elf,sizeof(cm_test_elf));
     if(!e)e=install_missing("/bin/filetest.elf",cm_file_elf,sizeof(cm_file_elf));
     if(!e)e=install_missing("/bin/udpwire.elf",cm_wire_elf,sizeof(cm_wire_elf));
     if(!e)e=install_missing("/bin/tcpwire.elf",cm_tcp_elf,sizeof(cm_tcp_elf));
     if(!e)e=install_missing("/bin/argtest.elf",cm_argv_elf,sizeof(cm_argv_elf));
-    return e?e:install_missing("/bin/concurrent.elf",cm_concurrent_elf,sizeof(cm_concurrent_elf));
+    if(!e)e=install_missing("/bin/concurrent.elf",cm_concurrent_elf,sizeof(cm_concurrent_elf));
+    if(!e)e=install_missing("/bin/hello-sdk.elf",cm_example_hello_elf,sizeof(cm_example_hello_elf));
+    if(!e)e=install_missing("/bin/nc.elf",cm_example_nc_elf,sizeof(cm_example_nc_elf));
+    if(!e)e=install_missing("/bin/cat.elf",cm_example_cat_elf,sizeof(cm_example_cat_elf));
+    if(!e)e=install_missing("/bin/ls.elf",cm_example_ls_elf,sizeof(cm_example_ls_elf));
+    if(!e)e=install_missing("/bin/http-get.elf",cm_example_http_get_elf,sizeof(cm_example_http_get_elf));
+    static const char sample[]="CapMix examples: persistent root ready\n";
+    if(!e)e=install_missing("/example.txt",sample,sizeof(sample)-1);
+    return e;
 }
 #endif
 void cm_product_start(cm_error_t status)

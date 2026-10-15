@@ -43,6 +43,9 @@ static uint64_t     g_preempt_count[CM_MAX_CPUS];
  * deadlocks instantly. */
 static volatile unsigned int g_rq_lock;
 static uint64_t              g_lock_contend;
+static void (*g_poll_hook)(void);
+void cm_sched_set_poll_hook(void (*hook)(void))
+{__atomic_store_n(&g_poll_hook,hook,__ATOMIC_RELEASE);}
 
 static void sched_lock(void)
 {
@@ -80,6 +83,7 @@ void cm_sched_init(void)
     g_min_vruntime = 0;
     g_rq_lock = 0;
     g_lock_contend = 0;
+    g_poll_hook = NULL;
 }
 
 /* Per-CPU accessors run with IF=0: cm_cpu_id() and the array access must
@@ -118,6 +122,8 @@ uint64_t     cm_sched_preempts(void)
 
 int cm_sched_runnable(void)
 {
+    void (*hook)(void)=__atomic_load_n(&g_poll_hook,__ATOMIC_ACQUIRE);
+    if(hook)hook(); /* no rq lock held; may enqueue a deferred sleeper */
     int n = 0;
     for (int q = 0; q < CM_QOS_NBANDS; q++) n += g_rq_len[q];
     return n;
@@ -636,6 +642,17 @@ void cm_sched_tick(void)
      * coming back from a cooperative yield IF is already 1. */
     __asm__ volatile("sti");
 #endif
+
+    /* This CPU owns the stopped context; CR3 is back on the scheduler's
+     * kernel view. A ring3 victim holds no kernel resources on its suspended
+     * ISR frame. Syscall continuations must resume and unwind instead. */
+    cm_proc_t *victim=cm_proc_current();
+    if(victim && victim->elf && !victim->exited && victim->elf_started &&
+       __atomic_load_n(&victim->kill_pending,__ATOMIC_ACQUIRE) &&
+       !__atomic_load_n(&victim->syscall_depth,__ATOMIC_ACQUIRE)) {
+        cm_proc_finish_exit(victim,137);
+        kinfo("user kill retired: pid=%llu cpu=%d off-cpu=1 exit=137",(unsigned long)victim->pid,cpu);
+    }
 
     /* Decide under the lock, act OUTSIDE it.
      *

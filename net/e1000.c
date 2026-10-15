@@ -5,8 +5,9 @@
 #include "capmix/klog.h"
 #include <string.h>
 /* Original implementation: Intel 8254x legacy descriptors; 82574 legacy
- * mode uses the same descriptor ABI. No offload, MSI, IRQ or NCQ-like queues. */
-static int available,iface_id=-1;
+ * mode uses the same descriptor ABI. Legacy INTx RX; no MSI/offload/multiqueue. */
+static int available,iface_id=-1,irq_enabled;
+static uint64_t irq_hits;
 #ifndef CAPMIX_HOSTED
 #define N 16u
 struct rxdesc {uint64_t address;uint16_t length,checksum;uint8_t status,errors;uint16_t special;};
@@ -43,6 +44,9 @@ static int reset(void)
 }
 static void stop(void)
 {
+    put(0xd8,UINT32_MAX);(void)reg(0xc0);
+    if(irq_enabled)cm_ioapic_pci_mask();
+    irq_enabled=0;
     available=0;cm_iface_t *iface=cm_if_get(iface_id);if(iface)iface->up=0;
     int ack=reset();command((uint16_t)((saved_command|0x400)&~4u));
     int disabled=!(config(pci,4)&4);
@@ -122,7 +126,18 @@ cm_error_t cm_e1000_init(void)
     if(iface_id<0){stop();unguard(flags);return CM_ERR_NOSPC;}
     cm_iface_t *iface=cm_if_get(iface_id);memcpy(iface->mac,mac,6);
     iface->netmask=0xffffff00u;iface->gateway=0x0a000202u;iface->up=link();available=1;
-    kinfo("e1000 ready: link=%s RX/TX=%u legacy DMA=2048 MAC=%x:%x:%x:%x:%x:%x polling IRQ=off",iface->up?"up":"down",N,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+    extern void cm_irq_stub_e1000(void);
+    unsigned line=config(pci,0x3c)&255;
+    uint32_t host_bridge=config(0x80000000u,0);
+    /* i440FX routes firmware PCI Interrupt Line to the matching ISA GSI.
+     * Other root complexes require ACPI _PRT/MSI; do not guess their GSI. */
+    if(host_bridge==0x12378086u && cm_ioapic_pci_route(line,0x42,cm_irq_stub_e1000)==CM_OK) {
+        irq_enabled=1;(void)reg(0xc0);
+        command((uint16_t)((saved_command|6)&~0x400u));
+        put(0xd0,(1u<<4)|(1u<<6)|(1u<<7));(void)reg(8);
+        kinfo("e1000 irq rx enabled: INTx line=%u RXDMT0/RXO/RXT0; top=ack+notify",line);
+    } else kinfo("e1000 irq rx skipped: unverified firmware route bridge=%x line=%u fallback=poll-10ms",host_bridge,line);
+    kinfo("e1000 ready: link=%s RX/TX=%u legacy DMA=2048 MAC=%x:%x:%x:%x:%x:%x irq=%u",iface->up?"up":"down",N,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],irq_enabled);
     kinfo("e1000 ip: enet0=10.0.2.15/24 gateway=10.0.2.2");unguard(flags);return CM_OK;
 #endif
 }
@@ -171,5 +186,21 @@ cm_error_t cm_e1000_receive(uint8_t *frame,uint16_t *length)
     d->length=0;d->errors=0;d->status=0;
     __atomic_thread_fence(__ATOMIC_RELEASE);put(0x2818,rx_next);rx_next=(rx_next+1)%N;
     unguard(flags);return e;
+#endif
+}
+
+int cm_e1000_irq_enabled(void){return __atomic_load_n(&irq_enabled,__ATOMIC_ACQUIRE);}
+uint64_t cm_e1000_irq_count(void){return __atomic_load_n(&irq_hits,__ATOMIC_RELAXED);}
+void cm_e1000_irq_isr(void)
+{
+#ifndef CAPMIX_HOSTED
+    /* Read-to-clear ICR before level EOI. No DMA parsing, locks, logging,
+     * capability operations or scheduler calls in hard interrupt context. */
+    uint32_t cause=mmio?reg(0xc0):0;
+    if(cause&((1u<<4)|(1u<<6)|(1u<<7))) {
+        __atomic_fetch_add(&irq_hits,1,__ATOMIC_RELAXED);
+        cm_net_rx_notify(iface_id);
+    }
+    cm_lapic_eoi();
 #endif
 }

@@ -38,6 +38,10 @@ struct madt {
 static uint64_t            g_ioapic_phys;
 static volatile uint32_t  *g_ioapic;
 static int                 g_irq1_gsi = 1;
+#ifndef CAPMIX_HOSTED
+static unsigned g_ioapic_base;
+static int g_pci_pin[2]={-1,-1};
+#endif
 
 /* Limine puts firmware tables (and its own response structs) at addresses
  * our page tables do not cover: the RSDP response was at phys 0x1fab0000,
@@ -140,8 +144,10 @@ int cm_ioapic_init(void)
         uint8_t len  = p[1];
         if (len < 2) break;
 
-        if (type == 1 && len >= 12)
+        if (type == 1 && len >= 12) {
             g_ioapic_phys = *(uint32_t *)(p + 4);
+            g_ioapic_base = *(uint32_t *)(p + 8);
+        }
         else if (type == 2 && len >= 10) {
             uint8_t src = p[3];
             uint32_t gsi = *(uint32_t *)(p + 4);
@@ -172,3 +178,43 @@ int cm_ioapic_init(void)
     return 0;
 #endif
 }
+/* Two dedicated legacy PCI INTx routes (e1000 and virtio-net). Firmware Interrupt Line is a GSI on
+ * the supported PC/QEMU topology; no AML _PRT evaluator or shared IRQ fanout. */
+int cm_ioapic_pci_route(unsigned gsi,unsigned vector,void (*entry)(void))
+{
+#ifdef CAPMIX_HOSTED
+    (void)gsi;(void)vector;(void)entry;return CM_ERR_NOTSUP;
+#else
+    uint64_t flags=cm_irq_save();
+    if(vector<0x42 || vector>0x43){cm_irq_restore(flags);return CM_ERR_NOTSUP;}
+    unsigned slot=vector-0x42;
+    if(!g_ioapic || !entry || g_pci_pin[slot]>=0 ||
+       gsi<3 || gsi== (unsigned)g_irq1_gsi || gsi<g_ioapic_base ||
+       gsi-g_ioapic_base>((ioapic_read(1)>>16)&255)) {cm_irq_restore(flags);return CM_ERR_NOTSUP;}
+    unsigned pin=gsi-g_ioapic_base;
+    /* Shared GSI needs fanout; leave the second device on polling instead. */
+    if(g_pci_pin[slot^1u]==(int)pin){cm_irq_restore(flags);return CM_ERR_BUSY;}
+    cm_idt_set_gate((int)vector,(void *)entry,0);
+    ioapic_write(0x10+pin*2,(1u<<16));
+    ioapic_write(0x11+pin*2,(uint32_t)cm_lapic_id()<<24);
+    ioapic_write(0x10+pin*2,vector|(1u<<13)|(1u<<15)); /* active-low, level */
+    g_pci_pin[slot]=(int)pin;
+    kinfo("irq rx route: PCI INTx GSI=%u pin=%u vector=0x%x dest=%u level/low",gsi,pin,vector,cm_lapic_id());
+    cm_irq_restore(flags);return CM_OK;
+#endif
+}
+void cm_ioapic_pci_mask_vector(unsigned vector)
+{
+#ifndef CAPMIX_HOSTED
+    if(vector<0x42 || vector>0x43)return;
+    uint64_t flags=cm_irq_save();int pin=g_pci_pin[vector-0x42];
+    if(g_ioapic && pin>=0) {
+        unsigned reg=0x10+(unsigned)pin*2;
+        ioapic_write((int)reg,ioapic_read((int)reg)|(1u<<16));
+    }
+    cm_irq_restore(flags);
+#else
+    CM_UNUSED(vector);
+#endif
+}
+void cm_ioapic_pci_mask(void){cm_ioapic_pci_mask_vector(0x42);}

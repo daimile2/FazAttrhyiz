@@ -8,7 +8,11 @@
 #define CM_SYS_READDIR 35
 #define CM_SYS_BOOT_CONTROL 36
 #define CM_SYS_POWEROFF 37
+#define CM_SYS_CHILD_KILL 38
+#define CM_SYS_TSC_HZ 39
+#define CM_POWEROFF_FORCE 2u
 #define CM_SPAWN_SHELL 1u
+#define CM_SPAWN_CONSOLE 2u /* explicit foreground console delegation; child handle 1 */
 #define CM_WAIT_NONBLOCK 1u
 /* ELF syscall 3: (controller_handle, request*, result*, 0). */
 typedef struct {uint64_t path,argv,envp;uint32_t flags;int32_t cpu;} cm_user_spawn_t;

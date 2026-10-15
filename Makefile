@@ -76,7 +76,7 @@ FREE_LDFLAGS = -nostdlib -static -no-pie -Wl,--build-id=none \
 
 all: test
 
-$(HOST_BIN): build/user_init.inc build/user_shell.inc build/concurrent_elf.inc build/argv_elf.inc build/tcp_elf.inc build/wire_elf.inc build/file_elf.inc build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc build/blockd_wait_elf.inc $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
+$(HOST_BIN): build/spin_elf.inc build/user_init.inc build/user_shell.inc build/concurrent_elf.inc build/argv_elf.inc build/tcp_elf.inc build/wire_elf.inc build/file_elf.inc build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc build/blockd_wait_elf.inc $(HOST_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h)
 	$(CC) $(CFLAGS) $(INCLUDES) -DCAPMIX_HOSTED -o $@ $(HOST_SRC)
 
 test: $(HOST_BIN)
@@ -116,7 +116,7 @@ build/net_elf.inc: build/net.elf scripts/embed-elf.py
 
 kernel: $(FREE_BIN)
 
-$(FREE_BIN): build/user_init.inc build/user_shell.inc build/concurrent_elf.inc build/argv_elf.inc build/tcp_elf.inc build/wire_elf.inc build/file_elf.inc build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc build/blockd_wait_elf.inc $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
+$(FREE_BIN): build/spin_elf.inc build/user_init.inc build/user_shell.inc build/concurrent_elf.inc build/argv_elf.inc build/tcp_elf.inc build/wire_elf.inc build/file_elf.inc build/hello_elf.inc build/blockd_elf.inc build/net_elf.inc build/trace_elf.inc build/blockd_wait_elf.inc $(FREE_SRC) $(wildcard include/capmix/*.h arch/x86_64/*_asm.h) arch/x86_64/linker.ld
 	$(CC) $(FREE_CFLAGS) $(INCLUDES) $(FREE_LDFLAGS) -o $@ $(FREE_SRC)
 
 iso: $(FREE_BIN)
@@ -216,6 +216,14 @@ build/concurrent.elf: build/concurrent.o tests/hello_elf.ld
 build/concurrent_elf.inc: build/concurrent.elf scripts/embed-elf.py
 	python3 scripts/embed-elf.py $< $@ cm_concurrent_elf
 
+build/spin.o: tests/spin_elf.S
+	@mkdir -p build
+	$(CC) -c -nostdlib -o $@ $<
+build/spin.elf: build/spin.o tests/hello_elf.ld
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -Wl,-T,tests/hello_elf.ld -o $@ $<
+build/spin_elf.inc: build/spin.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_spin_elf
+
 USER_CFLAGS = -std=c11 -Wall -Wextra -O2 -ffreestanding -fno-builtin -fno-stack-protector -fno-pie -mno-red-zone -mgeneral-regs-only -fno-asynchronous-unwind-tables -Iinclude -Iinclude/freestanding
 USER_HEADERS = user/runtime.h include/capmix/control.h include/capmix/syscall.h include/capmix/fs.h include/capmix/types.h
 build/user-runtime.o: user/runtime.c $(USER_HEADERS)
@@ -241,3 +249,29 @@ third_party/limine/limine: third_party/limine/limine.c third_party/limine/limine
 install-disk: $(FREE_BIN) third_party/limine/limine
 	@test -n "$(DISK_IMAGE)" || { echo 'usage: make install-disk DISK_IMAGE=/path/new.img'; exit 1; }
 	python3 scripts/install-disk.py "$(DISK_IMAGE)"
+
+# External freestanding GCC SDK; these files are not embedded in the kernel.
+.PHONY: external-hello
+build/external-hello.elf: examples/hello.c sdk/crt0.S sdk/capmix.ld sdk/include/capmix.h
+	@mkdir -p build
+	$(CC) -std=c11 -Wall -Wextra -O2 -static -nostdlib -no-pie -ffreestanding -fno-builtin -fno-pie -fno-stack-protector -mno-red-zone -mgeneral-regs-only -fno-asynchronous-unwind-tables -Isdk/include -Wl,--build-id=none,-z,max-page-size=0x1000,-T,sdk/capmix.ld -o $@ sdk/crt0.S examples/hello.c
+build/cow-put: tools/cow-put.c fs/cowfs.c fs/vfs.c io/disk_layout.c $(wildcard include/capmix/*.h)
+	@mkdir -p build
+	$(CC) -std=c11 -Wall -Wextra -Wshadow -O2 -DCAPMIX_HOSTED -DCM_TP_BUILD_MASK=0 -Iinclude -o $@ tools/cow-put.c fs/cowfs.c fs/vfs.c io/disk_layout.c
+external-hello: build/external-hello.elf build/cow-put
+	@test -n "$(DISK_IMAGE)" || { echo 'usage: make external-hello DISK_IMAGE=/path/initialized-offline.img'; exit 1; }
+	python3 scripts/copy-to-disk.py "$(DISK_IMAGE)" build/external-hello.elf /bin/external-hello.elf
+
+# Product examples use the same standalone SDK as external host-built ELFs.
+EXAMPLE_NAMES = hello nc cat ls http-get
+EXAMPLE_ELFS = $(addprefix build/example-,$(addsuffix .elf,$(EXAMPLE_NAMES)))
+EXAMPLE_INCS = $(addprefix build/example_,$(addsuffix .inc,$(EXAMPLE_NAMES)))
+.PHONY: examples
+examples: $(EXAMPLE_ELFS)
+build/example-%.elf: examples/%.c sdk/crt0.S sdk/capmix.ld sdk/include/capmix.h
+	@mkdir -p build
+	$(CC) -std=c11 -Wall -Wextra -O2 -static -nostdlib -no-pie -ffreestanding -fno-builtin -fno-pie -fno-stack-protector -mno-red-zone -mgeneral-regs-only -fno-asynchronous-unwind-tables -Isdk/include -Wl,--build-id=none,-z,max-page-size=0x1000,-T,sdk/capmix.ld -o $@ sdk/crt0.S $<
+build/example_%.inc: build/example-%.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_example_$(subst -,_,$*)_elf
+
+$(HOST_BIN) $(FREE_BIN): $(EXAMPLE_INCS)

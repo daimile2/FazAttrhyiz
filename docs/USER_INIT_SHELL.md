@@ -34,7 +34,7 @@ debug 仍用 `make iso LIMINE_CONFIG=boot/limine-selftest.conf`；所有 phase �
 - init：CONTROL EXEC/WAIT/DUPLICATE，CONSOLE READ/WRITE，BOOT MAP/WRITE/DESTROY。
 - shell：CONTROL EXEC/WAIT，CONSOLE READ/WRITE，BOOT DESTROY。它不能正式挂根或重新配置网络。
 - 普通子程序：不继承上述管理能力；继续使用原 fdio 文件、网络 syscall。缺失/错类型/缺 right 的控制操作返回 DENIED。
-- CHILD：WAIT，绑定 owner PID 与 child PID。只有持有本进程子 capability 才可等待并回收；成功 wait 消费该句柄。没有 user handle-close/dup 的新增接口。
+- CHILD：WAIT/SIGNAL，绑定 owner PID 与 child PID。只有持有本进程子 capability 才可等待并回收；成功 wait 消费该句柄。没有 user handle-close/dup 的新增接口。
 
 | 号 | 调用及参数（rax=号；rdi/rsi/rdx/r10） | 结果与约束 |
 |---|---|---|
@@ -45,7 +45,9 @@ debug 仍用 `make iso LIMINE_CONFIG=boot/limine-selftest.conf`；所有 phase �
 | 34 | YIELD(0,0,0,0) | 普通 ELF 可用，无 privileged capability；沿用现有上下文恢复 |
 | 35 | READDIR(path_ptr, index, dirent_out_ptr, 0) | 与原公开 VFS 路径访问一致；输出 `cm_dirent_t`；末尾 NOENT；index≤UINT32_MAX |
 | 36 | BOOT_CONTROL(boot_h, operation, bootinfo_out_ptr, 0) | operation=0 根正式挂载（MAP、PID1、BSP、一次性）；1 既有网络配置（WRITE、PID1、根已完成）；输出 disk/cpus/backend/NIC/ABI version=1 |
-| 37 | POWEROFF(boot_h,0,0,0) | DESTROY；有未回收直属子进程为 BUSY；先根 sync，再原 ACPI/安全 hlt |
+| 37 | POWEROFF(boot_h,flags,0,0) | DESTROY；flags=0 正常 sync，活跃子进程 BUSY；flags=2 应急关机，活跃子进程时明确跳过 sync |
+| 38 | CHILD_KILL(child_h,0,0,0) | CHILD/SIGNAL + owner；提交终止请求 |
+| 39 | TSC_HZ(0,0,0,0) | 已有标定 TSC Hz，只读 |
 
 `cm_user_spawn_t` 固定 32B：三个 uint64 用户地址（path、argv、envp），uint32 flags、int32 cpu。cpu=-1 为自动 round-robin，显式 CPU 必须在线。flags=0 普通 ELF；`CM_SPAWN_SHELL=1` 只允许 PID1 的可委派控制能力创建 `/bin/shell.elf`，为这个 CPU0 子进程安装 shell bundle；不是任意子进程的权限继承。
 
@@ -53,11 +55,11 @@ debug 仍用 `make iso LIMINE_CONFIG=boot/limine-selftest.conf`；所有 phase �
 
 ## Shell 与生命周期
 
-保留 help/echo/ls/cat/run/`&`/exit/poweroff/shutdown，输入 256B 行缓冲与退格。只做空白分词、末尾独立 `&`，没有引号/重定向/管道/作业控制。cat 最多 4096B；ls 最多 256 项。
+保留 help/echo/ls/cat/run/`&`/kill/exit/poweroff/shutdown，输入 256B 行缓冲与退格。只做空白分词、末尾独立 `&`，没有引号/重定向/管道/作业控制。cat 最多 4096B；ls 最多 256 项。
 
 shell 管理 8 个后台任务 + 1 个前台。全局 32 proc 槽包含用户 init、用户 shell 及退出记录，所以产品最多 30 个额外 ELF 记录，实际还受 task/thread/handle/page/commit 约束。前台等待期间继续回收后台；后台 argv/envp 已复制，不借用输入行。
 
-退出/关机等待后台完成；无强制 kill/信号或超时，无限循环子进程可使等待一直持续。shell exit 后 init 消费 shell child handle、回收 shell，再自身 exit。内核监督收尾回收 PID1 并停止 RX worker，保留控制台；正常路径不再启动 native shell。
+退出/关机正常等待最多 5 秒，再请求终止并等最多 2 秒；仍未回收则 exit 返回 BUSY，poweroff 明确记录并应急关机。`kill <pid>` 仅针对本 shell 后台表。详见 [kill 与关机超时](KILL_SHUTDOWN.md)。shell exit 后 init 消费 shell child handle、回收 shell，再自身 exit。内核监督收尾回收 PID1 并停止 RX worker，保留控制台；正常路径不再启动 native shell。
 
 父进程提前 exit 会释放 CHILD capability；BSP supervisor 检测父进程死亡/记录消失，待孤儿自然 exit 且 off-CPU 后回收其镜像/task。不会强杀无限运行的孤儿，也没有完整 POSIX reparent/waitpid 通知语义。外部 task 引用阻止回收时保持 BUSY。用户 fault→进程失败的完整隔离不是本轮新增能力。
 

@@ -144,6 +144,11 @@ cm_error_t cm_udp_sendaddr(cm_task_t *,int,uint32_t,uint16_t,const void *,uint16
 cm_error_t cm_net_bg_start(void);
 void cm_net_bg_stop(void);
 uint64_t cm_net_bg_frames(void);
+void cm_net_rx_notify(int ifid);
+uint64_t cm_net_bg_irq_frames(void);
+uint64_t cm_net_bg_sleeps(void);
+int cm_net_bg_is_parked(void);
+uint64_t cm_net_bg_irq_udp_queued(int ifid);
 uint64_t cm_net_bg_udp_queued(int ifid);
 cm_error_t cm_net_wire_send(int,uint32_t,uint8_t *,uint16_t);
 cm_error_t cm_udp_frame_to(uint32_t,uint32_t,uint16_t,uint16_t,const void *,uint16_t,uint8_t *,uint16_t *);

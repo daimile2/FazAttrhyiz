@@ -84,6 +84,7 @@ static void user_entry_wrap(void *arg)
 static void elf_entry_wrap(void *arg)
 {
     cm_proc_t *p = arg;
+    if(__atomic_load_n(&p->kill_pending,__ATOMIC_ACQUIRE)) {cm_proc_finish_exit(p,137);return;}
     cm_usermode_run_elf(p);
 }
 
@@ -187,6 +188,15 @@ cm_error_t cm_proc_release_child(cm_id_t parent,cm_id_t child)
     cm_proc_t *p=cm_proc_lookup(child);
     if(cm_cpu_id()!=0 || !p || p->parent_pid!=parent || parent==child)return CM_ERR_DENIED;
     return release_elf_record(child);
+}
+cm_error_t cm_proc_request_kill(cm_id_t parent,cm_id_t child)
+{
+    cm_proc_t *p=cm_proc_lookup(child);
+    if(!p || !p->elf || p->parent_pid!=parent || child==parent || child==1)return CM_ERR_DENIED;
+    if(!__atomic_load_n(&p->exited,__ATOMIC_ACQUIRE))
+        __atomic_store_n(&p->kill_pending,1,__ATOMIC_RELEASE);
+    kinfo("user kill requested: parent=%llu pid=%llu exit=137",(unsigned long)parent,(unsigned long)child);
+    return CM_OK;
 }
 int cm_proc_children_pending(cm_id_t parent)
 {

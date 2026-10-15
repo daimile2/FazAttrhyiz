@@ -49,6 +49,7 @@ typedef struct cm_proc {
     int           elf_cpu, elf_entry_slot;
     uint64_t elf_start_tsc, elf_end_tsc;
     int published;
+    int kill_pending, syscall_depth; /* atomic: terminate only outside syscall frames */
     cm_id_t parent_pid;
 } cm_proc_t;
 
@@ -67,6 +68,8 @@ cm_error_t cm_proc_release_product_elf(cm_id_t pid);
 cm_error_t cm_proc_release_elf(cm_id_t pid);
 cm_error_t cm_proc_release_child(cm_id_t parent,cm_id_t child);
 int cm_proc_children_pending(cm_id_t parent);
+cm_error_t cm_proc_request_kill(cm_id_t parent, cm_id_t child);
+void cm_proc_finish_exit(cm_proc_t *p, int64_t code);
 int cm_proc_reap_orphans(void);
 /* Each ELF has fixed CPU affinity, including blocked/exit cleanup. */
 int cm_proc_task_is_elf(const cm_task_t *task);

@@ -11,8 +11,10 @@ If STATUS is absent the link is assumed up and that limitation is logged via
 
 Header and Ethernet data use separate descriptors: the legacy net header is
 10 bytes because VERSION_1/MRG_RXBUF are not negotiated. No checksum/GSO/TSO
-or mergeable-buffer offload, packed rings, multiqueue or interrupt completion
-is implemented. PCI INTx is disabled and queues request no interrupts.
+or mergeable-buffer offload, packed rings or multiqueue is implemented. RX now
+uses legacy INTx on verified i440FX routes; TX remains synchronous with interrupt
+suppression. Unknown/shared routes retain polling fallback. See
+[NET_RX_IRQ.md](NET_RX_IRQ.md) for IRQ entry, wakeup, teardown and tests.
 
 Each queue uses a 16 KiB buddy allocation. RX buffers and TX bounce buffer are
 individual owned 4 KiB pages; arbitrary user/kernel stack addresses never go

@@ -206,7 +206,7 @@ void cm_poweroff(void)
             while(!(in16(pm1a)&1) && limit-- && cm_rdtsc()<until)__asm__ volatile("pause");
         }
         if((in16(pm1a)&1) && (!pm1b || (in16(pm1b)&1))) {
-            kinfo("poweroff: ACPI S5 request (root already synced)");
+            kinfo("poweroff: ACPI S5 request");
             (void)cm_irq_save();
             uint16_t a=(in16(pm1a)&~(uint16_t)0x3c00) | ((uint16_t)typea<<10) | 0x2000;
             uint16_t b=pm1b?(in16(pm1b)&~(uint16_t)0x3c00) | ((uint16_t)typeb<<10) | 0x2000:0;
@@ -217,6 +217,7 @@ void cm_poweroff(void)
         } else kinfo("poweroff: ACPI enable timed out; fallback=safe-hlt");
     } else kinfo("poweroff: ACPI unavailable (%s)",unavailable);
     kinfo("poweroff: safe-hlt (BSP stopped; AP scheduling disabled)");
+    cm_smp_sched_disable();
     (void)cm_irq_save();for(;;)__asm__ volatile("hlt");
 #endif
 }

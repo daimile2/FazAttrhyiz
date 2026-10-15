@@ -36,11 +36,11 @@ run /bin/argtest.elf foreground hello
 poweroff
 ```
 
-末尾独立 `&` token 使 run 在创建成功后立即返回提示符。argv 在发布前复制，后台程序不持有 shell 行缓冲指针；`&` 不传给程序。仍只支持空白分词，没有引号、管道、重定向、jobs/kill 或完整作业控制。
+末尾独立 `&` token 使 run 在创建成功后立即返回提示符。argv 在发布前复制，后台程序不持有 shell 行缓冲指针；`&` 不传给程序。仍只支持空白分词，没有引号、管道、重定向、jobs 或完整作业控制；现支持 kill 后台 PID。
 
 普通 run 等待自己的 ELF 退出/回收，同时回收已完成后台任务；其他后台进程继续运行。后台退出由用户 shell 在输入循环、前台等待、关机等待时回收，记录 PID、exit 和 `reap=ok`。spawn/加载失败只返回错误，不产生后台 job；后台槽满不先启动一个无人跟踪的进程。
 
-`exit`、`poweroff/shutdown` 都等待所有后台任务完成，再同步根文件系统。首版没有强制终止或超时：无限循环程序会使退出/关机等待持续，用户需运行能自行结束的 ELF。运行期 fault 隔离不是本轮新增功能。
+`exit`、`poweroff/shutdown` 使用 5 秒正常等待 + 2 秒终止等待，纯用户态死循环可被终止并回收。应急关机的持久化限制与 syscall 安全边界见 [kill 与关机超时](KILL_SHUTDOWN.md)。运行期 fault 隔离不是本轮新增功能。
 
 ## 自测与验收
 

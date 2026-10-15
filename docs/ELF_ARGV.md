@@ -123,3 +123,5 @@ boot/kernel.c、Makefile 及文档。未新增网络/syscall 编号，未改 bud
 DHCP/TCP 算法、FB 或 KPTI 核心。
 
 多 ELF 并发及 `run ... &`、CPU 亲和、回收和容量参见 [ELF_CONCURRENCY.md](ELF_CONCURRENCY.md)。
+
+外部宿主 GCC 构建、独立 SDK 和离线磁盘导入见 [EXTERNAL_ELF.md](EXTERNAL_ELF.md)。

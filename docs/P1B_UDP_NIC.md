@@ -3,12 +3,11 @@
 ## 实现和边界
 
 `net/runtime.c` 使用一个独立 EEVDF 内核线程消费 virtio-net/e1000 DMA RX
-环。每轮每接口最多处理 16 个 completion，随后 yield；产品 PID1 创建后
-自动启动，持续在 shell 等待输入、用户 ELF 执行期间收包。它不依赖应用
-调用硬件 receive 或 BSP 运行 M4/M8 probe 才收包。首版仍关闭硬件 IRQ，
-不是中断驱动，不修改 LAPIC 标定、buddy 锁或 shell/FB。产品现有 BSP
-调度限制保留：后台线程可在 BSP 上独立被调度，不宣称产品 RX 跑在 AP。
-无包时仍会轮询并 yield；尚无 IRQ 唤醒/节能睡眠。
+环，每接口每轮预算 16 帧。产品自动启动，应用不必直接读取硬件。
+后续已补 e1000/virtio-net INTx 硬件 IRQ 通知、BLOCKED 等待和 deferred wake；
+未知/共享 IRQ 路由保持 10ms 降频轮询，IRQ 模式另有 100ms watchdog。
+TCP RTO 仍每 10ms 推进，未更改其状态机或 LAPIC 标定。
+完整路由边界、SMP 唤醒与验收见 [NET_RX_IRQ.md](NET_RX_IRQ.md)。
 
 驱动原有 IRQ-save 锁保护描述符和同步 TX；新增邻居锁只保护缓存，不在
 持锁时发包。RX 线程负责 ARP 和 UDP 分流，UDP 校验 IPv4/UDP 长度、

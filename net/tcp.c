@@ -1,4 +1,5 @@
 #include "capmix/tcp.h"
+#include "capmix/boot.h"
 #include "capmix/arch.h"
 #include "capmix/sched.h"
 #include "capmix/cap_internal.h"
@@ -10,6 +11,12 @@
 #define PSH 8u
 #define ACK 16u
 enum {CLOSED,SYN_SENT,ESTABLISHED,FIN_WAIT_1,FIN_WAIT_2,CLOSING,TIME_WAIT,CLOSE_WAIT,LAST_ACK,ERROR};
+struct pending {
+    unsigned active,sent,retries,rto_ms,length;
+    uint32_t seq;
+    uint8_t flags,data[CM_TCP_MSS];
+    uint64_t next,end;
+};
 struct connection {
     unsigned used,state,busy,ack_pending,peer_fin;
     int ifid;
@@ -17,6 +24,9 @@ struct connection {
     uint16_t sport,dport,peer_window,mss;
     unsigned head,count;
     uint8_t rx[CM_TCP_RX_BYTES];
+    struct pending pending;
+    unsigned tx_busy,drop_mask;
+    uint64_t generation;
 };
 struct wire {int ifid;uint32_t local,remote,rcv_nxt;uint16_t sport,dport,window;};
 struct segment {
@@ -28,10 +38,46 @@ struct segment {
 static struct connection connections[CM_TCP_CONNECTIONS];
 static unsigned tcp_lock;
 static uint16_t next_port=49152;
+static uint64_t retransmits;
 static uint64_t lock(void)
 {uint64_t f=cm_irq_save();while(__atomic_exchange_n(&tcp_lock,1,__ATOMIC_ACQUIRE))__asm__ volatile("pause");return f;}
 static void unlock(uint64_t f){__atomic_store_n(&tcp_lock,0,__ATOMIC_RELEASE);cm_irq_restore(f);}
 static int before(uint32_t a,uint32_t b){return (int32_t)(a-b)<0;}
+static uint64_t interval(unsigned ms){return (cm_tsc_hz()/1000)*ms;}
+static void clear_pending(struct connection *c)
+{memset(&c->pending,0,sizeof(c->pending));c->generation++;}
+static void retain(struct connection *c,uint8_t flags,uint32_t seq,const void *data,unsigned n,uint64_t now,uint64_t end)
+{
+    clear_pending(c);struct pending *p=&c->pending;
+    p->active=1;p->flags=flags;p->seq=seq;p->length=n;p->rto_ms=CM_TCP_RTO_MS;p->next=now;p->end=end;
+    if(n)memcpy(p->data,data,n);
+}
+static void acknowledge(struct connection *c,uint64_t now,uint64_t ticks_per_ms)
+{
+    struct pending *p=&c->pending;
+    if(!p->active || !before(p->seq,c->snd_una))return;
+    unsigned acked=c->snd_una-p->seq,space=p->length+!!(p->flags&SYN)+!!(p->flags&FIN);
+    if(acked>=space){clear_pending(c);return;}
+    /* stop-and-wait data can be partially acknowledged. Keep only the tail. */
+    for(unsigned i=0;i<p->length-acked;i++)p->data[i]=p->data[i+acked];
+    p->length-=acked;p->seq+=acked;p->rto_ms=CM_TCP_RTO_MS;p->retries=0;
+    p->next=now+ticks_per_ms*p->rto_ms;c->generation++;
+}
+/* No wall-clock wait: deterministic tests pass synthetic now values. */
+static int due(const struct connection *c,uint64_t now)
+{
+    const struct pending *p=&c->pending;
+    if(!p->active || c->tx_busy || c->state==ERROR || c->state==CLOSED)return 0;
+    if(now>=p->end)return -1;
+    if(now<p->next)return 0;
+    if(p->sent && p->retries>=CM_TCP_RETRIES)return -1;
+    return p->sent?2:1;
+}
+static void submitted(struct pending *p,uint64_t now,int retry,uint64_t ticks_per_ms)
+{
+    if(retry){p->retries++;p->rto_ms=CM_MIN(p->rto_ms*2,CM_TCP_RTO_MAX_MS);}
+    p->sent=1;p->next=now+ticks_per_ms*p->rto_ms;
+}
 static uint16_t rd16(const uint8_t *p){return (uint16_t)((p[0]<<8)|p[1]);}
 static uint32_t rd32(const uint8_t *p){return ((uint32_t)p[0]<<24)|((uint32_t)p[1]<<16)|((uint32_t)p[2]<<8)|p[3];}
 static void wr16(uint8_t *p,uint16_t x){p[0]=(uint8_t)(x>>8);p[1]=(uint8_t)x;}
@@ -78,15 +124,15 @@ static cm_error_t decode(const uint8_t *p,unsigned n,struct segment *out)
 static cm_error_t advance(struct connection *c,const struct segment *s)
 {
     if(c->state==SYN_SENT) {
-        if((s->flags&(RST|ACK))==(RST|ACK) && s->ack==c->snd_nxt){c->state=ERROR;c->ack_pending=0;return CM_ERR_DEAD;}
+        if((s->flags&(RST|ACK))==(RST|ACK) && s->ack==c->snd_nxt){c->state=ERROR;c->ack_pending=0;clear_pending(c);return CM_ERR_DEAD;}
         if((s->flags&(SYN|ACK|FIN|RST))!=(SYN|ACK) || s->ack!=c->snd_nxt || s->length)return CM_ERR_INVAL;
-        c->snd_una=s->ack;c->rcv_nxt=s->seq+1;c->mss=s->mss;c->peer_window=s->window;
+        c->snd_una=s->ack;acknowledge(c,cm_rdtsc(),cm_tsc_hz()/1000);c->rcv_nxt=s->seq+1;c->mss=s->mss;c->peer_window=s->window;
         c->state=ESTABLISHED;c->ack_pending=1;return CM_OK;
     }
     if(c->state==CLOSED || c->state==ERROR)return CM_ERR_DEAD;
     if(s->flags&RST) {
         if(s->seq!=c->rcv_nxt){c->ack_pending=1;return CM_ERR_INVAL;}
-        c->state=ERROR;c->ack_pending=0;return CM_ERR_DEAD;
+        c->state=ERROR;c->ack_pending=0;clear_pending(c);return CM_ERR_DEAD;
     }
     if(!(s->flags&ACK) || (s->flags&SYN) || before(c->snd_nxt,s->ack)) {c->ack_pending=1;return CM_ERR_INVAL;}
     if(before(c->rcv_nxt,s->seq)){c->ack_pending=1;return CM_ERR_AGAIN;} /* no reorder queue */
@@ -94,7 +140,7 @@ static cm_error_t advance(struct connection *c,const struct segment *s)
         c->ack_pending=1;return CM_ERR_AGAIN; /* wholly stale segment: no ACK/window update */
     }
     if(!before(s->ack,c->snd_una)) {
-        c->snd_una=s->ack;
+        c->snd_una=s->ack;acknowledge(c,cm_rdtsc(),cm_tsc_hz()/1000);
         if(s->seq==c->rcv_nxt)c->peer_window=s->window;
     }
     if(c->snd_una==c->snd_nxt) {
@@ -121,6 +167,7 @@ static cm_error_t emit(struct connection *c,uint8_t flags,uint32_t seq,const voi
 {
     /* Snapshot only metadata, never copy a 4KiB RX buffer onto the kernel stack. */
     struct wire meta={0};uint64_t f=lock();
+    if((c->state==ERROR || c->state==CLOSED) && !(flags&RST)){unlock(f);return CM_ERR_DEAD;}
     meta.ifid=c->ifid;meta.local=c->local;meta.remote=c->remote;meta.sport=c->sport;
     meta.dport=c->dport;meta.rcv_nxt=c->rcv_nxt;meta.window=(uint16_t)(CM_TCP_RX_BYTES-c->count);unlock(f);
     uint8_t frame[58+CM_TCP_MSS];unsigned n=encode(frame,&meta,flags,seq,data,length);
@@ -162,7 +209,7 @@ static cm_error_t acquire(cm_task_t *task,int hid,cm_rights_t rights,cm_object_t
     if((*out)->destroy!=destroy){cm_obj_release(*out);return CM_ERR_INVAL;}return CM_OK;
 }
 cm_error_t cm_tcp_init(void)
-{memset(connections,0,sizeof(connections));next_port=49152;return CM_OK;}
+{memset(connections,0,sizeof(connections));next_port=49152;retransmits=0;return CM_OK;}
 unsigned cm_tcp_live(void)
 {uint64_t f=lock();unsigned n=0;for(unsigned i=0;i<CM_TCP_CONNECTIONS;i++)n+=connections[i].used!=0;unlock(f);return n;}
 cm_error_t cm_tcp_open(cm_task_t *task,int *out)
@@ -180,14 +227,63 @@ static uint64_t deadline(unsigned ms){return cm_rdtsc()+(cm_tsc_hz()/1000)*ms;}
 static int timeout_ok(unsigned ms){return ms && ms<=10000;}
 static void abort_connection(struct connection *c)
 {
-    uint64_t f=lock();uint32_t seq=c->snd_nxt;unsigned state=c->state;c->state=ERROR;c->busy=0;c->ack_pending=0;unlock(f);
+    uint64_t f=lock();uint32_t seq=c->snd_nxt;unsigned state=c->state;c->state=ERROR;c->busy=0;c->ack_pending=0;clear_pending(c);unlock(f);
     if(state!=CLOSED && state!=ERROR)(void)emit(c,RST|ACK,seq,NULL,0);
+}
+static void service(struct connection *c,uint64_t now)
+{
+    uint8_t data[CM_TCP_MSS];uint64_t f=lock();int action=due(c,now);
+    if(!action){unlock(f);return;}
+    if(action<0) {
+        unsigned retries=c->pending.retries;uint32_t seq=c->snd_nxt;
+        c->state=ERROR;c->ack_pending=0;c->busy=0;clear_pending(c);unlock(f);
+        kinfo("tcp rto exhausted: retries=%u/4 or API deadline; pending cleared error=DEAD RST=attempted",retries);
+        (void)emit(c,RST|ACK,seq,NULL,0);return;
+    }
+    struct pending *p=&c->pending;
+    unsigned length=p->length,flags=p->flags,retries=p->retries,rto=p->rto_ms;
+    uint32_t seq=p->seq;uint64_t gen=c->generation;unsigned sent=p->sent;
+    if(length)memcpy(data,p->data,length);
+    unsigned drop_bit=(flags&SYN)?1u:(flags&FIN)?4u:2u;
+    int dropped=(c->drop_mask&drop_bit)!=0;if(dropped)c->drop_mask&=~drop_bit;
+    c->tx_busy=1;submitted(p,now,action==2,cm_tsc_hz()/1000);unlock(f);
+    cm_error_t e=dropped?CM_OK:emit(c,(uint8_t)flags,seq,data,length);
+    f=lock();c->tx_busy=0;
+    if(action==2 && !e)__atomic_fetch_add(&retransmits,1,__ATOMIC_RELAXED);
+    if(c->generation==gen && c->pending.active && e) {
+        if(e==CM_ERR_AGAIN) {
+            /* ARP/TX backpressure is not a successfully transmitted retry. */
+            p->sent=sent;p->retries=retries;p->rto_ms=rto;p->next=now+interval(10);
+        } else {c->state=ERROR;c->busy=0;c->ack_pending=0;clear_pending(c);}
+    }
+    unsigned attempt=action==2?retries+1:0;unlock(f);
+    if(dropped)kinfo("tcp test dropped: flags=0x%x seq=%u",flags,seq);
+    if(action==2 && !e)kinfo("tcp rto retransmit: flags=0x%x seq=%u bytes=%u retry=%u next_rto_ms=%u",flags,seq,length,attempt,CM_MIN(rto*2,CM_TCP_RTO_MAX_MS));
+}
+void cm_tcp_poll(void)
+{
+    for(unsigned i=0;i<CM_TCP_CONNECTIONS;i++) {
+        struct connection *c=&connections[i];uint64_t f=lock();
+        if(!c->used || !c->pending.active){unlock(f);continue;}
+        c->used++;unlock(f);service(c,cm_rdtsc());
+        f=lock();c->used--;if(!c->used)memset(c,0,sizeof(*c));unlock(f);
+    }
+}
+uint64_t cm_tcp_retransmits(void){return __atomic_load_n(&retransmits,__ATOMIC_RELAXED);}
+cm_error_t cm_tcp_test_drop(cm_task_t *task,int hid,unsigned mask)
+{
+    if(!cm_boot_is_selftest() || mask&~7u)return CM_ERR_DENIED;
+    cm_object_t *o;cm_error_t e=acquire(task,hid,CM_RIGHT_WRITE,&o);if(e)return e;
+    struct connection *c=o->payload;uint64_t f=lock();
+    if(c->state!=CLOSED || c->busy)e=CM_ERR_BUSY;else c->drop_mask=mask;
+    unlock(f);cm_obj_release(o);return e;
 }
 static cm_error_t send_reserved(struct connection *c,uint8_t flags,uint32_t seq,const void *data,unsigned n,uint64_t end)
 {
-    cm_error_t e;
-    do{e=emit(c,flags,seq,data,n);if(e==CM_ERR_AGAIN)turn();}while(e==CM_ERR_AGAIN && cm_rdtsc()<end);
-    return e;
+    uint64_t f=lock();
+    if(c->state==ERROR){unlock(f);return CM_ERR_DEAD;}
+    retain(c,flags,seq,data,n,cm_rdtsc(),end);unlock(f);
+    service(c,cm_rdtsc());return CM_OK;
 }
 cm_error_t cm_tcp_connect(cm_task_t *task,int hid,int id,uint32_t remote,uint16_t port,unsigned ms)
 {
@@ -209,6 +305,7 @@ cm_error_t cm_tcp_connect(cm_task_t *task,int hid,int id,uint32_t remote,uint16_
     kinfo("tcp syn: if=%s source=%u dest_port=%u timeout_ms=%u",iface->name,c->sport,port,ms);
     uint64_t end=deadline(ms);e=send_reserved(c,SYN,seq,NULL,0,end);
     while(!e && cm_rdtsc()<end) {
+        service(c,cm_rdtsc());
         f=lock();unsigned state=c->state;unlock(f);
         if(state==ESTABLISHED){flush_ack(c);break;}if(state==ERROR){e=CM_ERR_DEAD;break;}turn();
     }
@@ -235,6 +332,7 @@ int64_t cm_tcp_send(cm_task_t *task,int hid,const void *data,uint32_t length,uns
         uint32_t seq=c->snd_nxt;c->snd_nxt+=n;uint32_t target=c->snd_nxt;unlock(f);
         e=send_reserved(c,ACK|PSH,seq,(const uint8_t *)data+done,n,end);if(e)break;
         for(;;) {
+            service(c,cm_rdtsc());
             f=lock();int acked=c->snd_una==target,dead=c->state==ERROR;unlock(f);
             if(acked){done+=n;break;}if(dead){e=CM_ERR_DEAD;break;}
             if(cm_rdtsc()>=end){e=CM_ERR_AGAIN;break;}flush_ack(c);turn();
@@ -267,6 +365,7 @@ cm_error_t cm_tcp_close(cm_task_t *task,int hid,unsigned ms)
     unlock(f);uint64_t end=deadline(ms);
     if(state==ESTABLISHED || state==CLOSE_WAIT)e=send_reserved(c,FIN|ACK,seq,NULL,0,end);
     while(!e && state!=CLOSED && state!=ERROR && cm_rdtsc()<end) {
+        service(c,cm_rdtsc());
         f=lock();state=c->state;unlock(f);
         if(state==CLOSED || state==TIME_WAIT)break;
         if(state==ERROR){e=CM_ERR_DEAD;break;}flush_ack(c);turn();
@@ -275,7 +374,7 @@ cm_error_t cm_tcp_close(cm_task_t *task,int hid,unsigned ms)
     if(!e && state!=CLOSED && state!=ERROR && state!=TIME_WAIT)e=CM_ERR_AGAIN;
     if(state==TIME_WAIT && !e){uint64_t linger=deadline(100);while(cm_rdtsc()<linger)turn();}
     if(e || state==ERROR)abort_connection(c);
-    else {f=lock();c->state=CLOSED;c->busy=0;unlock(f);}
+    else {f=lock();c->state=CLOSED;c->busy=0;clear_pending(c);unlock(f);}
     kinfo("tcp close: state=%u fin=%s error=%d TIME_WAIT=%ums handle released",state,
           state==TIME_WAIT || state==CLOSED?"complete":"aborted",e,state==TIME_WAIT && !e?100u:0u);
     cm_error_t drop=cm_handle_drop(task,hid);cm_obj_release(obj);return e?e:drop;
@@ -289,8 +388,78 @@ void cm_tcp_process_exit(cm_task_t *task)
         cm_cap_unlock(f);if(obj){abort_connection(obj->payload);cm_obj_release(obj);}
     }
 }
+static int exhausted_lifecycle_selftest(void)
+{
+    unsigned before=cm_tcp_live();cm_task_t *task=cm_task_create("tcp-rto-exhaust",CM_QOS_USER_INTERACTIVE);
+    if(!task)return 1;
+    int hid=-1,alias=-1,failed=0;cm_object_t *obj=NULL;
+    if(cm_tcp_open(task,&hid) || acquire(task,hid,CM_RIGHT_WRITE,&obj)){failed=1;goto finish;}
+    struct connection *c=obj->payload;uint64_t f=lock();
+    c->state=SYN_SENT;c->ifid=-1;c->snd_una=100;c->snd_nxt=101;
+    retain(c,SYN,100,NULL,0,100,10000);c->pending.sent=1;c->pending.retries=CM_TCP_RETRIES;c->pending.next=200;
+    unlock(f);
+    if(cm_handle_duplicate(task,hid,task,&alias,CM_RIGHT_READ)){failed=1;goto finish;}
+    /* Real expiration/abort path with a virtual due time; no NIC is needed.
+     * RST is attempted on an invalid route and safely fails, never fabricated. */
+    service(c,200);
+    f=lock();int cleaned=c->state==ERROR && !c->pending.active && !c->pending.next && !c->busy;unlock(f);
+    if(!cleaned || cm_tcp_send(task,hid,"x",1,100)!=CM_ERR_DEAD ||
+       cm_tcp_recv(task,alias,&failed,1)!=CM_ERR_DEAD)failed=1;
+finish:
+    if(obj)cm_obj_release(obj);
+    if(hid>=0 && cm_tcp_close(task,hid,100)!=CM_OK)failed=1;
+    if(alias>=0 && cm_handle_drop(task,alias)!=CM_OK)failed=1;
+    cm_tcp_process_exit(task);
+    if(cm_tcp_live()!=before)failed=1;
+    cm_obj_release(task->self_obj);memset(task,0,sizeof(*task));
+    if(!failed)kinfo("tcp rto exhausted cleanup verified: ERROR/RST-attempt pending=0 aliases released live=%u",before);
+    return failed;
+}
+static int retransmission_selftest(void)
+{
+    static struct connection c;
+    const uint8_t body[]={11,22,33,44,55};
+    uint64_t step=CM_TCP_RTO_MS,now=123; /* synthetic ticks: 1 per ms */
+    if(!step)return 1;
+    for(unsigned kind=0;kind<3;kind++) {
+        memset(&c,0,sizeof(c));c.state=kind==0?SYN_SENT:kind==1?ESTABLISHED:FIN_WAIT_1;
+        unsigned flags=kind==0?SYN:kind==1?ACK|PSH:FIN|ACK;
+        retain(&c,(uint8_t)flags,100,body,kind==1?sizeof(body):0,now,now+10000);
+        if(due(&c,now)!=1)return 1;
+        submitted(&c.pending,now,0,1);
+        if(due(&c,c.pending.next-1)!=0 || due(&c,c.pending.next)!=2)return 1;
+        for(unsigned retry=1;retry<=CM_TCP_RETRIES;retry++) {
+            uint64_t at=c.pending.next;submitted(&c.pending,at,1,1);
+            unsigned expected=CM_MIN(CM_TCP_RTO_MS<<retry,CM_TCP_RTO_MAX_MS);
+            if(c.pending.retries!=retry || c.pending.rto_ms!=expected ||
+               c.pending.next!=at+expected || c.pending.seq!=100 ||
+               c.pending.flags!=flags || (kind==1 && memcmp(c.pending.data,body,sizeof(body))))return 1;
+        }
+        if(due(&c,c.pending.next)!=-1)return 1;
+        clear_pending(&c);if(c.pending.active || c.pending.length || c.pending.next)return 1;
+    }
+    memset(&c,0,sizeof(c));c.state=ESTABLISHED;
+    retain(&c,ACK|PSH,UINT32_MAX-1,body,sizeof(body),now,now+10000);
+    submitted(&c.pending,now,0,1);c.snd_una=UINT32_MAX-1;
+    acknowledge(&c,now+1,1);if(c.pending.seq!=UINT32_MAX-1 || c.pending.length!=5)return 1; /* duplicate ACK */
+    c.rcv_nxt=700;c.snd_nxt=3;
+    struct segment partial={.flags=ACK,.seq=700,.ack=0,.window=4096};
+    if(advance(&c,&partial))return 1;
+    if(c.pending.seq || c.pending.length!=3 || memcmp(c.pending.data,body+2,3) || c.pending.retries)return 1;
+    partial.ack=3;if(advance(&c,&partial) || c.pending.active)return 1;
+    c.state=SYN_SENT;retain(&c,SYN,99,NULL,0,now,now+step);
+    c.tx_busy=1;if(due(&c,now)!=0)return 1;c.tx_busy=0;
+    if(due(&c,now+step)!=-1)return 1; /* caller deadline precedes retry budget */
+    c.snd_nxt=100;c.snd_una=99;
+    struct segment reset={.flags=RST|ACK,.ack=100};
+    if(advance(&c,&reset)!=CM_ERR_DEAD || c.pending.active || c.state!=ERROR)return 1;
+    if(exhausted_lifecycle_selftest())return 1;
+    kinfo("tcp rto mechanism verified: SYN/data/FIN retained; 200/400/800/1600ms backoff max-retries=4; partial/duplicate/wrap ACK; deadline/RST cleanup");
+    return 0;
+}
 int cm_tcp_mechanism_selftest(void)
 {
+    if(retransmission_selftest())return 1;
     uint8_t frame[58+CM_TCP_MSS];struct segment s;
     struct wire wire={.local=0x0a000202,.remote=0x0a00020f,.sport=9998,.dport=49152,.window=4096,.rcv_nxt=101};
     unsigned n=encode(frame,&wire,SYN|ACK,700,NULL,0);

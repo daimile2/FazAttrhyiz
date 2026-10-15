@@ -24,7 +24,7 @@ int cm_control_seed(cm_proc_t *p)
 {
     if(!p || !p->elf)return CM_ERR_INVAL;
     int a=mint(p,CM_OBJ_CONTROL,&control_tag,CM_RIGHT_EXEC|CM_RIGHT_WAIT|CM_RIGHT_DUPLICATE);
-    int b=mint(p,CM_OBJ_CONSOLE,&console_tag,CM_RIGHT_READ|CM_RIGHT_WRITE);
+    int b=mint(p,CM_OBJ_CONSOLE,&console_tag,CM_RIGHT_READ|CM_RIGHT_WRITE|CM_RIGHT_DUPLICATE);
     int c=mint(p,CM_OBJ_BOOT,&boot_tag,CM_RIGHT_MAP|CM_RIGHT_WRITE|CM_RIGHT_DESTROY);
     if(a!=1 || b!=2 || c!=3){cm_control_process_exit(p);return CM_ERR_NOSPC;}
     return CM_OK;
@@ -55,12 +55,16 @@ static cm_error_t vector(cm_proc_t *p,uint64_t address,char strings[][256],const
 }
 static int64_t spawn(cm_proc_t *p,uint64_t hid,uint64_t address,uint64_t output)
 {
-    cm_object_t *authority=NULL;int e=acquire(p,hid,CM_OBJ_CONTROL,CM_RIGHT_EXEC,&authority);if(e)return e;
+    cm_object_t *authority=NULL,*console=NULL;int e=acquire(p,hid,CM_OBJ_CONTROL,CM_RIGHT_EXEC,&authority);if(e)return e;
     cm_user_spawn_t req;char path[128];
     if(cm_copyin(p->elf,&req,address,sizeof(req)) || cm_copyinstr(p->elf,path,req.path,sizeof(path)) ||
        !cm_user_access(p->elf,output,sizeof(cm_user_child_t),1)){e=CM_ERR_INVAL;goto finish;}
-    if(cm_cpu_id()!=0 || req.flags&~CM_SPAWN_SHELL || req.cpu< -1 || req.cpu>=cm_cpu_count()){e=CM_ERR_INVAL;goto finish;}
-    int shell=req.flags==CM_SPAWN_SHELL;
+    if(cm_cpu_id()!=0 || (req.flags!=0 && req.flags!=CM_SPAWN_SHELL && req.flags!=CM_SPAWN_CONSOLE) || req.cpu< -1 || req.cpu>=cm_cpu_count()){e=CM_ERR_INVAL;goto finish;}
+    int shell=req.flags==CM_SPAWN_SHELL,interactive=req.flags==CM_SPAWN_CONSOLE;
+    if(interactive) {
+        e=acquire(p,2,CM_OBJ_CONSOLE,CM_RIGHT_READ|CM_RIGHT_WRITE|CM_RIGHT_DUPLICATE,&console);
+        if(e)goto finish;
+    }
     if(shell && (p->pid!=1 || !equal(path,"/bin/shell.elf") ||
        !(cm_handle_lookup(p->task,(int)hid)->rights&CM_RIGHT_DUPLICATE))){e=CM_ERR_DENIED;goto finish;}
     /* The snapshot is private kernel memory; never pass nested user pointers to spawn. */
@@ -70,30 +74,39 @@ static int64_t spawn(cm_proc_t *p,uint64_t hid,uint64_t address,uint64_t output)
     if(e){cm_page_free(strings,3);goto finish;}
     struct child *record=cm_page_alloc(0);if(!record){e=CM_ERR_NOMEM;cm_page_free(strings,3);goto finish;}
     memset(record,0,CM_PAGE_SIZE);record->owner=p->pid;
-    cm_object_t *obj=cm_obj_mint_owned(CM_OBJ_CHILD,record,CM_RIGHT_WAIT,child_destroy);
+    cm_object_t *obj=cm_obj_mint_owned(CM_OBJ_CHILD,record,CM_RIGHT_WAIT|CM_RIGHT_SIGNAL,child_destroy);
     if(!obj){cm_page_free(record,0);cm_page_free(strings,3);e=CM_ERR_NOSPC;goto finish;}
-    int handle=cm_handle_install(p->task,obj,CM_RIGHT_WAIT);cm_obj_release(obj);
+    int handle=cm_handle_install(p->task,obj,CM_RIGHT_WAIT|CM_RIGHT_SIGNAL);cm_obj_release(obj);
     if(handle<0){cm_page_free(strings,3);e=handle;goto finish;}
     cm_spawn_attr_t attr={.path=path,.argv=argv,.envp=envp,.qos=CM_QOS_USER_INTERACTIVE,
-        .cpu_set=1,.cpu=shell?0:req.cpu<0?(int)(cpu_next%(unsigned)cm_cpu_count()):req.cpu};
+        .cpu_set=1,.cpu=(shell||interactive)?0:req.cpu<0?(int)(cpu_next%(unsigned)cm_cpu_count()):req.cpu};
     cm_id_t pid=0;e=cm_posix_spawn(&attr,&pid);cm_page_free(strings,3);
     if(e){cm_handle_drop(p->task,handle);goto finish;}
     record->pid=pid;cm_proc_t *child=cm_proc_lookup(pid);child->parent_pid=p->pid;
-    if(shell) {
-        /* BSP child cannot execute before this syscall yields; capability publication is complete first. */
-        int c=mint(child,CM_OBJ_CONTROL,&control_tag,CM_RIGHT_EXEC|CM_RIGHT_WAIT);
-        int t=mint(child,CM_OBJ_CONSOLE,&console_tag,CM_RIGHT_READ|CM_RIGHT_WRITE);
-        int b=mint(child,CM_OBJ_BOOT,&boot_tag,CM_RIGHT_DESTROY);
-        if(c!=1 || t!=2 || b!=3) {
+    if(shell || interactive) {
+        /* Both are pinned BSP: grant/rollback completes before child executes. */
+        int granted;
+        if(shell) {
+            int c=mint(child,CM_OBJ_CONTROL,&control_tag,CM_RIGHT_EXEC|CM_RIGHT_WAIT);
+            int t=mint(child,CM_OBJ_CONSOLE,&console_tag,CM_RIGHT_READ|CM_RIGHT_WRITE|CM_RIGHT_DUPLICATE);
+            int b=mint(child,CM_OBJ_BOOT,&boot_tag,CM_RIGHT_DESTROY);
+            granted=c==1 && t==2 && b==3;
+        } else {
+            int tty=-1;
+            e=cm_handle_duplicate(p->task,2,child->task,&tty,CM_RIGHT_READ|CM_RIGHT_WRITE);
+            granted=!e && tty==1;
+        }
+        if(!granted) {
             child->exited=1;child->exit_code=CM_ERR_NOSPC;child->main->state=CM_TH_DEAD;
             cm_thread_reap(child->main);cm_control_process_exit(child);
             (void)cm_proc_release_child(p->pid,pid);cm_handle_drop(p->task,handle);e=CM_ERR_NOSPC;goto finish;
         }
+        if(interactive)kinfo("user console delegated: parent=%llu child=%llu handle=1 rights=READ/WRITE cpu=0",(unsigned long)p->pid,(unsigned long)pid);
     } else cpu_next++;
     cm_user_child_t out={.pid=pid,.handle=handle,.cpu=attr.cpu};
     e=cm_copyout(p->elf,output,&out,sizeof(out));
     kinfo("user spawn: parent=%llu child=%llu cpu=%d child-cap=%d",(unsigned long)p->pid,(unsigned long)pid,attr.cpu,handle);
-finish:cm_obj_release(authority);return e;
+finish:if(console)cm_obj_release(console);cm_obj_release(authority);return e;
 }
 static int child_done(cm_proc_t *p)
 {
@@ -130,6 +143,14 @@ int64_t cm_control_syscall(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t
     if(d)return CM_ERR_INVAL;
     if(nr==CM_SYS_SPAWN)return spawn(p,a,b,c);
     if(nr==CM_SYS_CHILD_WAIT)return wait_child(p,a,b,c);
+    if(nr==CM_SYS_TSC_HZ){if(a||b||c)return CM_ERR_INVAL;return (int64_t)cm_tsc_hz();}
+    if(nr==CM_SYS_CHILD_KILL) {
+        if(b||c)return CM_ERR_INVAL;
+        cm_object_t *child=NULL;int e=acquire(p,a,CM_OBJ_CHILD,CM_RIGHT_SIGNAL,&child);if(e)return e;
+        struct child *r=child->payload;
+        e=r->owner==p->pid?cm_proc_request_kill(p->pid,r->pid):CM_ERR_DENIED;
+        cm_obj_release(child);return e;
+    }
     if(nr==CM_SYS_YIELD){if(a||b||c)return CM_ERR_INVAL;cm_sched_yield();cm_usermode_resume_entry();return CM_OK;}
     if(nr==CM_SYS_READDIR) {
         char path[128];cm_dirent_t out;
@@ -164,8 +185,11 @@ int64_t cm_control_syscall(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t
             text_copy(out.backend,sizeof(out.backend),cm_blk_backend_name());if(nic)text_copy(out.nic,sizeof(out.nic),nic->name);
             e=cm_copyout(p->elf,c,&out,sizeof(out));}
     } else if(nr==CM_SYS_POWEROFF) {
-        if(b||c)e=CM_ERR_INVAL;
-        else if(cm_proc_children_pending(p->pid))e=CM_ERR_BUSY;
+        if((b!=0 && b!=CM_POWEROFF_FORCE)||c)e=CM_ERR_INVAL;
+        else if(cm_proc_children_pending(p->pid)) {
+            if(!b)e=CM_ERR_BUSY;
+            else {kwarn("user poweroff: timeout forced; live contexts retained; root sync skipped");cm_poweroff();}
+        }
         else {e=cm_vfs_sync();if(!e){kinfo("user poweroff: capability authorized root sync=0");cm_poweroff();}}
     } else e=CM_ERR_NOTSUP;
     cm_obj_release(o);return e;

@@ -20,13 +20,10 @@ static int64_t sys_nop(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     return 0;
 }
 
-static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+void cm_proc_finish_exit(cm_proc_t *p, int64_t code)
 {
-    CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
-    cm_proc_t *p = cm_proc_current();
-    cm_thread_t *th = cm_sched_current();
     if (p) {
-        p->exit_code = (int64_t)a0;
+        p->exit_code = code;
         if (!p->elf) {
             if (p->aspace_pages) cm_commit_uncharge(p->aspace_pages);
             p->aspace_pages = 0;
@@ -39,6 +36,19 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
         cm_trace_process_exit(p->task);
         cm_control_process_exit(p);
     }
+    if (p) {
+        p->elf_end_tsc=cm_rdtsc();
+        if(p->main)p->main->state=CM_TH_DEAD;
+        __atomic_store_n(&p->exited,1,__ATOMIC_RELEASE);
+    }
+}
+
+static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    CM_UNUSED(a1); CM_UNUSED(a2); CM_UNUSED(a3);
+    cm_proc_t *p = cm_proc_current();
+    cm_thread_t *th = cm_sched_current();
+    cm_proc_finish_exit(p, (int64_t)a0);
     if (th) th->state = CM_TH_DEAD;
     if (p) __atomic_store_n(&p->exited,1,__ATOMIC_RELEASE);
 #ifndef CAPMIX_HOSTED
@@ -585,20 +595,20 @@ void cm_syscall_init(void) {}
 
 const char *cm_sys_name(uint32_t nr)
 {
-    static const char *control_names[]={"console_read","console_write","child_wait","yield","readdir","boot_control","poweroff"};
-    if(nr>=CM_SYS_CONSOLE_READ && nr<=CM_SYS_POWEROFF)return control_names[nr-CM_SYS_CONSOLE_READ];
+    static const char *control_names[]={"console_read","console_write","child_wait","yield","readdir","boot_control","poweroff","child_kill","tsc_hz"};
+    if(nr>=CM_SYS_CONSOLE_READ && nr<=CM_SYS_TSC_HZ)return control_names[nr-CM_SYS_CONSOLE_READ];
     for (unsigned i = 0; i < CM_ARRAY_LEN(g_sys); i++)
         if (g_sys[i].nr == nr) return g_sys[i].name;
     return "unknown";
 }
 
-int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
+static int64_t dispatch(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 {
     /* Bounded ELF ABI: file calls use image-backed copyin/out.
      * Leave the existing hosted/C-entry and embedded ring3 tests unchanged. */
     cm_proc_t *elf_proc = cm_proc_current();
     if (elf_proc && elf_proc->elf) {
-        if(nr==CM_SYS_SPAWN || (nr>=CM_SYS_CONSOLE_READ && nr<=CM_SYS_POWEROFF))
+        if(nr==CM_SYS_SPAWN || (nr>=CM_SYS_CONSOLE_READ && nr<=CM_SYS_TSC_HZ))
             return cm_control_syscall(nr,a0,a1,a2,a3);
         if (nr == CM_SYS_FORK) return CM_ERR_NOTSUP;
         if (nr == CM_SYS_IPC_RECV && cm_drv_has_receiver(elf_proc->pid))
@@ -620,4 +630,19 @@ int64_t cm_syscall(uint32_t nr, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t 
             return g_sys[i].fn(a0, a1, a2, a3);
     }
     return CM_ERR_NOTSUP;
+}
+
+/* Kernel continuations must unwind normally: never discard held locks, bounce
+ * buffers or blocked endpoint references. Timer retirement is allowed only
+ * when this depth is zero (a suspended ring3 frame, not a syscall frame). */
+int64_t cm_syscall(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
+{
+    cm_proc_t *p=cm_proc_current();
+    if(!p || !p->elf)return dispatch(nr,a,b,c,d);
+    __atomic_add_fetch(&p->syscall_depth,1,__ATOMIC_ACQ_REL);
+    int64_t result=dispatch(nr,a,b,c,d);
+    if(!p->exited && __atomic_load_n(&p->kill_pending,__ATOMIC_ACQUIRE))
+        result=sys_exit(137,0,0,0);
+    __atomic_sub_fetch(&p->syscall_depth,1,__ATOMIC_RELEASE);
+    return result;
 }

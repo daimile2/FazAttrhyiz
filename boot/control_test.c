@@ -4,12 +4,16 @@
 #include "capmix/fs.h"
 #include <string.h>
 #include "../build/user_shell.inc"
+#include "../build/spin_elf.inc"
 #define CHECK(x) do{if(!(x)){kerr("user control test line %d: %s",__LINE__,#x);failed++;goto cleanup;}}while(0)
 _Static_assert(sizeof(cm_user_spawn_t)==32 && sizeof(cm_user_child_t)==16 && sizeof(cm_user_wait_t)==32 && sizeof(cm_user_boot_t)==56,"control ABI sizes");
 int cm_control_selftest(void)
 {
     int failed=0;cm_file_t *f=NULL;cm_id_t pid=0,childpid=0;cm_proc_t *p=NULL,*child=NULL;
     uint64_t before=cm_mm_free_pages();
+    CHECK(cm_vfs_open("/bin/spin.elf",CM_O_WRONLY|CM_O_CREAT|CM_O_TRUNC,&f)==CM_OK);
+    CHECK(cm_vfs_write(f,cm_spin_elf,sizeof(cm_spin_elf))==(int64_t)sizeof(cm_spin_elf));
+    CHECK(cm_vfs_fsync(f)==CM_OK);cm_vfs_close(f);f=NULL;
     CHECK(cm_vfs_open("/bin/control-test.elf",CM_O_WRONLY|CM_O_CREAT|CM_O_TRUNC,&f)==CM_OK);
     CHECK(cm_vfs_write(f,cm_user_shell_elf,sizeof(cm_user_shell_elf))==(int64_t)sizeof(cm_user_shell_elf));
     CHECK(cm_vfs_fsync(f)==CM_OK);cm_vfs_close(f);f=NULL;before=cm_mm_free_pages();
@@ -19,6 +23,8 @@ int cm_control_selftest(void)
     CHECK(cm_syscall(31,2,0x401000,1,0)==CM_ERR_DENIED);
     CHECK(cm_syscall(3,1,UINT64_MAX,UINT64_MAX,0)==CM_ERR_DENIED);
     CHECK(cm_syscall(37,3,0,0,0)==CM_ERR_DENIED);
+    CHECK(cm_syscall(CM_SYS_CHILD_KILL,3,0,0,0)==CM_ERR_DENIED);
+    CHECK(cm_syscall(CM_SYS_TSC_HZ,1,0,0,0)==CM_ERR_INVAL);
     kinfo("user control cap denied verified: console/spawn/poweroff default deny");
     CHECK(cm_control_seed(p)==CM_OK);
     uint64_t base=0;for(unsigned i=0;i<p->elf->npages;i++)if(p->elf->pages[i].flags&2){base=p->elf->pages[i].virt;break;}
@@ -43,6 +49,11 @@ int cm_control_selftest(void)
     cm_user_child_t out;CHECK(cm_copyin(p->elf,&out,base+64,sizeof(out))==CM_OK);
     childpid=out.pid;child=cm_proc_lookup(childpid);CHECK(child && child->parent_pid==pid);
     CHECK(cm_syscall(37,3,0,0,0)==CM_ERR_BUSY);
+#ifdef CAPMIX_HOSTED
+    CHECK(cm_syscall(37,3,CM_POWEROFF_FORCE,0,0)==CM_OK);
+    CHECK(child && !child->exited && child->elf && child->main->id);
+    kinfo("user shutdown selftest: force with live child retains resources, sync skipped (hosted no halt)");
+#endif
     CHECK(cm_syscall(33,out.handle,UINT64_MAX,1,0)==CM_ERR_INVAL);
     CHECK(cm_syscall(33,out.handle,base+320,1,0)==CM_ERR_AGAIN);
     int weak=cm_handle_install(p->task,cm_handle_lookup(p->task,out.handle)->obj,0);CHECK(weak>0);
@@ -60,6 +71,87 @@ int cm_control_selftest(void)
 #endif
     CHECK(!cm_handle_lookup(p->task,out.handle));
     kinfo("user control cap granted verified: nested copyin/out invalid-pointer/weak-right denied child wait/reap consumed handle");
+    /* Explicit console delegation: no ambient keyboard authority, no management
+     * authority in the recipient, and no allocation before rights validation. */
+    uint64_t grant_before=cm_mm_free_pages();
+    req.flags=CM_SPAWN_CONSOLE;
+    CHECK(cm_copyout(p->elf,base,&req,sizeof(req))==CM_OK);
+    cm_handle_t *parent_tty=cm_handle_lookup(p->task,2);CHECK(parent_tty);
+    cm_rights_t saved_rights=parent_tty->rights;
+    parent_tty->rights&=~CM_RIGHT_DUPLICATE;
+    int64_t denied_grant=cm_syscall(3,1,base,base+64,0);
+    parent_tty->rights=saved_rights;
+    CHECK(denied_grant==CM_ERR_DENIED && cm_mm_free_pages()==grant_before);
+    req.flags=CM_SPAWN_CONSOLE|CM_SPAWN_SHELL;
+    CHECK(cm_copyout(p->elf,base,&req,sizeof(req))==CM_OK);
+    CHECK(cm_syscall(3,1,base,base+64,0)==CM_ERR_INVAL);
+    req.flags=CM_SPAWN_CONSOLE;
+    CHECK(cm_copyout(p->elf,base,&req,sizeof(req))==CM_OK);
+    CHECK(cm_syscall(3,1,base,base+64,0)==CM_OK);
+    CHECK(cm_copyin(p->elf,&out,base+64,sizeof(out))==CM_OK);
+    childpid=out.pid;child=cm_proc_lookup(childpid);CHECK(child && out.cpu==0);
+    cm_handle_t *tty=cm_handle_lookup(child->task,1);
+    CHECK(tty && tty->obj->type==CM_OBJ_CONSOLE && tty->rights==(CM_RIGHT_READ|CM_RIGHT_WRITE));
+    cm_sched_set_current(child->main);
+    CHECK(cm_syscall(32,1,0,0,0)==CM_OK);
+    CHECK(cm_syscall(31,1,UINT64_MAX,1,0)==CM_ERR_INVAL);
+    CHECK(cm_syscall(37,3,0,0,0)==CM_ERR_DENIED);
+    CHECK(cm_syscall(3,1,UINT64_MAX,UINT64_MAX,0)==CM_ERR_DENIED);
+    cm_sched_set_current(NULL);
+    for(unsigned step=0;step<512 && (!child->exited || (child->main && child->main->id));step++)
+        (void)cm_sched_run_until_idle(1);
+    cm_sched_set_current(p->main);
+    CHECK(child->exited && (!child->main || !child->main->id));
+    CHECK(cm_syscall(33,out.handle,base+320,1,0)==CM_OK);childpid=0;child=NULL;
+    CHECK(cm_mm_free_pages()==grant_before);
+    req.flags=0;
+    kinfo("user console delegation verified: granted=READ/WRITE denied=no-duplicate no-control/boot reap=no-leak");
+    /* Start a noncooperative ring3 loop, then request capability-scoped
+     * termination. The target CPU must stop its context before resource reap. */
+    CHECK(cm_copyout(p->elf,base+128,"/bin/spin.elf",14)==CM_OK);
+    req.cpu=cm_cpu_count()>1?1:0;
+    CHECK(cm_copyout(p->elf,base,&req,sizeof(req))==CM_OK);
+    CHECK(cm_syscall(3,1,base,base+64,0)==CM_OK);
+    CHECK(cm_copyin(p->elf,&out,base+64,sizeof(out))==CM_OK);
+    childpid=out.pid;child=cm_proc_lookup(childpid);CHECK(child);
+    cm_sched_set_current(NULL);
+#ifndef CAPMIX_HOSTED
+    cm_smp_sched_enable();
+    uint64_t until=cm_rdtsc()+cm_tsc_hz()*2;
+    while((!child->elf_started || !child->elf_preempts ||
+           __atomic_load_n(&child->syscall_depth,__ATOMIC_ACQUIRE)) && cm_rdtsc()<until)
+        (void)cm_sched_run_until_idle(1);
+    CHECK(child->elf_started && child->elf_preempts && !__atomic_load_n(&child->syscall_depth,__ATOMIC_ACQUIRE));
+#else
+    for(unsigned step=0;step<64;step++)(void)cm_sched_run_until_idle(1);
+#endif
+    cm_sched_set_current(p->main);
+    weak=cm_handle_install(p->task,cm_handle_lookup(p->task,out.handle)->obj,CM_RIGHT_WAIT);CHECK(weak>0);
+    CHECK(cm_syscall(CM_SYS_CHILD_KILL,weak,0,0,0)==CM_ERR_DENIED);cm_handle_drop(p->task,weak);
+    CHECK(cm_syscall(CM_SYS_CHILD_KILL,out.handle,1,0,0)==CM_ERR_INVAL);
+    CHECK(cm_syscall(CM_SYS_CHILD_KILL,out.handle,0,0,0)==CM_OK);
+    cm_sched_set_current(NULL);
+    uint64_t kill_until=cm_rdtsc()+cm_tsc_hz()*2;
+    for(unsigned step=0;step<2000000 && (!__atomic_load_n(&child->exited,__ATOMIC_ACQUIRE) ||
+        (child->main && __atomic_load_n(&child->main->id,__ATOMIC_ACQUIRE)));step++) {
+        if(cm_rdtsc()>kill_until)break;
+        (void)cm_sched_run_until_idle(1);
+    }
+    cm_smp_sched_disable();
+    cm_sched_set_current(p->main);
+    CHECK(child->exited && (!child->main || !child->main->id));
+    CHECK(cm_syscall(33,out.handle,base+320,1,0)==CM_OK);childpid=0;child=NULL;
+    CHECK(cm_copyin(p->elf,&result,base+320,sizeof(result))==CM_OK);
+#ifndef CAPMIX_HOSTED
+    CHECK(result.exit_code==137 && result.preempts>0);
+    kinfo("user kill selftest: infinite ELF stopped exit=137 preempts=%llu reap=ok cap-denied=verified",(unsigned long)result.preempts);
+#else
+    CHECK(result.exit_code==CM_ERR_NOTSUP);
+    kinfo("user kill selftest: hosted ring3 skipped cap-denied/request/reap verified");
+#endif
+    CHECK(cm_syscall(CM_SYS_CHILD_KILL,out.handle,0,0,0)==CM_ERR_DENIED);
+    CHECK(cm_copyout(p->elf,base+128,"/bin/hello.elf",15)==CM_OK);req.cpu=0;
+    CHECK(cm_copyout(p->elf,base,&req,sizeof(req))==CM_OK);
     CHECK(cm_syscall(3,1,base,base+64,0)==CM_OK);
     CHECK(cm_copyin(p->elf,&out,base+64,sizeof(out))==CM_OK);childpid=out.pid;
     cm_sched_set_current(NULL);cm_control_process_exit(p);p->exited=1;p->main->state=CM_TH_DEAD;
@@ -70,11 +162,26 @@ int cm_control_selftest(void)
     CHECK(!cm_proc_lookup(childpid));childpid=0;
     kinfo("user orphan reclaim verified: parent exit drops child cap; off-CPU child image/task/pages reclaimed");
 cleanup:
+    cm_smp_sched_disable();
     cm_sched_set_current(NULL);
     if(f)cm_vfs_close(f);
-    if(childpid && child){cm_control_process_exit(child);child->exited=1;
-        if(child->main && child->main->id){child->main->state=CM_TH_DEAD;cm_thread_reap(child->main);}
-        (void)cm_proc_release_child(pid,childpid);}
+    if(childpid && (child=cm_proc_lookup(childpid))) {
+        /* A failing test must not recreate the remote live-stack free race. */
+        if(!__atomic_load_n(&child->exited,__ATOMIC_ACQUIRE))
+            (void)cm_proc_request_kill(child->parent_pid,childpid);
+        cm_smp_sched_enable();
+        uint64_t cleanup_until=cm_rdtsc()+cm_tsc_hz()*2;
+        for(unsigned step=0;step<2000000 && cm_rdtsc()<cleanup_until;step++) {
+            if(__atomic_load_n(&child->exited,__ATOMIC_ACQUIRE) &&
+               (!child->main || !__atomic_load_n(&child->main->id,__ATOMIC_ACQUIRE)))break;
+            (void)cm_sched_run_until_idle(1);
+        }
+        cm_smp_sched_disable();
+        if(__atomic_load_n(&child->exited,__ATOMIC_ACQUIRE) &&
+           (!child->main || !__atomic_load_n(&child->main->id,__ATOMIC_ACQUIRE)))
+            (void)cm_proc_release_child(child->parent_pid,childpid);
+        else {kerr("user control cleanup: live child retained, never force-free its context");failed++;}
+    }
     if(p){cm_control_process_exit(p);p->exited=1;p->main->state=CM_TH_DEAD;cm_thread_reap(p->main);(void)cm_proc_release_elf(pid);}
     if(cm_mm_free_pages()!=before){kerr("user control image/child-cap snapshot leak");failed++;}
     kinfo("user control selftest: %s (%d failures)",failed?"FAIL":"PASS",failed);return failed;

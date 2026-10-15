@@ -88,6 +88,8 @@ cm_thread_t *cm_eevdf_pick(void);
 void         cm_sched_tick(void);
 void         cm_sched_yield(void);
 int          cm_sched_run_until_idle(int max_steps);
+/* Trusted, non-switching deferred wake source, invoked outside the rq lock. */
+void cm_sched_set_poll_hook(void (*hook)(void));
 cm_thread_t *cm_sched_current(void);
 void         cm_sched_set_current(cm_thread_t *th);
 void         cm_sched_set_current(cm_thread_t *th);

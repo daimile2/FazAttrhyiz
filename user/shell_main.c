@@ -10,20 +10,55 @@ static void reap(void)
     for(unsigned i=0;i<JOBS;i++)if(jobs[i].handle>0){cm_user_wait_t r;long e=uwait(jobs[i].handle,&r,CM_WAIT_NONBLOCK);
         if(!e){jobs[i].handle=0;finished(&r);}else if(e!=CM_ERR_AGAIN)error(e);}
 }
-static void drain(void)
+static unsigned pending(void)
+{unsigned n=0;for(unsigned i=0;i<JOBS;i++)n+=jobs[i].handle>0;return n;}
+static uint64_t now(void){return (uint64_t)ucall(CM_SYS_CLOCK,0,0,0,0);}
+static int wait_bounded(unsigned seconds)
 {
-    int announced=0;for(;;){reap();unsigned n=0;for(unsigned i=0;i<JOBS;i++)n+=jobs[i].handle>0;
-        if(!n)return;
-        if(!announced){uputs("shell: waiting for background before exit/poweroff\n");announced=1;}uyield();}
+    long hz=ucall(CM_SYS_TSC_HZ,0,0,0,0);
+    uint64_t start=now(),limit=hz>0?(uint64_t)hz*seconds:0;
+    /* A bounded iteration fallback also handles an unavailable calibration. */
+    for(unsigned steps=0;steps<2000000;steps++) {
+        reap();if(!pending())return 1;
+        if(limit && now()-start>=limit)break;
+        uyield();
+    }
+    return !pending();
+}
+static int drain(void)
+{
+    reap();if(!pending())return 1;
+    uputs("shell shutdown: grace=5s waiting background\n");
+    if(wait_bounded(5))return 1;
+    uputs("shell shutdown: timeout; kill background; kill-wait=2s\n");
+    for(unsigned i=0;i<JOBS;i++)if(jobs[i].handle>0){long e=ucall(CM_SYS_CHILD_KILL,jobs[i].handle,0,0,0);if(e)error(e);}
+    if(wait_bounded(2)){uputs("shell shutdown: killed and reaped background\n");return 1;}
+    uputs("shell shutdown: deadline exhausted; live kernel continuation retained\n");return 0;
+}
+static long kill_job(const char *text)
+{
+    uint64_t pid=0;if(!*text)return CM_ERR_INVAL;
+    while(*text>='0' && *text<='9'){if(pid>(UINT64_MAX-9)/10)return CM_ERR_INVAL;pid=pid*10+(unsigned)(*text++-'0');}
+    while(*text==' ' || *text=='\t')text++;
+    if(*text || !pid)return CM_ERR_INVAL;
+    for(unsigned i=0;i<JOBS;i++)if(jobs[i].handle>0 && jobs[i].pid==pid){
+        long e=ucall(CM_SYS_CHILD_KILL,jobs[i].handle,0,0,0);
+        if(!e){uputs("shell kill accepted: pid=");unum(pid);uputs("\n");}return e;
+    }
+    return CM_ERR_NOENT;
 }
 static long run(char *text)
 {
     const char *args[34];unsigned n=0;while(*text){while(*text==' ' || *text=='\t')text++;if(!*text)break;
         if(n==33)return CM_ERR_NOSPC;
         args[n++]=text;while(*text && *text!=' ' && *text!='\t')text++;if(*text)*text++=0;}
-    int bg=n && ueq(args[n-1],"&");if(bg)n--;if(!n || n>32 || args[0][0]!='/')return CM_ERR_INVAL;
+    int interactive=n && ueq(args[0],"-i");
+    if(interactive){for(unsigned i=1;i<n;i++)args[i-1]=args[i];n--;}
+    int bg=n && ueq(args[n-1],"&");if(bg)n--;
+    if(interactive && bg)return CM_ERR_INVAL;
+    if(!n || n>32 || args[0][0]!='/')return CM_ERR_INVAL;
     args[n]=NULL;reap();unsigned slot=0;if(bg){while(slot<JOBS && jobs[slot].handle)slot++;if(slot==JOBS)return CM_ERR_NOSPC;}
-    const char *env[]={"PATH=/bin","CAPMIX=product",NULL};cm_user_child_t child;long e=uspawn(args[0],args,env,0,&child);if(e)return e;
+    const char *env[]={"PATH=/bin","CAPMIX=product",NULL};cm_user_child_t child;long e=uspawn(args[0],args,env,interactive?CM_SPAWN_CONSOLE:0,&child);if(e)return e;
     uputs(bg?"shell background start: pid=":"shell run: pid=");unum(child.pid);uputs(" cpu=");unum(child.cpu);uputs("\n");
     if(bg){jobs[slot]=child;return 0;}
     cm_user_wait_t result;while((e=uwait(child.handle,&result,CM_WAIT_NONBLOCK))==CM_ERR_AGAIN){reap();uyield();}
@@ -50,13 +85,14 @@ static long command(char *text)
     while(*text==' ' || *text=='\t')text++;
     if(!*text)return 0;
     char *args=text;while(*args && *args!=' ' && *args!='\t')args++;if(*args)*args++=0;while(*args==' ' || *args=='\t')args++;
-    if(ueq(text,"help")){if(*args)return CM_ERR_INVAL;uputs("help | echo TEXT | ls [PATH] | cat PATH | run ELF [ARGS] [&] | exit | poweroff/shutdown\n");return 0;}
+    if(ueq(text,"help")){if(*args)return CM_ERR_INVAL;uputs("help | echo TEXT | ls [PATH] | cat PATH | run [-i] ELF [ARGS] [&] | kill PID | exit | poweroff/shutdown\n");return 0;}
     if(ueq(text,"echo")){uputs(args);uputs("\n");return 0;}
     if(ueq(text,"run"))return run(args);
+    if(ueq(text,"kill"))return kill_job(args);
     if(ueq(text,"ls"))return list(*args?args:"/");
     if(ueq(text,"cat"))return *args=='/'?cat(args):CM_ERR_INVAL;
-    if(ueq(text,"exit")){if(*args)return CM_ERR_INVAL;drain();return 1;}
-    if(ueq(text,"poweroff") || ueq(text,"shutdown")){if(*args)return CM_ERR_INVAL;drain();return ucall(37,uboot,0,0,0);}
+    if(ueq(text,"exit")){if(*args)return CM_ERR_INVAL;return drain()?1:CM_ERR_BUSY;}
+    if(ueq(text,"poweroff") || ueq(text,"shutdown")){if(*args)return CM_ERR_INVAL;int clean=drain();return ucall(37,uboot,clean?0:CM_POWEROFF_FORCE,0,0);}
     return CM_ERR_NOTSUP;
 }
 int main(int argc,char **argv,char **envp)

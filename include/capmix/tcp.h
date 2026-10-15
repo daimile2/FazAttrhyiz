@@ -4,6 +4,9 @@
 #define CM_TCP_CONNECTIONS 8u
 #define CM_TCP_MSS 536u
 #define CM_TCP_RX_BYTES 4096u
+#define CM_TCP_RTO_MS 200u
+#define CM_TCP_RTO_MAX_MS 1600u
+#define CM_TCP_RETRIES 4u /* initial transmission + four retransmissions */
 cm_error_t cm_tcp_init(void);
 cm_error_t cm_tcp_open(cm_task_t *,int *);
 cm_error_t cm_tcp_connect(cm_task_t *,int,int,uint32_t,uint16_t,unsigned);
@@ -15,4 +18,8 @@ void cm_tcp_process_exit(cm_task_t *);
 cm_error_t cm_tcp_input(int,const uint8_t *,uint16_t);
 int cm_tcp_mechanism_selftest(void);
 unsigned cm_tcp_live(void);
+void cm_tcp_poll(void);
+/* Trusted selftest only, no user/global packet injection ABI. */
+cm_error_t cm_tcp_test_drop(cm_task_t *,int,unsigned);
+uint64_t cm_tcp_retransmits(void);
 #endif
