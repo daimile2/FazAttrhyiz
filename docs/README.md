@@ -56,3 +56,5 @@
 - [可选 Linux 包：安装/启用、保留数据卸载与显式清理](LINUX_PACKAGE.md)
 
 - [Linux ABI L5：匿名mmap、16MiB窗口与COW reserve commit](LINUX_ABI_L5.md)
+
+- [固定静态BusyBox sh：hush脚本、fork/exec/pipe与复现](LINUX_BUSYBOX_SH.md)

@@ -481,3 +481,23 @@ ACPI S5关机。第二次冷启动后cat读回 `vbox-l5-persist`、musl探针再
 这是产品路径验收，不是VBox全量debug PASS；此VM的e1000显示down，本次不声称网络通过。
 Linux默认仍关；L1仍定制BusyBox+BSS，L5仅新增固定原版musl allocator探针，非通用musl/glibc。
 完整支持边界、QEMU开关/NUMA全量矩阵与复现方式见 [LINUX_ABI_L5](LINUX_ABI_L5.md)。
+
+### 固定静态 BusyBox sh（2026-10-16）
+
+独立VM `CapMix-busybox-sh-20261016`，VBox7.2.20、EFI64/PIIX3、AHCI、512MiB、4 CPU，
+安装盘无ISO启动，Linux包开启。在原生用户shell运行：
+
+```text
+run /bin/busybox-sh.elf sh /data/linux/sh-smoke.sh
+run /bin/cat.elf /data/linux/sh-output.txt
+run /bin/linux-hello.elf
+poweroff
+```
+
+实际看到sh-product-start、child/parent、sh-exec-ok、sh-pipe-ok、sh-redirect-ok、
+sh-product-ok，主脚本exit=0 reap=ok，原生cat读回写入内容，L0也exit=0，ACPI关机成功。
+日志 `/tmp/sh-vbox-first.log`。这是定制非交互hush子集，不是完整交互shell或glibc；
+信号仍ENOSYS，产品默认Linux关闭；限制、哈希、复现和QEMU开关矩阵见
+[LINUX_BUSYBOX_SH](LINUX_BUSYBOX_SH.md)。本轮不宣称VBox全量debug或网络PASS。
+
+同VM第二次冷启动读取sh-output.txt仍为sh-redirect-ok，脚本再exit=0并关机；日志 `/tmp/sh-vbox-second.log`。

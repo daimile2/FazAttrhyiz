@@ -10,3 +10,5 @@ build/
 
 # Fixed source-backed musl 1.2.5 L5 mmap/allocator probe.
 !third_party/linux-l5/musl-mmap.elf
+
+!tests/fixtures/busybox-sh.elf

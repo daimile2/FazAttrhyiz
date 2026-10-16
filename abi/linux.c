@@ -1,3 +1,4 @@
+#include "capmix/linux_pipe.h"
 #include "capmix/abi.h"
 #include "capmix/linux_socket.h"
 #include "capmix/config.h"
@@ -72,6 +73,7 @@ static int64_t l_write(uint64_t fd,uint64_t address,uint64_t n,uint64_t unused)
     (void)unused;cm_proc_t *p=cm_proc_current();
     if(fd>=CM_FD_MAX || p->fd[fd]<0 || (fd==0 && !(p->stdio_mask&1u)))return -9; /* EBADF */
     if(!cm_user_access(p->elf,address,n,0))return -14; /* EFAULT */
+    if(cm_linux_pipe_is(p,fd)){int64_t r=cm_linux_pipe_io(p,fd,address,n,1);if(r>0)p->linux_write_bytes+=(uint64_t)r;return r;}
     if(cm_linux_socket_is(p,fd)) {
         int64_t r=cm_linux_socket_io(p,fd,address,n,1);if(r>0)p->linux_write_bytes+=(uint64_t)r;return r;
     }
@@ -105,6 +107,7 @@ int64_t cm_linux_dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t 
         {1,l_write},{60,l_exit},{158,l_arch_prctl}
     };
     for(unsigned i=0;i<sizeof(calls)/sizeof(calls[0]);i++)if(calls[i].nr==nr)return calls[i].fn(a,b,c,d);
+    if(nr==22 || nr==293)return cm_linux_pipe_create(active,a,nr==293?b:0);
     if(nr==57)return cm_linux_fork();
     if(nr==61)return cm_linux_wait4((int64_t)a,b,c,d);
     if(nr==59)return cm_linux_execve(a,b,c);
@@ -116,6 +119,6 @@ int64_t cm_linux_dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t 
 #else
     (void)nr;(void)a;(void)b;(void)c;(void)d;
 #endif
-    cm_proc_t *p=cm_proc_current();if(p)p->linux_enosys++;
+    cm_proc_t *p=cm_proc_current();if(p){p->linux_enosys++;if(p->linux_enosys<=8)kinfo("linux ENOSYS: pid=%llu nr=%u count=%llu",(unsigned long)p->pid,nr,(unsigned long)p->linux_enosys);}
     return -38;
 }

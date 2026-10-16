@@ -1,0 +1,13 @@
+--- a/shell/hush.c
++++ b/shell/hush.c
+@@ -1970,7 +1970,9 @@
+ 	/* sigfillset(&G.sa.sa_mask);      - already done */
+ 	/* G.sa.sa_flags = SA_RESTART;     - already done */
+ 	G.sa.sa_handler = handler;
+-	sigaction(sig, &G.sa, &old_sa);
++	/* CapMix: no signal delivery; never read old_sa on ENOSYS. */
++	if (sigaction(sig, &G.sa, &old_sa) != 0)
++		return SIG_DFL;
+ 	return old_sa.sa_handler;
+ }
+ 

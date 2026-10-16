@@ -115,7 +115,11 @@ static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
     p->fd[0] = 0; p->fd[1] = 1; p->fd[2] = 2;
     if(p->abi==CM_ABI_LINUX)for(unsigned i=0;i<3;i++)p->linux_console[i]=(uint8_t)(i+1);
     for(unsigned fd=0;fd<2;fd++)if(attr->stdio[fd]) {
-        int h=cm_handle_install(p->task,attr->stdio[fd],fd?CM_RIGHT_WRITE:CM_RIGHT_READ);
+        cm_rights_t rights=fd?CM_RIGHT_WRITE:CM_RIGHT_READ;
+        /* Native bindings keep their original attenuation. Linux fork needs
+         * DUP only when the trusted stdio object explicitly grants it. */
+        if(p->abi==CM_ABI_LINUX)rights|=attr->stdio[fd]->default_rights&CM_RIGHT_DUPLICATE;
+        int h=cm_handle_install(p->task,attr->stdio[fd],rights);
         if(h<0) {
             cm_fdio_close_all(p);cm_obj_release(p->task->self_obj);
             memset(p->task,0,sizeof(*p->task));cm_elf_destroy(im);memset(p,0,sizeof(*p));
@@ -434,12 +438,13 @@ int64_t cm_linux_fork(void)
 fail:
     if(p->task){cm_fdio_close_all(p);if(p->task->self_obj)cm_obj_release(p->task->self_obj);memset(p->task,0,sizeof(*p->task));}
     cm_elf_destroy(p->elf);memset(p,0,sizeof(*p));cm_irq_restore(irq);
+    kinfo("linux fork denied: error=%d parent=%llu",e,(unsigned long)parent->pid);
     return e==CM_ERR_DENIED?-13:e==CM_ERR_OVERCOMMIT || e==CM_ERR_NOMEM?-12:-11;
 }
 int64_t cm_linux_wait4(int64_t pid,uint64_t status,uint64_t options,uint64_t usage)
 {
     cm_proc_t *p=cm_proc_current();if(!p || cm_cpu_id()!=0)return -11;
-    if((pid<=0 && pid!=-1) || (options&~1ull))return -22;
+    if((pid<=0 && pid!=-1) || (options&~3ull))return -22;
     if(usage)return -95;
     if(status && !cm_user_access(p->elf,status,4,1))return -14;
     for(;;) {
@@ -455,7 +460,7 @@ int64_t cm_linux_wait4(int64_t pid,uint64_t status,uint64_t options,uint64_t usa
             return (int64_t)result;
         }
         if(!found)return -10;
-        if(options)return 0;
+        if(options&1)return 0;
         cm_sched_yield();cm_usermode_resume_entry();
         if(__atomic_load_n(&p->kill_pending,__ATOMIC_ACQUIRE))return -4;
     }

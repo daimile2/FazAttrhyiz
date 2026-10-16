@@ -6,7 +6,7 @@ CapMix syscall/capability、posix_spawn 和原生 fork=NOTSUP；后续原生软�
 原生 `/bin`，Linux 数据保留/显式删除政策见 [LINUX_PACKAGE](LINUX_PACKAGE.md)。
 
 本轮新增匿名映射与一个**未修改 musl 1.2.5 libc/分配器**的固定静态探针。
-这不等于通用 musl、BusyBox sh 或 glibc 兼容。L1 仍是原固定 fixture：
+这不等于通用 musl 或 glibc 兼容。后续固定hush子集验收见 [LINUX_BUSYBOX_SH](LINUX_BUSYBOX_SH.md)，并非任意BusyBox sh。L1 仍是原固定 fixture：
 **定制 musl 静态 BusyBox 子集 + 有界 BSS 分配**，64KiB 分配器没有被替换。
 L4a 仍只是固定解释器交接，不是真 ld.so 重定位/符号解析。
 

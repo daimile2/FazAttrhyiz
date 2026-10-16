@@ -29,6 +29,8 @@
 #include "../build/linux_hello.inc"
 #include "../build/busybox_l1.inc"
 #include "../build/linux_l3.inc"
+#include "../build/busybox_sh.inc"
+#include "../build/linux_sh_demo.inc"
 #include "../build/linux_l5.inc"
 #include "../build/linux_l5_musl.inc"
 #include "../build/linux_l4_main.inc"
@@ -72,6 +74,7 @@ static cm_error_t provision(void)
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-hello.elf",cm_linux_hello_elf,sizeof(cm_linux_hello_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/busybox-l1.elf",cm_busybox_l1_elf,sizeof(cm_busybox_l1_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-net.elf",cm_linux_l3_elf,sizeof(cm_linux_l3_elf));
+    if(!e && cm_linux_enabled())e=install_missing("/bin/busybox-sh.elf",cm_busybox_sh_elf,sizeof(cm_busybox_sh_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-mmap.elf",cm_linux_l5_elf,sizeof(cm_linux_l5_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/musl-mmap.elf",cm_linux_l5_musl,sizeof(cm_linux_l5_musl));
     if(!e && cm_linux_interp_enabled()) {
@@ -87,6 +90,7 @@ static cm_error_t provision(void)
             if(e==CM_ERR_NOENT)e=cm_vfs_mkdir(dirs[i]);
             else if(!e && data.kind!=CM_INO_DIR)e=CM_ERR_NOTDIR;
         }
+        if(!e)e=install_missing("/data/linux/sh-smoke.sh",cm_linux_sh_demo,sizeof(cm_linux_sh_demo));
         if(!e)kinfo("linux package ready: /data/linux retained; persona enabled; uninstall via offline profile (no hot unload)");
     }
     static const char sample[]="CapMix examples: persistent root ready\n";

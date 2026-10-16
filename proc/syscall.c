@@ -1,3 +1,4 @@
+#include "capmix/linux_pipe.h"
 #include "capmix/control.h"
 #include "capmix/linux_socket.h"
 #include "capmix/trace.h"
@@ -84,7 +85,7 @@ static cm_file_t *fd_file(int fd, cm_rights_t need, int64_t *err)
 static int64_t close_fd(cm_proc_t *p, cm_task_t *t, int fd)
 {
     int hid = cm_fdio_lookup(p, fd);
-    if(cm_linux_socket_is(p,(uint64_t)fd)) {
+    if(cm_linux_socket_is(p,(uint64_t)fd) || (p->abi==CM_ABI_LINUX && cm_linux_pipe_is(p,(uint64_t)fd))) {
         p->fd[fd]=-1;p->linux_cloexec[fd]=0;
         return cm_handle_drop(t,hid);
     }

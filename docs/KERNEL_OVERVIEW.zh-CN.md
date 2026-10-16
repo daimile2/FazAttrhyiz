@@ -1098,3 +1098,10 @@ COW reserve与backing各拥有独立commit页，分裂只转换所有权，退�
 COW页仍驻留，不接压缩/swap。原生ABI与128页额度不变，产品默认关闭Linux。
 固定未改libc/分配器的musl1.2.5静态malloc/mmap探针可用，不代表通用musl/glibc；
 L1仍为定制BusyBox+BSS，L4a仍非真动态链接。详见[LINUX_ABI_L5](LINUX_ABI_L5.md)。
+
+### 固定静态 BusyBox sh 验收
+
+独立BusyBox1.36.0/musl1.2.5 hush子集支持已测的sh -c、变量/条件、子shell、
+fork/exec/wait及有界capability pipe；补getppid和wait4 WUNTRACED选项。
+产品默认仍关Linux；L1旧fixture及原生shell不替换。信号调用仍ENOSYS，不支持交互作业控制、
+完整POSIX或通用glibc；窗口及commit沿用L5，详见[LINUX_BUSYBOX_SH](LINUX_BUSYBOX_SH.md)。

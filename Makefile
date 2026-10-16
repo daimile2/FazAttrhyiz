@@ -36,7 +36,7 @@ SRC = \
 	cap/handle.c \
 	sched/eevdf.c \
 	ipc/channel.c \
-	proc/syscall.c proc/control.c proc/uaccess.c abi/linux.c abi/linux_file.c abi/linux_process.c abi/linux_socket.c \
+	proc/syscall.c proc/control.c proc/uaccess.c abi/linux.c abi/linux_file.c abi/linux_process.c abi/linux_socket.c abi/linux_pipe.c \
 	proc/spawn.c proc/elf.c proc/elf_args.c proc/init.c user/shell.c \
 	fs/vfs.c \
 	fs/cowfs.c \
@@ -55,7 +55,7 @@ SRC = \
 	security/gate.c \
 	virt/job.c \
 	virt/kvm.c virt/hardware.c virt/vmcs.c virt/ept.c arch/x86_64/virt_probe.S arch/x86_64/vmcs.S \
-	boot/kernel.c boot/linux_l5_test.c boot/linux_l4_test.c boot/linux_l3_test.c boot/linux_l2_test.c boot/linux_l1_test.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
+	boot/kernel.c boot/linux_sh_test.c boot/linux_l5_test.c boot/linux_l4_test.c boot/linux_l3_test.c boot/linux_l2_test.c boot/linux_l1_test.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
 	boot/phase9_test.c boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c \
 	boot/phase3_test.c \
  
@@ -385,3 +385,12 @@ build/linux_l5_musl.inc: third_party/linux-l5/musl-mmap.elf third_party/linux-l5
 	sha256sum -c third_party/linux-l5/SHA256SUMS
 	python3 scripts/embed-elf.py $< $@ cm_linux_l5_musl
 $(HOST_BIN) $(FREE_BIN): build/linux_l5_musl.inc
+
+build/busybox_sh.inc: tests/fixtures/busybox-sh.elf tests/fixtures/busybox-sh.sha256 scripts/embed-elf.py
+	sha256sum -c tests/fixtures/busybox-sh.sha256
+	python3 scripts/embed-elf.py $< $@ cm_busybox_sh_elf
+$(HOST_BIN) $(FREE_BIN): build/busybox_sh.inc
+
+build/linux_sh_demo.inc: user/linux/sh-smoke.sh scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_linux_sh_demo
+$(HOST_BIN) $(FREE_BIN): build/linux_sh_demo.inc

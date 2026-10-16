@@ -1,3 +1,4 @@
+#include "capmix/linux_pipe.h"
 #include "capmix/abi.h"
 #include "capmix/linux_socket.h"
 #include "capmix/linux_uapi.h"
@@ -82,6 +83,7 @@ static int64_t close_file(uint64_t fd)
 static int64_t read_file(uint64_t fd,uint64_t address,uint64_t n)
 {
     if(!valid(fd))return -9;
+    if(cm_linux_pipe_is(caller(),fd))return cm_linux_pipe_io(caller(),fd,address,n,0);
     if(cm_linux_socket_is(caller(),fd))return cm_linux_socket_io(caller(),fd,address,n,0);
     if(!cm_user_access(caller()->elf,address,n,1))return -14;
     if(caller()->linux_console[fd])return caller()->linux_console[fd]==1?0:-9;
@@ -95,6 +97,7 @@ static int64_t dup_to(uint64_t fd,uint64_t target)
 {
     if(!valid(fd) || target>=CM_FD_MAX)return -9;
     if(fd==target)return (int64_t)target;
+    if(cm_linux_pipe_is(caller(),fd))return cm_linux_pipe_dup(caller(),fd,target);
     if(cm_linux_socket_is(caller(),fd))return cm_linux_socket_dup(caller(),fd,target);
     if(caller()->linux_console[fd]) {
         if(valid(target))(void)close_file(target);
@@ -116,6 +119,7 @@ static int64_t stat_call(uint64_t fd,int dirfd,uint64_t name,uint64_t address,in
     cm_linux_stat_t out;cm_stat_t st;int e;
     if(byfd) {
         if(!valid(fd))return -9;
+        if(cm_linux_pipe_is(caller(),fd)){memset(&out,0,sizeof(out));out.mode=0010600;out.nlink=1;out.blksize=512;return cm_copyout(caller()->elf,address,&out,sizeof(out))?-14:0;}
         if(cm_linux_socket_is(caller(),fd)) {
             memset(&out,0,sizeof(out));out.mode=0140666;out.nlink=1;out.blksize=4096;
             return cm_copyout(caller()->elf,address,&out,sizeof(out))?-14:0;
@@ -133,7 +137,7 @@ static int64_t stat_call(uint64_t fd,int dirfd,uint64_t name,uint64_t address,in
 static int64_t seek_file(uint64_t fd,uint64_t offset,uint64_t whence)
 {
     if(!valid(fd))return -9;
-    if(caller()->linux_console[fd] || cm_linux_socket_is(caller(),fd))return -29;
+    if(caller()->linux_console[fd] || cm_linux_socket_is(caller(),fd) || cm_linux_pipe_is(caller(),fd))return -29;
     if(whence>2)return -22;
     cm_object_t *o=NULL;int e=acquire(fd,0,&o);if(e)return e;
     int64_t r=cm_vfs_seek(o->payload,(int64_t)offset,(int)whence);cm_obj_release(o);return cm_linux_errno(r);
@@ -142,7 +146,7 @@ static int64_t getdents(uint64_t fd,uint64_t address,uint64_t capacity)
 {
     if(!cm_user_access(caller()->elf,address,capacity,1))return -14;
     if(!capacity)return -22;
-    if(cm_linux_socket_is(caller(),fd))return -20;
+    if(cm_linux_socket_is(caller(),fd) || cm_linux_pipe_is(caller(),fd))return -20;
     cm_object_t *o=NULL;int e=acquire(fd,CM_RIGHT_READ,&o);if(e)return e;
     _Alignas(8) uint8_t record[88];uint64_t done=0;
     cm_vfs_lock();
@@ -192,6 +196,7 @@ static int64_t fcntl_file(uint64_t fd,uint64_t op,uint64_t arg)
         if(target==CM_FD_MAX)return -24;
         int64_t r=dup_to(fd,target);if(r>=0)caller()->linux_cloexec[target]=op==1030;return r;
     }
+    if(cm_linux_pipe_is(caller(),fd))return cm_linux_pipe_fcntl(caller(),fd,op,arg);
     if(cm_linux_socket_is(caller(),fd))return cm_linux_socket_fcntl(caller(),fd,op,arg);
     if(op==3) {
         if(caller()->linux_console[fd])return caller()->linux_console[fd]==1?0:1;
@@ -223,6 +228,7 @@ int cm_linux_file_call(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d,i
     case 72:*result=fcntl_file(a,b,c);break;
     case 19:case 20:*result=vectors(a,b,c,nr==20);break;
     case 39:*result=(int64_t)caller()->pid;break;
+    case 110:*result=(int64_t)caller()->parent_pid;break;
     case 79: {
         if(b<2){*result=-34;break;}const char root[]="/";
         *result=cm_copyout(caller()->elf,a,root,2)?-14:2;break;
