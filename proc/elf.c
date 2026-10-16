@@ -15,27 +15,58 @@ _Static_assert(sizeof(cm_elf64_phdr_t) == 56, "ELF64 program header ABI");
 _Static_assert(sizeof(cm_elf_image_t) <= CM_PAGE_SIZE, "ELF metadata page");
 static uint64_t physical(void *p) { return (uint64_t)(uintptr_t)p - cm_hhdm(); }
 static uint64_t *table(uint64_t p) { return (void *)(uintptr_t)(p + cm_hhdm()); }
-/* L2 pages stay resident. A writable shared group with R owners owns R-1
- * reserved physical pages. Neither this pool nor its reserves enter anon/swap. */
-#define ELF_REFS ((CM_MAX_PROCS+CM_MAX_CPUS)*CM_ELF_MAX_PAGES+1)
-typedef struct {void *page,*reserve;unsigned refs,writable;} elf_ref_t;
+/* Bounded global pool: at most 8192 resident backing/reserve data pages.
+ * Reserved slots are acquired with their data at fork, never on a COW fault.
+ * Each used slot owns exactly one commit page, including reserved slots. */
+#define ELF_REFS 8193u
+#define PAGE_ANON 0x100u
+_Static_assert(CM_ELF_MAX_PAGES*sizeof(cm_elf_page_t)<=CM_PAGE_SIZE,"page descriptor chunk");
+typedef struct {void *page;unsigned refs,writable,reserve,next;} elf_ref_t;
 static elf_ref_t refs[ELF_REFS];
-static unsigned ref_lock;
-static uint64_t split_count;
+static unsigned ref_lock,ref_hint=1;
+static uint64_t split_count,backing_count,reserve_count;
 static uint64_t refs_lock(void){uint64_t f=cm_irq_save();while(__atomic_exchange_n(&ref_lock,1,__ATOMIC_ACQUIRE))__asm__ volatile("pause");return f;}
 static void refs_unlock(uint64_t f){__atomic_store_n(&ref_lock,0,__ATOMIC_RELEASE);cm_irq_restore(f);}
+unsigned cm_elf_page_limit(const cm_elf_image_t *im){return im->abi==CM_ABI_LINUX?CM_LINUX_MAX_PAGES:CM_ELF_MAX_PAGES;}
+cm_elf_page_t *cm_elf_page_at(const cm_elf_image_t *im,unsigned n)
+{
+    if(n<CM_ELF_MAX_PAGES)return (cm_elf_page_t *)&im->pages[n];
+    unsigned chunk=n/CM_ELF_MAX_PAGES-1;
+    return chunk<CM_ELF_EXTRA_CHUNKS && im->extra[chunk]?&im->extra[chunk][n%CM_ELF_MAX_PAGES]:NULL;
+}
+static int descriptors(cm_elf_image_t *im,unsigned n)
+{
+    if(n>=cm_elf_page_limit(im))return CM_ERR_NOSPC;
+    if(n>=CM_ELF_MAX_PAGES && !im->extra[n/CM_ELF_MAX_PAGES-1]) {
+        void *q=cm_page_alloc(0);if(!q)return CM_ERR_NOMEM;memset(q,0,CM_PAGE_SIZE);
+        im->extra[n/CM_ELF_MAX_PAGES-1]=q;
+    }
+    return CM_OK;
+}
+static void trim_descriptors(cm_elf_image_t *im)
+{
+    for(unsigned i=0;i<CM_ELF_EXTRA_CHUNKS;i++)if(im->extra[i] && im->npages<=(i+1)*CM_ELF_MAX_PAGES){cm_page_free(im->extra[i],0);im->extra[i]=NULL;}
+}
+void cm_elf_cow_stats(uint64_t *backings,uint64_t *reserves)
+{uint64_t f=refs_lock();if(backings)*backings=backing_count;if(reserves)*reserves=reserve_count;refs_unlock(f);}
 static unsigned ref_new(void *page,unsigned writable)
 {
-    for(unsigned i=1;i<ELF_REFS;i++)if(!refs[i].refs){refs[i]=(elf_ref_t){page,NULL,1,writable};return i;}
+    for(unsigned n=0;n<ELF_REFS-1;n++) {
+        unsigned i=ref_hint++;if(ref_hint==ELF_REFS)ref_hint=1;
+        if(!refs[i].page){refs[i]=(elf_ref_t){.page=page,.refs=1,.writable=writable};return i;}
+    }
     return 0;
 }
 static void page_drop(cm_elf_page_t *p)
 {
     if(!p->shared){cm_page_free(p->backing,0);return;}
-    uint64_t f=refs_lock();elf_ref_t *r=&refs[p->shared];
-    if(r->refs>1 && r->writable){void *q=r->reserve;r->reserve=*(void **)q;cm_page_free(q,0);}
-    if(!--r->refs){cm_page_free(r->page,0);memset(r,0,sizeof(*r));}
-    refs_unlock(f);
+    uint64_t f=refs_lock();elf_ref_t *r=&refs[p->shared];unsigned charge=0;
+    if(r->refs>1 && r->writable) {
+        unsigned id=r->reserve;elf_ref_t *q=&refs[id];r->reserve=q->next;
+        cm_page_free(q->page,0);memset(q,0,sizeof(*q));reserve_count--;charge++;
+    }
+    if(!--r->refs){cm_page_free(r->page,0);memset(r,0,sizeof(*r));backing_count--;charge++;}
+    refs_unlock(f);if(charge)cm_commit_uncharge(charge);
 }
 static uint64_t *leaf(cm_elf_image_t *im,uint64_t va)
 {
@@ -51,19 +82,41 @@ static void invalidate(uint64_t va)
     (void)va;
 #endif
 }
+/* Private low-half tables only; shadow aliases these same subtables. */
+static void unmap_page(cm_elf_image_t *im,uint64_t va)
+{
+    uint64_t *tables[6];unsigned indices[6],depth=0;
+    tables[0]=im->root;
+    for(unsigned l=cm_paging_levels();l>1;l--) {
+        indices[depth]=(va>>(12+9*(l-1)))&511;
+        uint64_t e=tables[depth][indices[depth]];
+        if(!(e&1) || (e&PT_PS))goto prune;
+        tables[depth+1]=table(e&PT_ADDR);depth++;
+    }
+    tables[depth][(va>>12)&511]=0;invalidate(va);
+prune:
+    while(depth) {
+        unsigned i;for(i=0;i<512;i++)if(tables[depth][i])break;
+        if(i!=512)break;
+        cm_page_free(tables[depth],0);depth--;
+        tables[depth][indices[depth]]=0;
+        if(!depth && im->shadow)im->shadow[indices[0]]=im->root[indices[0]];
+    }
+}
 uint64_t cm_elf_cow_splits(void){return __atomic_load_n(&split_count,__ATOMIC_RELAXED);}
 cm_error_t cm_elf_cow_write(cm_elf_image_t *im,uint64_t va)
 {
     if(!im || im->abi!=CM_ABI_LINUX)return CM_ERR_INVAL;
     uint64_t f=refs_lock();cm_error_t e=CM_ERR_INVAL;
     for(unsigned i=0;i<im->npages;i++) {
-        cm_elf_page_t *p=&im->pages[i];if(p->virt!=(va&~CM_PAGE_MASK) || !(p->flags&2) || !p->shared)continue;
+        cm_elf_page_t *p=cm_elf_page_at(im,i);if(p->virt!=(va&~CM_PAGE_MASK) || !(p->flags&2) || !p->shared)continue;
         elf_ref_t *r=&refs[p->shared];uint64_t *pte=leaf(im,va);if(!pte || !(*pte&1))break;
         if(r->refs>1) {
-            void *q=r->reserve;if(!q)break;
-            unsigned id=ref_new(q,1);if(!id){e=CM_ERR_NOSPC;break;}
-            r->reserve=*(void **)q;memcpy(q,r->page,CM_PAGE_SIZE);r->refs--;
-            p->backing=q;p->shared=id;__atomic_add_fetch(&split_count,1,__ATOMIC_RELAXED);
+            unsigned id=r->reserve;if(!id)break;elf_ref_t *q=&refs[id];
+            r->reserve=q->next;q->next=0;q->refs=1;
+            memcpy(q->page,r->page,CM_PAGE_SIZE);r->refs--;
+            reserve_count--;backing_count++;
+            p->backing=q->page;p->shared=id;__atomic_add_fetch(&split_count,1,__ATOMIC_RELAXED);
         }
         *pte=physical(p->backing)|7;invalidate(va);e=CM_OK;break;
     }
@@ -89,8 +142,9 @@ void cm_elf_destroy(cm_elf_image_t *im)
             if (im->root[i] & PT_P) free_tables(table(im->root[i] & PT_ADDR), cm_paging_levels() - 1);
         cm_page_free(im->root, 0);
     }
-    for (unsigned i = 0; i < im->npages; i++) page_drop(&im->pages[i]);
-    cm_commit_uncharge(im->charged);
+    for (unsigned i = 0; i < im->npages; i++) page_drop(cm_elf_page_at(im,i));
+    cm_commit_uncharge(im->abi==CM_ABI_LINUX?im->pending:im->charged);
+    im->npages=0;trim_descriptors(im);
     cm_page_free(im, 0);
 }
 static int read_exact(cm_file_t *f, void *dst, uint64_t bytes, uint64_t offset)
@@ -106,19 +160,19 @@ void *cm_elf_pointer(const cm_elf_image_t *im, uint64_t addr)
 {
     if (!im) return NULL;
     for (unsigned i = 0; i < im->npages; i++)
-        if (im->pages[i].virt == (addr & ~CM_PAGE_MASK))
-            return (uint8_t *)im->pages[i].backing + (addr & CM_PAGE_MASK);
+        if (cm_elf_page_at(im,i)->virt == (addr & ~CM_PAGE_MASK))
+            return (uint8_t *)cm_elf_page_at(im,i)->backing + (addr & CM_PAGE_MASK);
     return NULL;
 }
 int cm_elf_user_range(const cm_elf_image_t *im, uint64_t addr, uint64_t bytes, uint32_t flags)
 {
-    if (!im || !bytes || addr < CM_ELF_USER_MIN || addr >= CM_ELF_USER_MAX ||
-        bytes > CM_ELF_USER_MAX - addr) return 0;
+    if (!im || !bytes || addr < CM_ELF_USER_MIN || addr >= (im->abi==CM_ABI_LINUX?CM_LINUX_USER_MAX:CM_ELF_USER_MAX) ||
+        bytes > (im->abi==CM_ABI_LINUX?CM_LINUX_USER_MAX:CM_ELF_USER_MAX) - addr) return 0;
     uint64_t end = addr + bytes;
     for (uint64_t page = addr & ~CM_PAGE_MASK; page < end; page += CM_PAGE_SIZE) {
         int found = 0;
         for (unsigned i = 0; i < im->npages; i++)
-            if (im->pages[i].virt == page && (im->pages[i].flags & flags) == flags) { found = 1; break; }
+            if (cm_elf_page_at(im,i)->virt == page && (cm_elf_page_at(im,i)->flags & flags) == flags) { found = 1; break; }
         if (!found) return 0;
     }
     return 1;
@@ -135,13 +189,13 @@ static void finalize_write(cm_elf_image_t *im, uint64_t virt, int writable)
 }
 static cm_error_t add_page(cm_elf_image_t *im, uint64_t virt, uint32_t flags)
 {
-    if (im->npages == CM_ELF_MAX_PAGES) return CM_ERR_NOSPC;
+    int e=descriptors(im,im->npages);if(e)return e;
     void *p = cm_page_alloc(0);
     if (!p) return CM_ERR_NOMEM;
     memset(p, 0, CM_PAGE_SIZE);
     unsigned id=0;
-    if(im->abi==CM_ABI_LINUX){uint64_t f=refs_lock();id=ref_new(p,!!(flags&2));refs_unlock(f);if(!id){cm_page_free(p,0);return CM_ERR_NOSPC;}}
-    im->pages[im->npages++] = (cm_elf_page_t){.virt=virt,.backing=p,.shared=id,.flags=flags};
+    if(im->abi==CM_ABI_LINUX){uint64_t f=refs_lock();id=ref_new(p,!!(flags&2));if(id)backing_count++;refs_unlock(f);if(!id){cm_page_free(p,0);return CM_ERR_NOSPC;}im->pending--;}
+    *cm_elf_page_at(im,im->npages++) = (cm_elf_page_t){.virt=virt,.backing=p,.shared=id,.flags=flags};
     return cm_space_map(im->root, virt, physical(p), 1) ? CM_ERR_NOMEM : CM_OK;
 }
 static cm_error_t build_shadow(cm_elf_image_t *im)
@@ -240,13 +294,13 @@ static cm_error_t load_interp(cm_elf_image_t *im)
         uint64_t start=p->vaddr&~CM_PAGE_MASK,end=CM_ALIGN_UP(p->vaddr+p->memsz,CM_PAGE_SIZE);
         for(unsigned j=0;j<i;j++)if(ph[j].type==1 && ph[j].memsz &&
             start<CM_ALIGN_UP(ph[j].vaddr+ph[j].memsz,CM_PAGE_SIZE) && (ph[j].vaddr&~CM_PAGE_MASK)<end){e=CM_ERR_INVAL;goto done;}
-        for(unsigned j=0;j<im->npages;j++)if(im->pages[j].virt>=CM_ELF_INTERP_BASE+start && im->pages[j].virt<CM_ELF_INTERP_BASE+end){e=CM_ERR_INVAL;goto done;}
+        for(unsigned j=0;j<im->npages;j++)if(cm_elf_page_at(im,j)->virt>=CM_ELF_INTERP_BASE+start && cm_elf_page_at(im,j)->virt<CM_ELF_INTERP_BASE+end){e=CM_ERR_INVAL;goto done;}
         pages+=(end-start)/CM_PAGE_SIZE;loads++;
         if((p->flags&1) && eh.entry>=p->vaddr && eh.entry-p->vaddr<p->filesz)entry=1;
     }
     if(!loads || !entry){e=CM_ERR_INVAL;goto done;}
-    if(pages>CM_ELF_MAX_PAGES-im->npages-CM_ELF_STACK_PAGES){e=CM_ERR_NOSPC;goto done;}
-    e=cm_commit_charge(pages);if(e)goto done;im->charged+=pages;
+    if(pages>cm_elf_page_limit(im)-im->npages-CM_ELF_STACK_PAGES){e=CM_ERR_NOSPC;goto done;}
+    e=cm_commit_charge(pages);if(e)goto done;im->charged+=pages;im->pending+=pages;
     for(unsigned i=0;i<eh.phnum;i++) {
         cm_elf64_phdr_t *p=&ph[i];if(p->type!=1 || !p->memsz)continue;
         uint64_t base=CM_ELF_INTERP_BASE+p->vaddr;
@@ -325,7 +379,7 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
             if (start < je && js < end) { err = CM_ERR_INVAL; goto done; }
         }
         pages += (end - start) / CM_PAGE_SIZE;
-        if (pages > CM_ELF_MAX_PAGES) { err = CM_ERR_NOSPC; goto done; }
+        if (pages > (abi==CM_ABI_LINUX?CM_LINUX_MAX_PAGES:CM_ELF_MAX_PAGES)) { err = CM_ERR_NOSPC; goto done; }
         if ((p->flags & 1) && eh.entry >= p->vaddr && eh.entry - p->vaddr < p->filesz) executable_entry = 1;
         loads++;
     }
@@ -345,7 +399,7 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     im->abi=abi;im->phdr=user_phdr;im->phnum=eh.phnum;im->phent=eh.phentsize;
     err = cm_commit_charge(pages);
     if (err) goto done;
-    im->charged = pages; im->entry = im->main_entry = eh.entry;
+    im->charged = pages;im->pending=abi==CM_ABI_LINUX?pages:0; im->entry = im->main_entry = eh.entry;
     im->brk_limit=CM_ELF_STACK_TOP-CM_ELF_STACK_PAGES*CM_PAGE_SIZE; im->stack = CM_ELF_STACK_TOP;
     im->root = cm_space_create(&im->cr3);
     if (!im->root) { err = CM_ERR_NOMEM; goto done; }
@@ -365,14 +419,14 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
             off += n;
         }
     }
-    for(unsigned i=0;i<im->npages;i++)if(im->pages[i].virt+CM_PAGE_SIZE>im->brk_base)im->brk_base=im->pages[i].virt+CM_PAGE_SIZE;
+    for(unsigned i=0;i<im->npages;i++)if(cm_elf_page_at(im,i)->virt+CM_PAGE_SIZE>im->brk_base)im->brk_base=cm_elf_page_at(im,i)->virt+CM_PAGE_SIZE;
     if(interpreted){err=load_interp(im);if(err)goto done;}
     for (uint64_t va = CM_ELF_STACK_TOP - CM_ELF_STACK_PAGES * CM_PAGE_SIZE; va < CM_ELF_STACK_TOP; va += CM_PAGE_SIZE) {
         err = add_page(im, va, 6);
         if (err) goto done;
     }
     for (unsigned i = 0; i < im->npages; i++)
-        finalize_write(im, im->pages[i].virt, im->pages[i].flags & 2);
+        finalize_write(im, cm_elf_page_at(im,i)->virt, cm_elf_page_at(im,i)->flags & 2);
     im->brk_end=im->brk_base;
     err = cm_elf_set_args(im,NULL,NULL);
     if(err)goto done;
@@ -396,21 +450,24 @@ cm_error_t cm_elf_clone_cow(cm_elf_image_t *src,cm_elf_image_t **out)
 {
     if(!src || !out || src->abi!=CM_ABI_LINUX)return CM_ERR_INVAL;
     cm_elf_image_t *dst=cm_page_alloc(0);if(!dst)return CM_ERR_NOMEM;
-    memcpy(dst,src,sizeof(*dst));dst->root=dst->shadow=NULL;dst->npages=0;dst->charged=0;
-    cm_error_t e=cm_commit_charge(src->charged);if(e)goto fail;dst->charged=src->charged;
+    memcpy(dst,src,sizeof(*dst));dst->root=dst->shadow=NULL;dst->npages=0;dst->charged=0;dst->pending=0;memset(dst->extra,0,sizeof(dst->extra));
+    unsigned writable=0;for(unsigned i=0;i<src->npages;i++)if(cm_elf_page_at(src,i)->flags&2)writable++;
+    cm_error_t e=cm_commit_charge(writable);if(e)goto fail;dst->pending=writable;dst->charged=src->npages;
     dst->root=cm_space_create(&dst->cr3);if(!dst->root){e=CM_ERR_NOMEM;goto fail;}
     for(unsigned i=0;i<src->npages;i++) {
-        cm_elf_page_t p=src->pages[i];void *reserve=NULL;
+        e=descriptors(dst,dst->npages);if(e)goto fail;
+        cm_elf_page_t p=*cm_elf_page_at(src,i);void *reserve=NULL;
         if(p.flags&2){reserve=cm_page_alloc(0);if(!reserve){e=CM_ERR_NOMEM;goto fail;}}
         uint64_t f=refs_lock();elf_ref_t *r=&refs[p.shared];
-        if(reserve){*(void **)reserve=r->reserve;r->reserve=reserve;}r->refs++;
-        refs_unlock(f);dst->pages[dst->npages++]=p;
+        if(reserve){unsigned id=ref_new(reserve,1);if(!id){refs_unlock(f);cm_page_free(reserve,0);e=CM_ERR_NOSPC;goto fail;}
+            refs[id].refs=0;refs[id].next=r->reserve;r->reserve=id;dst->pending--;reserve_count++;}
+        r->refs++;refs_unlock(f);*cm_elf_page_at(dst,dst->npages++)=p;
         if(cm_space_map(dst->root,p.virt,physical(p.backing),1)){e=CM_ERR_NOMEM;goto fail;}
         *leaf(dst,p.virt)&=~2ull;
     }
     e=build_shadow(dst);if(e)goto fail;
     /* Parent PTEs change only once every child resource is owned. */
-    for(unsigned i=0;i<src->npages;i++)if(src->pages[i].flags&2){*leaf(src,src->pages[i].virt)&=~2ull;invalidate(src->pages[i].virt);}
+    for(unsigned i=0;i<src->npages;i++)if(cm_elf_page_at(src,i)->flags&2){*leaf(src,cm_elf_page_at(src,i)->virt)&=~2ull;invalidate(cm_elf_page_at(src,i)->virt);}
     *out=dst;return CM_OK;
 fail:cm_elf_destroy(dst);return e;
 }
@@ -421,16 +478,64 @@ uint64_t cm_elf_brk(cm_elf_image_t *im,uint64_t wanted)
     if(wanted<im->brk_base || wanted>im->brk_limit)return old;
     uint64_t from=CM_ALIGN_UP(old,CM_PAGE_SIZE),to=CM_ALIGN_UP(wanted,CM_PAGE_SIZE);
     if(to>from) {
-        uint64_t n=(to-from)/CM_PAGE_SIZE;if(n>CM_ELF_MAX_PAGES-im->npages || cm_commit_charge(n))return old;
+        uint64_t n=(to-from)/CM_PAGE_SIZE;if(n>cm_elf_page_limit(im)-im->npages || cm_commit_charge(n))return old;im->pending+=n;
         unsigned before=im->npages;cm_error_t e=0;
         for(uint64_t va=from;va<to;va+=CM_PAGE_SIZE)if((e=add_page(im,va,6)))break;
-        if(e){while(im->npages>before){cm_elf_page_t *p=&im->pages[--im->npages];uint64_t *pte=leaf(im,p->virt);if(pte)*pte=0;invalidate(p->virt);page_drop(p);}cm_commit_uncharge(n);return old;}
+        if(e){unmap_page(im,from+(im->npages-before)*CM_PAGE_SIZE);while(im->npages>before){cm_elf_page_t *p=cm_elf_page_at(im,--im->npages);unmap_page(im,p->virt);page_drop(p);}cm_commit_uncharge(im->pending);im->pending=0;trim_descriptors(im);return old;}
         im->charged+=n;
     } else if(to<from) {
         for(unsigned i=0;i<im->npages;) {
-            cm_elf_page_t *p=&im->pages[i];
-            if(p->virt>=to && p->virt<from){*leaf(im,p->virt)=0;invalidate(p->virt);page_drop(p);*p=im->pages[--im->npages];im->charged--;cm_commit_uncharge(1);}else i++;
+            cm_elf_page_t *p=cm_elf_page_at(im,i);
+            if(p->virt>=to && p->virt<from){unmap_page(im,p->virt);page_drop(p);*p=*cm_elf_page_at(im,--im->npages);im->charged--;}else i++;
         }
     }
-    im->brk_end=wanted;return wanted;
+    trim_descriptors(im);im->brk_end=wanted;return wanted;
+}
+
+/* Linux anonymous PRIVATE only: eagerly zero and reserve every payload page.
+ * No fixed replacement, file sharing, lazy faults or overcommit. */
+int64_t cm_elf_mmap(cm_elf_image_t *im,uint64_t hint,uint64_t len,uint64_t prot,
+                    uint64_t flags,uint64_t fd,uint64_t offset)
+{
+    (void)fd; /* Linux ignores fd for MAP_ANONYMOUS. */
+    if(!im || im->abi!=CM_ABI_LINUX || flags!=0x22 || prot!=3)return -95;
+    if(!len || len>CM_LINUX_USER_MAX-CM_LINUX_MMAP_MIN || offset)return -22;
+    len=CM_ALIGN_UP(len,CM_PAGE_SIZE);uint64_t n=len/CM_PAGE_SIZE;
+    if(n>cm_elf_page_limit(im)-im->npages)return -12;
+    uint64_t start=hint&~CM_PAGE_MASK;
+    for(unsigned attempt=0;attempt<2;attempt++) {
+        if(attempt || start<CM_LINUX_MMAP_MIN || start>CM_LINUX_USER_MAX-len)start=CM_LINUX_MMAP_MIN;
+        for(;start<=CM_LINUX_USER_MAX-len;start+=CM_PAGE_SIZE) {
+            uint64_t end=start+len,collision=0;
+            for(unsigned i=0;i<im->npages;i++) {
+                uint64_t va=cm_elf_page_at(im,i)->virt;
+                if(va>=start && va<end && va+CM_PAGE_SIZE>collision)collision=va+CM_PAGE_SIZE;
+            }
+            if(!collision)goto found;
+            start=collision-CM_PAGE_SIZE;
+        }
+    }
+    return -12;
+found:
+    if(cm_commit_charge(n))return -12;
+    im->pending+=n;unsigned before=im->npages;uint64_t va;
+    for(va=start;va<start+len;va+=CM_PAGE_SIZE)if(add_page(im,va,6|PAGE_ANON)) {
+        unmap_page(im,va);
+        while(im->npages>before){cm_elf_page_t *p=cm_elf_page_at(im,--im->npages);unmap_page(im,p->virt);page_drop(p);}
+        cm_commit_uncharge(im->pending);im->pending=0;trim_descriptors(im);return -12;
+    }
+    im->charged+=n;return (int64_t)start;
+}
+int64_t cm_elf_munmap(cm_elf_image_t *im,uint64_t start,uint64_t len)
+{
+    if(!im || im->abi!=CM_ABI_LINUX || (start&CM_PAGE_MASK) || !len ||
+       start<CM_LINUX_MMAP_MIN || start>=CM_LINUX_USER_MAX || len>CM_LINUX_USER_MAX-start)return -22;
+    uint64_t end=start+CM_ALIGN_UP(len,CM_PAGE_SIZE);
+    for(unsigned i=0;i<im->npages;) {
+        cm_elf_page_t *p=cm_elf_page_at(im,i);
+        if(p->virt>=start && p->virt<end && (p->flags&PAGE_ANON)) {
+            unmap_page(im,p->virt);page_drop(p);*p=*cm_elf_page_at(im,--im->npages);im->charged--;
+        }else i++;
+    }
+    trim_descriptors(im);return 0;
 }

@@ -5,6 +5,7 @@ typedef enum {CM_ABI_CAPMIX=0,CM_ABI_LINUX=1} cm_abi_t;
 struct cm_proc;
 int cm_linux_enabled(void);
 int cm_linux_interp_enabled(void);
+int cm_linux_l5_selftest(void);
 int cm_linux_l4_selftest(void);
 void cm_linux_random16(uint8_t out[16]);
 int64_t cm_linux_dispatch(uint32_t,uint64_t,uint64_t,uint64_t,uint64_t);

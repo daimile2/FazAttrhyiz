@@ -5,6 +5,10 @@
 
 #define CM_ELF_MAX_PHDRS 16u
 #define CM_ELF_MAX_PAGES 128u
+#define CM_LINUX_MAX_PAGES 2048u /* 8MiB mapped payload, including image/stack/brk/mmap */
+#define CM_LINUX_USER_MAX 0x1400000ull /* 16MiB VA span from 0x400000 */
+#define CM_LINUX_MMAP_MIN 0x800000ull
+#define CM_ELF_EXTRA_CHUNKS ((CM_LINUX_MAX_PAGES-CM_ELF_MAX_PAGES)/CM_ELF_MAX_PAGES)
 #define CM_ELF_USER_MIN 0x400000ull
 #define CM_ELF_USER_MAX 0x800000ull
 #define CM_ELF_STACK_TOP 0x800000ull
@@ -34,7 +38,7 @@ typedef struct {
     uint64_t virt;
     void *backing;
     uint32_t shared; /* L2 resident backing reference, zero for native */
-    uint32_t flags; /* ELF PF_R=4 PF_W=2 PF_X=1 */
+    uint32_t flags; /* ELF PF_R=4 PF_W=2 PF_X=1; internal anonymous tag above bit 7 */
 } cm_elf_page_t;
 typedef struct cm_elf_image {
     uint64_t *root, *shadow;
@@ -44,11 +48,17 @@ typedef struct cm_elf_image {
     uint64_t phdr;
     uint16_t phnum,phent;
     unsigned npages,argc,envc;
-    uint64_t charged,brk_base,brk_end,brk_limit;
+    uint64_t pending; /* globally charged, not yet adopted by backing/reserve records */
+    uint64_t charged; /* logical payload pages; Linux physical charges belong to refs */
+    uint64_t brk_base,brk_end,brk_limit;
     char path[CM_ELF_PATH_MAX];
-    cm_elf_page_t pages[CM_ELF_MAX_PAGES];
+    cm_elf_page_t *extra[CM_ELF_EXTRA_CHUNKS];
+    cm_elf_page_t pages[CM_ELF_MAX_PAGES]; /* native/first Linux chunk */
 } cm_elf_image_t;
 
+cm_elf_page_t *cm_elf_page_at(const cm_elf_image_t *,unsigned);
+unsigned cm_elf_page_limit(const cm_elf_image_t *);
+void cm_elf_cow_stats(uint64_t *backings,uint64_t *reserves);
 cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out);
 /* Inactive/private image only. NULL/empty argv defaults to {image path,NULL}. */
 cm_error_t cm_elf_set_args(cm_elf_image_t *,const char *const *,const char *const *);
@@ -59,5 +69,7 @@ int cm_elf_user_range(const cm_elf_image_t *image, uint64_t addr, uint64_t bytes
 cm_error_t cm_elf_clone_cow(cm_elf_image_t *,cm_elf_image_t **);
 cm_error_t cm_elf_cow_write(cm_elf_image_t *,uint64_t);
 uint64_t cm_elf_brk(cm_elf_image_t *,uint64_t);
+int64_t cm_elf_mmap(cm_elf_image_t *,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t);
+int64_t cm_elf_munmap(cm_elf_image_t *,uint64_t,uint64_t);
 uint64_t cm_elf_cow_splits(void);
 #endif

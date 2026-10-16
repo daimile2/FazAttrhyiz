@@ -54,3 +54,5 @@
 - [Linux ABI L4a：受限 PT_INTERP/ET_DYN 解释器交接与边界](LINUX_ABI_L4.md)
 
 - [可选 Linux 包：安装/启用、保留数据卸载与显式清理](LINUX_PACKAGE.md)
+
+- [Linux ABI L5：匿名mmap、16MiB窗口与COW reserve commit](LINUX_ABI_L5.md)

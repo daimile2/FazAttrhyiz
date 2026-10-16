@@ -457,3 +457,27 @@ L0静态程序、QEMU写入的持久文件读回与ACPI关机也正常。未跑V
 默认卸载保留数据，`--purge-data`只清理live根的`/data/linux`，不安全擦除快照/备份。
 本轮VBox 7.2.20、UEFI/AHCI、4CPU、无ISO产品路径实测：开启后Linux ELF与数据持久化，
 卸载+清理后的冷启动拒绝Linux、保留目录外数据，原生hello与poweroff正常。未跑全量debug。
+
+
+### Linux L5 匿名mmap与COW内存（2026-10-16）
+
+在独立VM `CapMix-linux-l5-20261016` 实际调用VBoxManage测试：VBox7.2.20，EFI64、
+PIIX3、512MiB、4 CPU、AHCI安装盘、无ISO。Linux包开启，用户shell运行：
+
+```text
+run /bin/linux-mmap.elf
+run /bin/musl-mmap.elf
+run /bin/linux-hello.elf
+run /bin/cat.elf /l5-copy.txt
+echo vbox-l5-persist > /vbox-l5.txt
+run /bin/cat.elf /vbox-l5.txt
+poweroff
+```
+
+看到 `linux L5 user mmap: 1MiB touch + COW fork + unmap ok`、
+`linux L5 musl1.2.5: malloc=2MiB mmap=1MiB verified`，各ELF `exit=0 reap=ok`，
+ACPI S5关机。第二次冷启动后cat读回 `vbox-l5-persist`、musl探针再exit=0并正常关机。
+日志 `/tmp/l5-vbox-first.log`、`/tmp/l5-vbox-second.log`。
+这是产品路径验收，不是VBox全量debug PASS；此VM的e1000显示down，本次不声称网络通过。
+Linux默认仍关；L1仍定制BusyBox+BSS，L5仅新增固定原版musl allocator探针，非通用musl/glibc。
+完整支持边界、QEMU开关/NUMA全量矩阵与复现方式见 [LINUX_ABI_L5](LINUX_ABI_L5.md)。

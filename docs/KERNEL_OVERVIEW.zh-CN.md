@@ -261,7 +261,7 @@ selftest 自动等价 PASS。无 VMX 路径与“整套 TCG 工作负载已验�
 | 每 VMO | 128 页 = 512 KiB | eager resident backing，不是完整可换页 pager 对象 |
 | 每 VMAR | 32 个映射记录 | `vm.h: CM_VMAR_MAX_MAPS` |
 | ELF program headers | 16 | `elf.h` |
-| ELF backing 映射页 | 128 页，含栈 | 还要额外付出页表/内核栈等资源 |
+| ELF backing 映射页 | 原生128页；可选Linux L5为2048页/8MiB，含栈 | 还要额外付出页表/内核栈等资源 |
 | ELF 地址窗口 | 0x400000..0x800000 | PT_LOAD 上界为栈起点 0x7fc000；不是任意地址 ET_EXEC |
 | ELF 用户栈 | 4 页 = 16 KiB | 栈顶0x800000；初始RSP随argv/envp大小变化并保持16B对齐 |
 | argv/envp | 各最多32项，每项255B+NUL，总字符串4096B含NUL | argc≥1；缺argv时默认镜像路径；不自动继承任意环境 |
@@ -1072,7 +1072,7 @@ write/exit/arch_prctl分发、Linux auxv与FS基址上下文。产品默认关�
 
 可选 Linux persona 增加驻留 COW fork、有限 brk、wait4 和同 PID execve；
 fork 提前扣 commit 并预留潜在副本物理页，COW 页不参与压缩/swap。首版 Linux 固定 BSP，
-每镜像仍128页，产品默认关闭。原生 fork 保持 NOTSUP，原生 ELF SMP 并发保留。
+L2首版每镜像128页；[L5](LINUX_ABI_L5.md)已将Linux窗口扩到16MiB、映射额度扩到8MiB，原生仍128页。产品默认关闭。原生 fork 保持 NOTSUP，原生 ELF SMP 并发保留。
 L1 的定制 BusyBox/64KiB BSS 分配器未替换，不代表通用 musl 或 sh 已可用；详见 [LINUX_ABI_L2](LINUX_ABI_L2.md)。
 
 ### Linux ABI L3 网络续作
@@ -1090,3 +1090,11 @@ read/write/close 与六参数 sendto/recvfrom。复用原生能力与网络后�
 实际先进入解释器再跳到主程序。spawn/替换式 execve、缺解释器旧镜像存活与回收有测试。
 这只是启动交接：没有 PT_DYNAMIC、重定位、共享库、真实 musl/glibc ld.so、动态TLS；
 固定地址不是ASLR。默认产品两层开关仍关闭，原生ABI保留。详见 [LINUX_ABI_L4](LINUX_ABI_L4.md)。
+
+### Linux ABI L5 匿名内存续作
+
+Linux persona支持有界eager PRIVATE匿名mmap/munmap，16MiB VA窗口、8MiB总payload额度。
+COW reserve与backing各拥有独立commit页，分裂只转换所有权，退出/失败对称回收。
+COW页仍驻留，不接压缩/swap。原生ABI与128页额度不变，产品默认关闭Linux。
+固定未改libc/分配器的musl1.2.5静态malloc/mmap探针可用，不代表通用musl/glibc；
+L1仍为定制BusyBox+BSS，L4a仍非真动态链接。详见[LINUX_ABI_L5](LINUX_ABI_L5.md)。

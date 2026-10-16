@@ -1,5 +1,7 @@
 # Linux ABI L0：可关闭的静态 persona，与原生 ABI 并存
 
+后续更新：[L5](LINUX_ABI_L5.md)已新增Linux匿名PRIVATE mmap/munmap、16MiB VA窗口及8MiB映射额度，并细化COW物理页commit归属；下文首版容量/全部mmap拒绝为阶段快照，原生限制不变。
+
 后续 COW fork、有界 brk 与替换式 execve 见 [L2](LINUX_ABI_L2.md)。本文保留本阶段快照；L2 默认关闭且不改变原生 ABI。
 
 后续文件映射与定制 BusyBox 子集见 [L1](LINUX_ABI_L1.md)。本文保留 L0 验收快照；

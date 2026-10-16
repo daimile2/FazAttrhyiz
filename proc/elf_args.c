@@ -52,8 +52,8 @@ cm_error_t cm_elf_set_args(cm_elf_image_t *im,const char *const *argv,const char
     }
     table[n++]=0;table[n++]=0; /* AT_NULL */
     /* No thread may be running this image. Validate before any stack change. */
-    for(unsigned i=0;i<im->npages;i++)if(im->pages[i].virt>=bottom && im->pages[i].virt<CM_ELF_STACK_TOP)
-        memset(im->pages[i].backing,0,CM_PAGE_SIZE);
+    for(unsigned i=0;i<im->npages;i++)if(cm_elf_page_at(im,i)->virt>=bottom && cm_elf_page_at(im,i)->virt<CM_ELF_STACK_TOP)
+        memset(cm_elf_page_at(im,i)->backing,0,CM_PAGE_SIZE);
     e=linux_stack?cm_copyout(im,random_address,random,sizeof(random)):CM_OK;
     if(!e)e=cm_copyout(im,strings,bytes,used);
     if(!e)e=cm_copyout(im,rsp,table,n*8u);

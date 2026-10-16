@@ -61,7 +61,7 @@ static int mechanism(void)
         if(test==2){eh->ident[7]=0;expected=CM_ERR_NOTSUP;} /* never change native persona */
         if(test==3){ph[0].vaddr=CM_ELF_INTERP_BASE;eh->entry+=CM_ELF_INTERP_BASE-CM_ELF_USER_MIN;}
         if(test==4){((char *)mutant)[ph[2].offset]='x';expected=CM_ERR_NOTSUP;}
-        if(test==5){ph[1].memsz=123*CM_PAGE_SIZE;expected=CM_ERR_NOSPC;} /* total 129 pages incl interpreter */
+        if(test==5){ph[1].memsz=CM_LINUX_MAX_PAGES*CM_PAGE_SIZE;expected=CM_ERR_INVAL;} /* exceeds the fixed L4a main/interpreter address partition */
         CHECK(stage(BAD,mutant,sizeof(cm_linux_l4_main))==0 && !rejected(BAD,expected));
     }
     for(unsigned test=0;test<6;test++) {

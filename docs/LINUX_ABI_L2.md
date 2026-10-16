@@ -1,5 +1,7 @@
 # Linux ABI L2：有界驻留内存、COW fork 与替换式 execve
 
+后续更新：[L5](LINUX_ABI_L5.md)已新增Linux匿名PRIVATE mmap/munmap、16MiB VA窗口及8MiB映射额度，并细化COW物理页commit归属；下文首版容量/全部mmap拒绝为阶段快照，原生限制不变。
+
 L2 在可选 Linux persona 中加入可运行的 COW fork、brk、wait4 和 execve。
 原生 CapMix ABI 仍优先 posix_spawn，原生 fork 仍 NOTSUP。产品默认 Linux 关闭，
 开启和关闭均不删除任何原生或 Linux 文件，沿用 [L0](LINUX_ABI_L0.md) 的镜像识别、

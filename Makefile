@@ -55,7 +55,7 @@ SRC = \
 	security/gate.c \
 	virt/job.c \
 	virt/kvm.c virt/hardware.c virt/vmcs.c virt/ept.c arch/x86_64/virt_probe.S arch/x86_64/vmcs.S \
-	boot/kernel.c boot/linux_l4_test.c boot/linux_l3_test.c boot/linux_l2_test.c boot/linux_l1_test.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
+	boot/kernel.c boot/linux_l5_test.c boot/linux_l4_test.c boot/linux_l3_test.c boot/linux_l2_test.c boot/linux_l1_test.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
 	boot/phase9_test.c boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c \
 	boot/phase3_test.c \
  
@@ -371,3 +371,17 @@ build/linux-package: tools/linux-package.c fs/cowfs.c fs/vfs.c io/disk_layout.c 
 build/test-linux-package-fixture: tests/linux_package_fixture.c tools/linux-package.c fs/cowfs.c fs/vfs.c io/disk_layout.c $(wildcard include/capmix/*.h)
 	@mkdir -p build
 	$(CC) -std=c11 -Wall -Wextra -Wshadow -O2 -DCAPMIX_HOSTED -DCM_TP_BUILD_MASK=0 -Iinclude -o $@ tests/linux_package_fixture.c fs/cowfs.c fs/vfs.c io/disk_layout.c
+
+# Linux L5 fixed raw-syscall golden image (no libc dependency).
+build/linux-mmap.elf: tests/linux_l5.S tests/linux_hello.ld scripts/mark-linux.py
+	@mkdir -p build
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none,-z,max-page-size=0x1000,-T,tests/linux_hello.ld -o $@ $<
+	python3 scripts/mark-linux.py $@
+build/linux_l5.inc: build/linux-mmap.elf scripts/embed-elf.py
+	python3 scripts/embed-elf.py $< $@ cm_linux_l5_elf
+$(HOST_BIN) $(FREE_BIN): build/linux_l5.inc
+
+build/linux_l5_musl.inc: third_party/linux-l5/musl-mmap.elf third_party/linux-l5/SHA256SUMS scripts/embed-elf.py
+	sha256sum -c third_party/linux-l5/SHA256SUMS
+	python3 scripts/embed-elf.py $< $@ cm_linux_l5_musl
+$(HOST_BIN) $(FREE_BIN): build/linux_l5_musl.inc

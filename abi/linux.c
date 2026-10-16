@@ -109,7 +109,8 @@ int64_t cm_linux_dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t 
     if(nr==61)return cm_linux_wait4((int64_t)a,b,c,d);
     if(nr==59)return cm_linux_execve(a,b,c);
     if(nr==12)return (int64_t)cm_elf_brk(active->elf,a);
-    if(nr==9)return -95; /* mmap unsupported: including file/MAP_SHARED */
+    if(nr==9)return cm_elf_mmap(active->elf,a,b,c,d,active->linux_regs.r8,active->linux_regs.r9);
+    if(nr==11)return cm_elf_munmap(active->elf,a,b);
     int64_t result;if(cm_linux_socket_call(nr,a,b,c,d,&result))return result;
     if(cm_linux_file_call(nr,a,b,c,d,&result))return result;
 #else

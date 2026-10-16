@@ -1,5 +1,7 @@
 # Linux ABI L4a：PT_INTERP 的最小用户态交接
 
+后续更新：[L5](LINUX_ABI_L5.md)已新增Linux匿名PRIVATE mmap/munmap、16MiB VA窗口及8MiB映射额度，并细化COW物理页commit归属；下文首版容量/全部mmap拒绝为阶段快照，原生限制不变。
+
 本轮是动态链接启动协议的第一步：**内核映射主程序和解释器，进入解释器，再由解释器跳转主程序**。
 这是仓库固定的无 libc 探针；没有实现符号解析、重定位、共享库加载或真正可用的 musl/glibc ld.so。
 `.so` 后缀是解释器试验产物名称，不代表共享库生态已支持。

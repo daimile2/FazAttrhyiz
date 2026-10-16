@@ -39,7 +39,7 @@ static int mechanism(void)
     CHECK(cm_elf_brk(c,base)==base && !cm_elf_pointer(c,base));
     CHECK(cm_elf_brk(c,base+8192)==base+8192 && *(uint64_t *)cm_elf_pointer(c,base)==0);
     CHECK(cm_elf_brk(c,CM_ELF_STACK_TOP)==base+8192);
-    CHECK(cm_elf_brk(c,base+(CM_ELF_MAX_PAGES+1)*CM_PAGE_SIZE)==base+8192);
+    CHECK(cm_elf_brk(c,base+(CM_LINUX_MAX_PAGES+1)*CM_PAGE_SIZE)==base+8192);
     CHECK(cm_commit_charge(UINT64_MAX)==CM_ERR_OVERCOMMIT);
     cm_commit_stats(&after,&limit);held=limit-after;
     CHECK(cm_commit_charge(held)==0);

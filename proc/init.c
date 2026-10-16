@@ -29,6 +29,8 @@
 #include "../build/linux_hello.inc"
 #include "../build/busybox_l1.inc"
 #include "../build/linux_l3.inc"
+#include "../build/linux_l5.inc"
+#include "../build/linux_l5_musl.inc"
 #include "../build/linux_l4_main.inc"
 #include "../build/linux_l4_interp.inc"
 static cm_error_t root_status;
@@ -70,6 +72,8 @@ static cm_error_t provision(void)
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-hello.elf",cm_linux_hello_elf,sizeof(cm_linux_hello_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/busybox-l1.elf",cm_busybox_l1_elf,sizeof(cm_busybox_l1_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-net.elf",cm_linux_l3_elf,sizeof(cm_linux_l3_elf));
+    if(!e && cm_linux_enabled())e=install_missing("/bin/linux-mmap.elf",cm_linux_l5_elf,sizeof(cm_linux_l5_elf));
+    if(!e && cm_linux_enabled())e=install_missing("/bin/musl-mmap.elf",cm_linux_l5_musl,sizeof(cm_linux_l5_musl));
     if(!e && cm_linux_interp_enabled()) {
         cm_stat_t lib;e=cm_vfs_stat("/lib",&lib);
         if(e==CM_ERR_NOENT)e=cm_vfs_mkdir("/lib");
