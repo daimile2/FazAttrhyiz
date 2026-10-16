@@ -137,11 +137,20 @@ def main():
     p.add_argument('image', help='new path or existing all-zero regular disk image')
     p.add_argument('--size-mib', type=int, default=128, help='new file capacity (default 128MiB)')
     p.add_argument('--kernel', type=Path, default=REPO / 'capmix.elf')
+    p.add_argument('--linux', action='store_true', help='request optional Linux persona at first boot; L4a stays disabled')
     p.add_argument('--config', type=Path, default=REPO / 'boot/limine-disk.conf')
     p.add_argument('--limine-dir', type=Path, default=REPO / 'third_party/limine')
     args = p.parse_args()
     try:
-        install(args.image, args.size_mib*1024*1024, args.kernel, args.config, args.limine_dir)
+        if args.linux:
+            from linux_package import configure, require_support
+            require_support(args.kernel)
+            with tempfile.TemporaryDirectory(prefix='capmix-linux-config-') as temp:
+                config = Path(temp)/'limine.conf'
+                config.write_text(configure(args.config.read_text(), True))
+                install(args.image, args.size_mib*1024*1024, args.kernel, config, args.limine_dir)
+        else:
+            install(args.image, args.size_mib*1024*1024, args.kernel, args.config, args.limine_dir)
     except (OSError, ValueError, subprocess.CalledProcessError) as e:
         print(f'install refused/failed: {e}', file=sys.stderr)
         return 1

@@ -116,3 +116,10 @@ debug 带安装盘时显式用 `-boot order=d -cdrom capmix.iso`，否则 BIOS �
 此次 no-NIC debug 暴露旧 overlap 自测的基线问题：之前的 IPC backgroundd 仍在队列，AP 会在测试期间释放它的 4-page 栈，导致 free pages 比基线多 4。仅在并发自测采样前让之前任务自然完成并确认队列为空，保留原精确页数/commit 检查；未改并发入口或 buddy。
 
 不支持真实设备直接安装、已有数据盘迁移、GPT/分区编辑器、双系统管理、动态根 UUID 选择、原子内核/ESP 升级、Secure Boot/verified boot、加密根或完整断电安装恢复。系统文件沿用“缺失才 provision”；内核在 ESP 中的升级和 COW ELF 更新需后续受控工具，不应重跑此 blank-only 安装器。
+
+## 可选 Linux 包配置
+
+`make install-disk DISK_IMAGE=/tmp/new.img INSTALL_LINUX=1` 或宿主安装器的 `--linux`
+可在首次安装时请求 Linux persona。未选择时默认仍关闭；L4a不随此选项开启。
+装后离线启用/卸载、`/data/linux`默认保留及显式清理见 [LINUX_PACKAGE](LINUX_PACKAGE.md)。
+不增加guest安装命令，不重新格式化已安装盘，不热卸内核。

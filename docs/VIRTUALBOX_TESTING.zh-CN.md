@@ -439,3 +439,21 @@ UDP lo、TCP echo、fork/exec socket 别名、HTTP 客户端与 listen/accept �
 宿主响应脚本 PASS，原生 cat 冷启动读回、ACPI poweroff 正常。没有重跑 VBox 全量 debug。
 启动横幅 link down 不一定是最终状态；后台 worker 会继续更新链路，不能用启动横幅
 代替网络调用结果。首次误用严格 `nonet` 探针的 exit=12 与最终成功运行分开记录。
+
+### Linux L4a 解释器交接试验（2026-10-15）
+
+仍是默认关闭的实验路径。安装盘Limine cmdline需同时有
+`capmix.linux=1 capmix.linux_interp=1`，开启后补入固定解释器与主程序：
+`run /bin/linux-l4a.elf`。应先看到 `interp entered`，再看到 `main entered`，最后exit=0/reap。
+本轮实测VBox 7.2.20、UEFI/AHCI/e1000 NAT、4CPU、无ISO冷启动通过；
+L0静态程序、QEMU写入的持久文件读回与ACPI关机也正常。未跑VBox全量debug。
+这不是通用ld.so：无PT_DYNAMIC、共享库重定位、TLS或glibc兼容。
+具体边界、构建、开关矩阵见 [LINUX_ABI_L4](LINUX_ABI_L4.md)。
+
+### 可选Linux包离线启用/卸载（2026-10-16）
+
+操作说明见 [LINUX_PACKAGE](LINUX_PACKAGE.md)。VBox必须先关机；本版工具只接受RAW，
+不要对VDI/VMDK直接使用。先导出可丢弃RAW副本，执行enable或uninstall，再转换为新VDI并挂回测试VM。
+默认卸载保留数据，`--purge-data`只清理live根的`/data/linux`，不安全擦除快照/备份。
+本轮VBox 7.2.20、UEFI/AHCI、4CPU、无ISO产品路径实测：开启后Linux ELF与数据持久化，
+卸载+清理后的冷启动拒绝Linux、保留目录外数据，原生hello与poweroff正常。未跑全量debug。

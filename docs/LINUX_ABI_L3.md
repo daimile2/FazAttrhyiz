@@ -153,7 +153,7 @@ QEMU 首次产品盘缺 lo 导致 UDP bind 失败；最终产品初始化已补�
 - 本文、`docs/README.md`、`docs/KERNEL_OVERVIEW.zh-CN.md`、`docs/LINUX_ABI_L2.md`、
   `docs/VIRTUALBOX_TESTING.zh-CN.md`：当前能力、边界与实测环境。
 
-### 无网卡附加回归的已知问题
+### 无网卡附加回归的历史问题（后续已修复）
 
 显式 `-nic none`（否则 QEMU 会默认提供 e1000）下，L3 的 UDP lo 与
 `linux L3 no NIC: ENETUNREACH verified`、`CPL3 nonet ... socket/commit/pages reclaimed`
@@ -163,3 +163,6 @@ QEMU 首次产品盘缺 lo 导致 UDP bind 失败；最终产品初始化已补�
 对照日志 `/tmp/linux-l3-qemu-dual-l2-baseline-no-nic-final.log`。
 因此没有把无网卡全量标 PASS，也没有在本轮修改 L0/内存核心来掩盖旧断言。
 L3 当前日志为 `/tmp/linux-l3-qemu-dual-no-nic-final.log`。
+
+后续修复已定位为 IPC 自测后台线程延迟释放4页内核栈，
+处理及最终开关矩阵见 [L0_RECLAIM](L0_RECLAIM.md)。上段 FAIL 是修复前证据，保留供对照。

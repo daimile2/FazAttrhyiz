@@ -209,6 +209,60 @@ static cm_error_t persona(cm_file_t *file,const cm_elf64_ehdr_t *eh,
     }
     return CM_OK;
 }
+/* L4a interpreter only: PIC ET_DYN with no dynamic dependencies, TLS or
+ * recursive interpreter. Fixed bias is not ASLR. All pages belong to im. */
+static cm_error_t load_interp(cm_elf_image_t *im)
+{
+    cm_file_t *f=NULL;cm_stat_t st;cm_elf64_ehdr_t eh;
+    cm_elf64_phdr_t ph[CM_ELF_MAX_PHDRS];
+    cm_error_t e=cm_vfs_stat(CM_ELF_INTERP_PATH,&st);if(e)return e;
+    if(st.kind!=CM_INO_FILE || st.size<sizeof(eh))return CM_ERR_INVAL;
+    e=cm_vfs_open(CM_ELF_INTERP_PATH,CM_O_RDONLY,&f);if(e)return e;
+    if(read_exact(f,&eh,sizeof(eh),0)){e=CM_ERR_IO;goto done;}
+    if(memcmp(eh.ident,"\177ELF",4) || eh.ident[4]!=2 || eh.ident[5]!=1 || eh.ident[6]!=1 ||
+       eh.type!=3 || eh.machine!=62 || eh.version!=1 || eh.ehsize!=sizeof(eh) ||
+       eh.phentsize!=sizeof(ph[0]) || !eh.phnum || eh.phnum>CM_ELF_MAX_PHDRS ||
+       eh.phoff>st.size || (uint64_t)eh.phnum*sizeof(ph[0])>st.size-eh.phoff) {e=CM_ERR_INVAL;goto done;}
+    if(read_exact(f,ph,eh.phnum*sizeof(ph[0]),eh.phoff)){e=CM_ERR_IO;goto done;}
+    cm_abi_t abi;e=persona(f,&eh,ph,st.size,&abi);if(e)goto done;
+    if(abi!=CM_ABI_LINUX){e=CM_ERR_NOTSUP;goto done;}
+    uint64_t pages=0;int entry=0,loads=0;
+    for(unsigned i=0;i<eh.phnum;i++) {
+        cm_elf64_phdr_t *p=&ph[i];
+        if(p->type==2 || p->type==3 || p->type==7){e=CM_ERR_NOTSUP;goto done;}
+        if(p->type!=1)continue;
+        if(p->filesz>p->memsz || p->offset>st.size || p->filesz>st.size-p->offset ||
+           p->vaddr>=CM_ELF_INTERP_END-CM_ELF_INTERP_BASE ||
+           p->memsz>CM_ELF_INTERP_END-CM_ELF_INTERP_BASE-p->vaddr ||
+           (p->flags&~7u) || !(p->flags&4) || (p->flags&3)==3 ||
+           (p->align>1 && ((p->align&(p->align-1)) || ((p->vaddr-p->offset)&(p->align-1)) || (CM_ELF_INTERP_BASE&(p->align-1))))) {e=CM_ERR_INVAL;goto done;}
+        if(!p->memsz)continue;
+        uint64_t start=p->vaddr&~CM_PAGE_MASK,end=CM_ALIGN_UP(p->vaddr+p->memsz,CM_PAGE_SIZE);
+        for(unsigned j=0;j<i;j++)if(ph[j].type==1 && ph[j].memsz &&
+            start<CM_ALIGN_UP(ph[j].vaddr+ph[j].memsz,CM_PAGE_SIZE) && (ph[j].vaddr&~CM_PAGE_MASK)<end){e=CM_ERR_INVAL;goto done;}
+        for(unsigned j=0;j<im->npages;j++)if(im->pages[j].virt>=CM_ELF_INTERP_BASE+start && im->pages[j].virt<CM_ELF_INTERP_BASE+end){e=CM_ERR_INVAL;goto done;}
+        pages+=(end-start)/CM_PAGE_SIZE;loads++;
+        if((p->flags&1) && eh.entry>=p->vaddr && eh.entry-p->vaddr<p->filesz)entry=1;
+    }
+    if(!loads || !entry){e=CM_ERR_INVAL;goto done;}
+    if(pages>CM_ELF_MAX_PAGES-im->npages-CM_ELF_STACK_PAGES){e=CM_ERR_NOSPC;goto done;}
+    e=cm_commit_charge(pages);if(e)goto done;im->charged+=pages;
+    for(unsigned i=0;i<eh.phnum;i++) {
+        cm_elf64_phdr_t *p=&ph[i];if(p->type!=1 || !p->memsz)continue;
+        uint64_t base=CM_ELF_INTERP_BASE+p->vaddr;
+        for(uint64_t va=base&~CM_PAGE_MASK;va<CM_ALIGN_UP(base+p->memsz,CM_PAGE_SIZE);va+=CM_PAGE_SIZE)
+            if((e=add_page(im,va,p->flags)))goto done;
+        for(uint64_t off=0;off<p->filesz;) {
+            uint64_t va=base+off,n=CM_MIN(p->filesz-off,CM_PAGE_SIZE-(va&CM_PAGE_MASK));
+            if(read_exact(f,cm_elf_pointer(im,va),n,p->offset+off)){e=CM_ERR_IO;goto done;}off+=n;
+        }
+    }
+    im->interp_base=CM_ELF_INTERP_BASE;im->entry=CM_ELF_INTERP_BASE+eh.entry;
+    im->brk_limit=CM_ELF_INTERP_BASE;
+    kinfo("linux L4a interp mapped: base=%llx entry=%llx pages=%llu fixed-bias no-relocations",
+          (unsigned long)im->interp_base,(unsigned long)im->entry,(unsigned long)pages);
+done:cm_vfs_close(f);return e;
+}
 cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
 {
     if (!path || !out) return CM_ERR_INVAL;
@@ -224,7 +278,7 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     cm_abi_t abi=CM_ABI_CAPMIX;
     uint64_t user_phdr=0;
     uint64_t pages = CM_ELF_STACK_PAGES;
-    int executable_entry = 0, loads = 0;
+    int executable_entry = 0, loads = 0, interpreted=0;
     /* Pin file contents against concurrent VFS mutations for the whole load. */
     cm_vfs_lock();
     err = cm_vfs_stat(path, &st);
@@ -241,13 +295,18 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     }
     if (read_exact(file, ph, eh.phnum * sizeof(ph[0]), eh.phoff)) { err = CM_ERR_IO; goto done; }
     for(unsigned i=0;i<eh.phnum;i++)if(ph[i].type==3) {
-        kinfo("elf rejected: PT_INTERP dynamic loader unsupported (Linux L4 deferred)");err=CM_ERR_NOTSUP;goto done;
+        if(!cm_linux_interp_enabled()) {kinfo("elf rejected: PT_INTERP dynamic loader unsupported (L4a gate off)");err=CM_ERR_NOTSUP;goto done;}
+        if(interpreted++ || ph[i].filesz<2 || ph[i].filesz>CM_ELF_PATH_MAX || ph[i].offset>st.size || ph[i].filesz>st.size-ph[i].offset){kinfo("elf rejected: malformed PT_INTERP");err=CM_ERR_INVAL;goto done;}
+        char name[CM_ELF_PATH_MAX];
+        if(read_exact(file,name,ph[i].filesz,ph[i].offset)){err=CM_ERR_IO;goto done;}
+        if(name[ph[i].filesz-1] || ph[i].filesz!=sizeof(CM_ELF_INTERP_PATH) || memcmp(name,CM_ELF_INTERP_PATH,sizeof(CM_ELF_INTERP_PATH))){err=CM_ERR_NOTSUP;goto done;}
     }
     if (eh.type != 2) { kinfo("elf rejected: only static ET_EXEC supported (no ET_DYN)");err = CM_ERR_NOTSUP; goto done; }
     err=persona(file,&eh,ph,st.size,&abi);if(err)goto done;
+    if(interpreted && abi!=CM_ABI_LINUX){err=CM_ERR_NOTSUP;goto done;}
     for (unsigned i = 0; i < eh.phnum; i++) {
         cm_elf64_phdr_t *p = &ph[i];
-        if (p->type == 2 || p->type == 3 || p->type == 7) { err = CM_ERR_NOTSUP; goto done; } /* DYNAMIC/INTERP/TLS */
+        if (p->type == 2 || (p->type == 3 && !interpreted) || p->type == 7) { err = CM_ERR_NOTSUP; goto done; } /* DYNAMIC/INTERP/TLS */
         if (p->type != 1) continue;
         if (p->filesz > p->memsz || p->offset > st.size || p->filesz > st.size - p->offset ||
             p->vaddr < CM_ELF_USER_MIN || p->vaddr >= CM_ELF_STACK_TOP - CM_ELF_STACK_PAGES * CM_PAGE_SIZE ||
@@ -256,6 +315,7 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
             (p->align > 1 && ((p->align & (p->align - 1)) || ((p->vaddr - p->offset) & (p->align - 1))))) {
             err = CM_ERR_INVAL; goto done;
         }
+        if(interpreted && (p->vaddr>=CM_ELF_INTERP_BASE || p->memsz>CM_ELF_INTERP_BASE-p->vaddr)){err=CM_ERR_INVAL;goto done;}
         if (!p->memsz) continue;
         uint64_t start = p->vaddr & ~CM_PAGE_MASK;
         uint64_t end = CM_ALIGN_UP(p->vaddr + p->memsz, CM_PAGE_SIZE);
@@ -285,7 +345,8 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     im->abi=abi;im->phdr=user_phdr;im->phnum=eh.phnum;im->phent=eh.phentsize;
     err = cm_commit_charge(pages);
     if (err) goto done;
-    im->charged = pages; im->entry = eh.entry; im->stack = CM_ELF_STACK_TOP;
+    im->charged = pages; im->entry = im->main_entry = eh.entry;
+    im->brk_limit=CM_ELF_STACK_TOP-CM_ELF_STACK_PAGES*CM_PAGE_SIZE; im->stack = CM_ELF_STACK_TOP;
     im->root = cm_space_create(&im->cr3);
     if (!im->root) { err = CM_ERR_NOMEM; goto done; }
     for (unsigned i = 0; i < eh.phnum; i++) {
@@ -304,13 +365,14 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
             off += n;
         }
     }
+    for(unsigned i=0;i<im->npages;i++)if(im->pages[i].virt+CM_PAGE_SIZE>im->brk_base)im->brk_base=im->pages[i].virt+CM_PAGE_SIZE;
+    if(interpreted){err=load_interp(im);if(err)goto done;}
     for (uint64_t va = CM_ELF_STACK_TOP - CM_ELF_STACK_PAGES * CM_PAGE_SIZE; va < CM_ELF_STACK_TOP; va += CM_PAGE_SIZE) {
         err = add_page(im, va, 6);
         if (err) goto done;
     }
     for (unsigned i = 0; i < im->npages; i++)
         finalize_write(im, im->pages[i].virt, im->pages[i].flags & 2);
-    for(unsigned i=0;i<im->npages;i++)if(im->pages[i].virt<CM_ELF_STACK_TOP-CM_ELF_STACK_PAGES*CM_PAGE_SIZE && im->pages[i].virt+CM_PAGE_SIZE>im->brk_base)im->brk_base=im->pages[i].virt+CM_PAGE_SIZE;
     im->brk_end=im->brk_base;
     err = cm_elf_set_args(im,NULL,NULL);
     if(err)goto done;
@@ -319,7 +381,9 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     *out = im;
     kinfo("elf load: path=%s ET_EXEC entry=%llx PT_LOAD=%d pages=%u BSS zeroed",
           im->path, (unsigned long)im->entry, loads, im->npages);
-    if(im->abi==CM_ABI_LINUX)kinfo("linux static ELF: persona=LINUX phdr=%llx phnum=%u",(unsigned long)im->phdr,im->phnum);
+    if(im->interp_base)kinfo("linux L4a image ready: main_entry=%llx initial_rip=%llx AT_BASE=%llx handoff-only",
+        (unsigned long)im->main_entry,(unsigned long)im->entry,(unsigned long)im->interp_base);
+    if(im->abi==CM_ABI_LINUX && !im->interp_base)kinfo("linux static ELF: persona=LINUX phdr=%llx phnum=%u",(unsigned long)im->phdr,im->phnum);
     im = NULL;
 done:
     if (file) cm_vfs_close(file);
@@ -354,7 +418,7 @@ uint64_t cm_elf_brk(cm_elf_image_t *im,uint64_t wanted)
 {
     if(!im || im->abi!=CM_ABI_LINUX)return 0;
     uint64_t old=im->brk_end;if(!wanted)return old;
-    if(wanted<im->brk_base || wanted>CM_ELF_STACK_TOP-CM_ELF_STACK_PAGES*CM_PAGE_SIZE)return old;
+    if(wanted<im->brk_base || wanted>im->brk_limit)return old;
     uint64_t from=CM_ALIGN_UP(old,CM_PAGE_SIZE),to=CM_ALIGN_UP(wanted,CM_PAGE_SIZE);
     if(to>from) {
         uint64_t n=(to-from)/CM_PAGE_SIZE;if(n>CM_ELF_MAX_PAGES-im->npages || cm_commit_charge(n))return old;

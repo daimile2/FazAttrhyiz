@@ -1082,3 +1082,11 @@ read/write/close 与六参数 sendto/recvfrom。复用原生能力与网络后�
 负责关闭，fork/exec CLOEXEC 与回收可验证。仍无 DNS/TLS/通用 socket 兼容；
 有界等待、4096 字节 TCP 单次 I/O、1472 字节 UDP 与不支持项详见 [LINUX_ABI_L3](LINUX_ABI_L3.md)。
 原生 shell/httpd/nc/http-get 与文件 ABI 保留。
+
+### Linux ABI L4a 解释器启动试验
+
+在显式 Linux 与解释器开关下，内核可映射带 PT_INTERP 的固定 ET_EXEC 探针及
+固定基址的 PIC ET_DYN 解释器；auxv 保留主程序 AT_ENTRY/PHDR、增加 AT_BASE，
+实际先进入解释器再跳到主程序。spawn/替换式 execve、缺解释器旧镜像存活与回收有测试。
+这只是启动交接：没有 PT_DYNAMIC、重定位、共享库、真实 musl/glibc ld.so、动态TLS；
+固定地址不是ASLR。默认产品两层开关仍关闭，原生ABI保留。详见 [LINUX_ABI_L4](LINUX_ABI_L4.md)。

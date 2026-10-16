@@ -64,10 +64,10 @@ int cm_linux_selftest(void)
     CHECK(cm_elf_load("/bin/linux-marker-test.elf",&im)==CM_ERR_INVAL && !im);
     ph[1].type=3;
     CHECK(stage("/bin/linux-marker-test.elf",mutant,sizeof(cm_linux_hello_elf)+sizeof(note)+sizeof(native_note))==CM_OK);
-    CHECK(cm_elf_load("/bin/linux-marker-test.elf",&im)==CM_ERR_NOTSUP && !im);
+    CHECK(cm_elf_load("/bin/linux-marker-test.elf",&im)==(cm_linux_interp_enabled()?CM_ERR_INVAL:CM_ERR_NOTSUP) && !im);
     eh->type=3; /* usual dynamic Linux executable: still log PT_INTERP explicitly */
     CHECK(stage("/bin/linux-marker-test.elf",mutant,sizeof(cm_linux_hello_elf)+sizeof(note)+sizeof(native_note))==CM_OK);
-    CHECK(cm_elf_load("/bin/linux-marker-test.elf",&im)==CM_ERR_NOTSUP && !im);
+    CHECK(cm_elf_load("/bin/linux-marker-test.elf",&im)==(cm_linux_interp_enabled()?CM_ERR_INVAL:CM_ERR_NOTSUP) && !im);
     memcpy(mutant,cm_linux_hello_elf,sizeof(cm_linux_hello_elf));
     ph=(void *)((char *)mutant+eh->phoff);ph[0].offset=4096; /* PHDR no longer mapped */
     CHECK(stage("/bin/linux-marker-test.elf",mutant,sizeof(cm_linux_hello_elf))==CM_OK);
@@ -139,7 +139,14 @@ cleanup:
         }
         if(cm_proc_release_elf(pid[i])!=CM_OK)failed++;
     }
-    if(before && cm_mm_free_pages()+cm_file_cache_pages()!=before){kerr("linux L0 image/page-table reclaim mismatch");failed++;}
+    uint64_t after=cm_mm_free_pages()+cm_file_cache_pages();
+    if(before && after!=before) {
+        kerr("linux L0 image/page-table reclaim mismatch before=%llu after=%llu",
+             (unsigned long long)before,(unsigned long long)after);failed++;
+    } else if(before) {
+        kinfo("linux L0 reclaim verified: before=%llu after=%llu",
+              (unsigned long long)before,(unsigned long long)after);
+    }
     kinfo("linux L0 selftest: %s (%d failures) enabled=%u native ABI retained",failed?"FAIL":"PASS",failed,cm_linux_enabled());
     return failed;
 }

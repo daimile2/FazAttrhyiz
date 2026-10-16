@@ -6,6 +6,9 @@
 #include "capmix/types.h"
 
 #include <stdint.h>
+#ifdef CAPMIX_HOSTED
+#include <stdlib.h>
+#endif
 
 /* Snapshot before replacing Limine page tables; no later response reads. */
 static struct { uint64_t base,length; } usable[128];
@@ -70,7 +73,13 @@ int cm_boot_is_selftest(void)
 }
 
 #ifdef CAPMIX_HOSTED
-void cm_boot_cmdline_snapshot(void) { memcpy(boot_cmdline,"capmix.mode=selftest",20); }
+void cm_boot_cmdline_snapshot(void)
+{
+    const char *line=getenv("CAPMIX_CMDLINE");
+    if(!line)line="capmix.mode=selftest";
+    size_t n=0;while(n+1<sizeof(boot_cmdline) && line[n]){boot_cmdline[n]=line[n];n++;}
+    boot_cmdline[n]=0;
+}
 void cm_limine_fb_snapshot(void) {}
 
 int cm_limine_memory(cm_paddr_t *base, uint64_t *npages, uint64_t *hhdm)

@@ -32,10 +32,10 @@ cm_error_t cm_elf_set_args(cm_elf_image_t *im,const char *const *argv,const char
     if(linux_stack)cm_linux_random16(random);
     uint64_t random_address=CM_ELF_STACK_TOP-(linux_stack?16u:0u);
     uint64_t strings=random_address-used;
-    unsigned words=argc+envc+5+(linux_stack?12u:0u);uint64_t rsp=(strings-words*8u)&~15ull;
+    unsigned words=argc+envc+5+(linux_stack?12u:0u)+(im->interp_base?2u:0u);uint64_t rsp=(strings-words*8u)&~15ull;
     uint64_t bottom=CM_ELF_STACK_TOP-CM_ELF_STACK_PAGES*CM_PAGE_SIZE;
     if(rsp<bottom || !cm_elf_user_range(im,bottom,CM_ELF_STACK_PAGES*CM_PAGE_SIZE,6)){e=CM_ERR_INVAL;goto done;}
-    uint64_t table[CM_ELF_ARG_MAX+CM_ELF_ENV_MAX+17];unsigned n=0;
+    uint64_t table[CM_ELF_ARG_MAX+CM_ELF_ENV_MAX+19];unsigned n=0;
     table[n++]=argc;
     for(unsigned i=0;i<argc;i++)table[n++]=strings+args[i];
     table[n++]=0;
@@ -46,7 +46,8 @@ cm_error_t cm_elf_set_args(cm_elf_image_t *im,const char *const *argv,const char
         table[n++]=3;table[n++]=im->phdr;
         table[n++]=4;table[n++]=im->phent;
         table[n++]=5;table[n++]=im->phnum;
-        table[n++]=9;table[n++]=im->entry;
+        table[n++]=9;table[n++]=im->main_entry;
+        if(im->interp_base){table[n++]=7;table[n++]=im->interp_base;} /* AT_BASE */
         table[n++]=25;table[n++]=random_address;
     }
     table[n++]=0;table[n++]=0; /* AT_NULL */

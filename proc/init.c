@@ -1,4 +1,5 @@
 #include "capmix/control.h"
+#include "capmix/elf.h"
 #include "capmix/disk_layout.h"
 #include "capmix/config.h"
 #include "capmix/net.h"
@@ -28,6 +29,8 @@
 #include "../build/linux_hello.inc"
 #include "../build/busybox_l1.inc"
 #include "../build/linux_l3.inc"
+#include "../build/linux_l4_main.inc"
+#include "../build/linux_l4_interp.inc"
 static cm_error_t root_status;
 void cm_product_record_root(cm_error_t status) {root_status=status;}
 #ifndef CAPMIX_HOSTED
@@ -67,6 +70,21 @@ static cm_error_t provision(void)
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-hello.elf",cm_linux_hello_elf,sizeof(cm_linux_hello_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/busybox-l1.elf",cm_busybox_l1_elf,sizeof(cm_busybox_l1_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-net.elf",cm_linux_l3_elf,sizeof(cm_linux_l3_elf));
+    if(!e && cm_linux_interp_enabled()) {
+        cm_stat_t lib;e=cm_vfs_stat("/lib",&lib);
+        if(e==CM_ERR_NOENT)e=cm_vfs_mkdir("/lib");
+        if(!e)e=install_missing(CM_ELF_INTERP_PATH,cm_linux_l4_interp,sizeof(cm_linux_l4_interp));
+        if(!e)e=install_missing("/bin/linux-l4a.elf",cm_linux_l4_main,sizeof(cm_linux_l4_main));
+    }
+    if(!e && cm_linux_enabled()) {
+        const char *dirs[]={"/data","/data/linux"};
+        for(unsigned i=0;i<2 && !e;i++) {
+            cm_stat_t data;e=cm_vfs_stat(dirs[i],&data);
+            if(e==CM_ERR_NOENT)e=cm_vfs_mkdir(dirs[i]);
+            else if(!e && data.kind!=CM_INO_DIR)e=CM_ERR_NOTDIR;
+        }
+        if(!e)kinfo("linux package ready: /data/linux retained; persona enabled; uninstall via offline profile (no hot unload)");
+    }
     static const char sample[]="CapMix examples: persistent root ready\n";
     if(!e)e=install_missing("/example.txt",sample,sizeof(sample)-1);
     return e;

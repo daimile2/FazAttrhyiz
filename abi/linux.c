@@ -9,6 +9,12 @@
 #include "capmix/sha256.h"
 #include "capmix/klog.h"
 #include <string.h>
+/* Offline package tools inspect this exact marker, never infer support from filenames. */
+#if CM_LINUX_ABI
+static const char package_support[] __attribute__((used))="CapMix.LinuxPersona.v1:compiled=1";
+#else
+static const char package_support[] __attribute__((used))="CapMix.LinuxPersona.v1:compiled=0";
+#endif
 int cm_linux_enabled(void)
 {
 #if CM_LINUX_ABI
@@ -17,6 +23,11 @@ int cm_linux_enabled(void)
 #else
     return 0;
 #endif
+}
+/* Independent experimental gate; selftest alone does not enable L4a. */
+int cm_linux_interp_enabled(void)
+{
+    return cm_linux_enabled() && !cm_boot_has_option("capmix.linux_interp=0") && cm_boot_has_option("capmix.linux_interp=1");
 }
 void cm_linux_random16(uint8_t out[16])
 {

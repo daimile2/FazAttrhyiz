@@ -48,3 +48,9 @@
 - [Linux ABI L2：驻留 COW fork、brk、替换式 execve 与记账](LINUX_ABI_L2.md)
 
 - [Linux ABI L3：有界 IPv4 socket、能力生命周期与固定 ELF](LINUX_ABI_L3.md)
+
+- [L0 全量回收断言：根因、fixture join 修复与开关矩阵](L0_RECLAIM.md)
+
+- [Linux ABI L4a：受限 PT_INTERP/ET_DYN 解释器交接与边界](LINUX_ABI_L4.md)
+
+- [可选 Linux 包：安装/启用、保留数据卸载与显式清理](LINUX_PACKAGE.md)

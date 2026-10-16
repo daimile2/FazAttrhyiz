@@ -440,7 +440,7 @@ int capmix_selftest(void)
 
     int bg_work = 0;
     cm_task_t *bg = cm_task_create("backgroundd", CM_QOS_BACKGROUND);
-    cm_thread_create(bg, worker_fn, &bg_work, CM_QOS_BACKGROUND);
+    cm_thread_t *bg_thread = cm_thread_create(bg, worker_fn, &bg_work, CM_QOS_BACKGROUND);
 
     int steps = cm_sched_run_until_idle(32);
     kinfo("sched ran %d steps, ping=%d pong=%d replies=%d bg_work=%d",
@@ -448,6 +448,24 @@ int capmix_selftest(void)
     probe("after-ipc");
     if (g_ping_count == 0) { kerr("client never sent"); fails++; }
     if (g_pong_count == 0) { kerr("server never received"); fails++; }
+
+    /* This fixture owns a four-page kernel stack. Join it before later
+     * tests snapshot global free pages: without NIC tests providing extra
+     * scheduler turns it used to exit during the Linux L0 overlap probe,
+     * adding four pages to that test's baseline and hiding its provenance.
+     * No thread slots can be reused here (no new threads are created). */
+    for (unsigned i = 0; bg_thread && bg_thread->id && i < 4096; i++)
+        (void)cm_sched_run_until_idle(1);
+    if (!bg_thread || bg_thread->id || bg_work != 201) {
+        kerr("sched IPC background join failed: work=%d", bg_work);
+        fails++;
+        if (bg_thread && bg_thread->id) {
+            bg_thread->state = CM_TH_DEAD;
+            cm_thread_reap(bg_thread);
+        }
+    } else {
+        kinfo("sched IPC background joined: work=%d stack/pages reclaimed", bg_work);
+    }
 
     extern int cm_phase1_selftest(void);
     fails += cm_phase1_selftest();
@@ -516,6 +534,7 @@ int capmix_selftest(void)
     fails += cm_linux_l1_selftest();
     fails += cm_linux_l2_selftest();
     fails += cm_linux_l3_selftest();
+    fails += cm_linux_l4_selftest();
     extern int cm_concurrent_selftest(void);
     fails += cm_concurrent_selftest();
     extern int cm_control_selftest(void);

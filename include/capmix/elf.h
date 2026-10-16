@@ -9,6 +9,9 @@
 #define CM_ELF_USER_MAX 0x800000ull
 #define CM_ELF_STACK_TOP 0x800000ull
 #define CM_ELF_STACK_PAGES 4u
+#define CM_ELF_INTERP_BASE 0x600000ull
+#define CM_ELF_INTERP_END  0x700000ull
+#define CM_ELF_INTERP_PATH "/lib/ld-capmix-l4a.so"
 #define CM_ELF_PATH_MAX 128u
 #define CM_ELF_ARG_MAX 32u
 #define CM_ELF_ENV_MAX 32u
@@ -37,10 +40,11 @@ typedef struct cm_elf_image {
     uint64_t *root, *shadow;
     uint64_t cr3, shadow_cr3, entry, stack;
     cm_abi_t abi;
+    uint64_t main_entry,interp_base; /* entry is actual initial RIP; AT_ENTRY is main_entry */
     uint64_t phdr;
     uint16_t phnum,phent;
     unsigned npages,argc,envc;
-    uint64_t charged,brk_base,brk_end;
+    uint64_t charged,brk_base,brk_end,brk_limit;
     char path[CM_ELF_PATH_MAX];
     cm_elf_page_t pages[CM_ELF_MAX_PAGES];
 } cm_elf_image_t;
