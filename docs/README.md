@@ -58,3 +58,5 @@
 - [Linux ABI L5：匿名mmap、16MiB窗口与COW reserve commit](LINUX_ABI_L5.md)
 
 - [固定静态BusyBox sh：hush脚本、fork/exec/pipe与复现](LINUX_BUSYBOX_SH.md)
+
+- [最小真实用户态ld.so：共享库、RELA、黄金用例与边界](LINUX_ABI_LDSO.md)

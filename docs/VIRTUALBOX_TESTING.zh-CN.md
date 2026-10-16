@@ -501,3 +501,24 @@ sh-product-ok，主脚本exit=0 reap=ok，原生cat读回写入内容，L0也exi
 [LINUX_BUSYBOX_SH](LINUX_BUSYBOX_SH.md)。本轮不宣称VBox全量debug或网络PASS。
 
 同VM第二次冷启动读取sh-output.txt仍为sh-redirect-ok，脚本再exit=0并关机；日志 `/tmp/sh-vbox-second.log`。
+
+### 最小真实 ld.so（2026-10-16）
+
+独立VM `CapMix-real-ldso-20261016`，VBox7.2.20、EFI64/PIIX3、AHCI、512MiB、4 CPU，
+磁盘专用配置Linux+interp双开，无ISO进入产品用户shell：
+
+```text
+run /bin/linux-dynamic.elf
+run /bin/busybox-sh.elf sh /data/linux/sh-smoke.sh
+run /bin/linux-hello.elf
+run /bin/cat.elf /data/linux/sh-output.txt
+poweroff
+```
+
+实测 `ldso: reloc RELATIVE=1 GLOB_DAT=4 JUMP_SLOT=1 R64=1`、
+`linux ldso: relocation verified`，黄金主程序exit=0 reap=ok；hush、L0及原生cat也exit=0，
+ACPI关机成功。日志 `/tmp/ldso-vbox-first.log`。这是自有无libc/TLS的固定真实链接子集，
+不是glibc/musl ld.so生态，不宣称VBox全量debug或网络PASS；详见
+[LINUX_ABI_LDSO](LINUX_ABI_LDSO.md)。产品默认仍关闭Linux与interp。
+
+同VM第二次冷启动动态黄金再次exit=0、原生cat读回持久内容并关机；日志 `/tmp/ldso-vbox-second.log`。

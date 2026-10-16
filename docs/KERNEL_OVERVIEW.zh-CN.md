@@ -1105,3 +1105,10 @@ L1仍为定制BusyBox+BSS，L4a仍非真动态链接。详见[LINUX_ABI_L5](LINU
 fork/exec/wait及有界capability pipe；补getppid和wait4 WUNTRACED选项。
 产品默认仍关Linux；L1旧fixture及原生shell不替换。信号调用仍ENOSYS，不支持交互作业控制、
 完整POSIX或通用glibc；窗口及commit沿用L5，详见[LINUX_BUSYBOX_SH](LINUX_BUSYBOX_SH.md)。
+
+### 最小真实用户态动态链接
+
+可选Linux+interp双开路径新增仓库自有ld-capmix.so.1：实际读取DT_NEEDED共享库、
+解析SysV动态符号、执行RELATIVE/GLOB_DAT/JUMP_SLOT/64重定位后进入黄金main。
+原L4a仍只是独立交接探针。无TLS、构造器、完整libc或任意Linux动态生态，库暂缺W^X/RELRO；
+默认双轨策略不变，详见[LINUX_ABI_LDSO](LINUX_ABI_LDSO.md)。

@@ -35,6 +35,9 @@
 #include "../build/linux_l5_musl.inc"
 #include "../build/linux_l4_main.inc"
 #include "../build/linux_l4_interp.inc"
+#include "../build/ldso_main.inc"
+#include "../build/ldso_interp.inc"
+#include "../build/ldso_lib.inc"
 static cm_error_t root_status;
 void cm_product_record_root(cm_error_t status) {root_status=status;}
 #ifndef CAPMIX_HOSTED
@@ -81,6 +84,9 @@ static cm_error_t provision(void)
         cm_stat_t lib;e=cm_vfs_stat("/lib",&lib);
         if(e==CM_ERR_NOENT)e=cm_vfs_mkdir("/lib");
         if(!e)e=install_missing(CM_ELF_INTERP_PATH,cm_linux_l4_interp,sizeof(cm_linux_l4_interp));
+        if(!e)e=install_missing(CM_ELF_LDSO_PATH,cm_ldso_interp,sizeof(cm_ldso_interp));
+        if(!e)e=install_missing("/lib/libcmgold.so.1",cm_ldso_lib,sizeof(cm_ldso_lib));
+        if(!e)e=install_missing("/bin/linux-dynamic.elf",cm_ldso_main,sizeof(cm_ldso_main));
         if(!e)e=install_missing("/bin/linux-l4a.elf",cm_linux_l4_main,sizeof(cm_linux_l4_main));
     }
     if(!e && cm_linux_enabled()) {

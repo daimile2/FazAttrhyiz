@@ -12,3 +12,6 @@ build/
 !third_party/linux-l5/musl-mmap.elf
 
 !tests/fixtures/busybox-sh.elf
+
+# Fixed dynamic-linking golden ET_EXEC (DSO suffixes are not ignored).
+!tests/fixtures/ldso/linux-dynamic.elf

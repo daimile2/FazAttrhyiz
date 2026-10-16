@@ -263,15 +263,36 @@ static cm_error_t persona(cm_file_t *file,const cm_elf64_ehdr_t *eh,
     }
     return CM_OK;
 }
-/* L4a interpreter only: PIC ET_DYN with no dynamic dependencies, TLS or
- * recursive interpreter. Fixed bias is not ASLR. All pages belong to im. */
+/* Structural PT_DYNAMIC validation only. All symbol/RELA work is user-space.
+ * Preserve the L4a no-dynamic contract and keep static/native rejection. */
+static cm_error_t dynamic_headers(const cm_elf64_phdr_t *ph,unsigned n,uint64_t size,int required)
+{
+    unsigned found=0;
+    for(unsigned i=0;i<n;i++)if(ph[i].type==2) {
+        if(!required)return CM_ERR_NOTSUP;
+        const cm_elf64_phdr_t *p=&ph[i];
+        if(++found>1 || !p->filesz || p->filesz!=p->memsz || p->filesz>4096 || p->filesz%16 ||
+           p->offset>size || p->filesz>size-p->offset || p->vaddr+p->memsz<p->vaddr)return CM_ERR_INVAL;
+        int contained=0;
+        for(unsigned j=0;j<n;j++)if(ph[j].type==1 && (ph[j].flags&4) &&
+            p->vaddr>=ph[j].vaddr && p->vaddr-ph[j].vaddr<=ph[j].filesz &&
+            p->filesz<=ph[j].filesz-(p->vaddr-ph[j].vaddr) && p->offset>=ph[j].offset &&
+            p->offset-ph[j].offset==p->vaddr-ph[j].vaddr)contained=1;
+        if(!contained)return CM_ERR_INVAL;
+    }
+    return found==(unsigned)required?CM_OK:CM_ERR_NOTSUP;
+}
+/* Fixed-bias ET_DYN: L4a is relocation-free handoff; rtld permits a bounded
+ * PT_DYNAMIC, with all actual linking done in userspace. TLS/recursive interp
+ * remain rejected. Fixed bias is not ASLR. All kernel-loaded pages belong to im. */
 static cm_error_t load_interp(cm_elf_image_t *im)
 {
     cm_file_t *f=NULL;cm_stat_t st;cm_elf64_ehdr_t eh;
     cm_elf64_phdr_t ph[CM_ELF_MAX_PHDRS];
-    cm_error_t e=cm_vfs_stat(CM_ELF_INTERP_PATH,&st);if(e)return e;
+    const char *path=im->rtld?CM_ELF_LDSO_PATH:CM_ELF_INTERP_PATH;
+    cm_error_t e=cm_vfs_stat(path,&st);if(e)return e;
     if(st.kind!=CM_INO_FILE || st.size<sizeof(eh))return CM_ERR_INVAL;
-    e=cm_vfs_open(CM_ELF_INTERP_PATH,CM_O_RDONLY,&f);if(e)return e;
+    e=cm_vfs_open(path,CM_O_RDONLY,&f);if(e)return e;
     if(read_exact(f,&eh,sizeof(eh),0)){e=CM_ERR_IO;goto done;}
     if(memcmp(eh.ident,"\177ELF",4) || eh.ident[4]!=2 || eh.ident[5]!=1 || eh.ident[6]!=1 ||
        eh.type!=3 || eh.machine!=62 || eh.version!=1 || eh.ehsize!=sizeof(eh) ||
@@ -280,10 +301,11 @@ static cm_error_t load_interp(cm_elf_image_t *im)
     if(read_exact(f,ph,eh.phnum*sizeof(ph[0]),eh.phoff)){e=CM_ERR_IO;goto done;}
     cm_abi_t abi;e=persona(f,&eh,ph,st.size,&abi);if(e)goto done;
     if(abi!=CM_ABI_LINUX){e=CM_ERR_NOTSUP;goto done;}
+    e=dynamic_headers(ph,eh.phnum,st.size,im->rtld);if(e)goto done;
     uint64_t pages=0;int entry=0,loads=0;
     for(unsigned i=0;i<eh.phnum;i++) {
         cm_elf64_phdr_t *p=&ph[i];
-        if(p->type==2 || p->type==3 || p->type==7){e=CM_ERR_NOTSUP;goto done;}
+        if((p->type==2 && !im->rtld) || p->type==3 || p->type==7){if(im->rtld)kinfo("linux ldso rejected: interpreter PT_TLS/recursive interp unsupported");e=CM_ERR_NOTSUP;goto done;}
         if(p->type!=1)continue;
         if(p->filesz>p->memsz || p->offset>st.size || p->filesz>st.size-p->offset ||
            p->vaddr>=CM_ELF_INTERP_END-CM_ELF_INTERP_BASE ||
@@ -313,7 +335,8 @@ static cm_error_t load_interp(cm_elf_image_t *im)
     }
     im->interp_base=CM_ELF_INTERP_BASE;im->entry=CM_ELF_INTERP_BASE+eh.entry;
     im->brk_limit=CM_ELF_INTERP_BASE;
-    kinfo("linux L4a interp mapped: base=%llx entry=%llx pages=%llu fixed-bias no-relocations",
+    if(im->rtld)kinfo("linux ldso interp mapped: path=%s base=%llx entry=%llx pages=%llu user-space RELA",path,(unsigned long)im->interp_base,(unsigned long)im->entry,(unsigned long)pages);
+    else kinfo("linux L4a interp mapped: base=%llx entry=%llx pages=%llu fixed-bias no-relocations",
           (unsigned long)im->interp_base,(unsigned long)im->entry,(unsigned long)pages);
 done:cm_vfs_close(f);return e;
 }
@@ -332,7 +355,7 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     cm_abi_t abi=CM_ABI_CAPMIX;
     uint64_t user_phdr=0;
     uint64_t pages = CM_ELF_STACK_PAGES;
-    int executable_entry = 0, loads = 0, interpreted=0;
+    int executable_entry = 0, loads = 0, interpreted=0,rtld=0;
     /* Pin file contents against concurrent VFS mutations for the whole load. */
     cm_vfs_lock();
     err = cm_vfs_stat(path, &st);
@@ -353,14 +376,17 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
         if(interpreted++ || ph[i].filesz<2 || ph[i].filesz>CM_ELF_PATH_MAX || ph[i].offset>st.size || ph[i].filesz>st.size-ph[i].offset){kinfo("elf rejected: malformed PT_INTERP");err=CM_ERR_INVAL;goto done;}
         char name[CM_ELF_PATH_MAX];
         if(read_exact(file,name,ph[i].filesz,ph[i].offset)){err=CM_ERR_IO;goto done;}
-        if(name[ph[i].filesz-1] || ph[i].filesz!=sizeof(CM_ELF_INTERP_PATH) || memcmp(name,CM_ELF_INTERP_PATH,sizeof(CM_ELF_INTERP_PATH))){err=CM_ERR_NOTSUP;goto done;}
+        if(name[ph[i].filesz-1]){err=CM_ERR_NOTSUP;goto done;}
+        if(ph[i].filesz==sizeof(CM_ELF_LDSO_PATH) && !memcmp(name,CM_ELF_LDSO_PATH,sizeof(CM_ELF_LDSO_PATH)))rtld=1;
+        else if(ph[i].filesz!=sizeof(CM_ELF_INTERP_PATH) || memcmp(name,CM_ELF_INTERP_PATH,sizeof(CM_ELF_INTERP_PATH))){err=CM_ERR_NOTSUP;goto done;}
     }
-    if (eh.type != 2) { kinfo("elf rejected: only static ET_EXEC supported (no ET_DYN)");err = CM_ERR_NOTSUP; goto done; }
+    if (eh.type != 2) { kinfo("elf rejected: only ET_EXEC main supported (no PIE/ET_DYN)");err = CM_ERR_NOTSUP; goto done; }
     err=persona(file,&eh,ph,st.size,&abi);if(err)goto done;
     if(interpreted && abi!=CM_ABI_LINUX){err=CM_ERR_NOTSUP;goto done;}
+    err=dynamic_headers(ph,eh.phnum,st.size,rtld);if(err)goto done;
     for (unsigned i = 0; i < eh.phnum; i++) {
         cm_elf64_phdr_t *p = &ph[i];
-        if (p->type == 2 || (p->type == 3 && !interpreted) || p->type == 7) { err = CM_ERR_NOTSUP; goto done; } /* DYNAMIC/INTERP/TLS */
+        if ((p->type == 2 && !rtld) || (p->type == 3 && !interpreted) || p->type == 7) { if(rtld)kinfo("linux ldso rejected: PT_TLS unsupported");err = CM_ERR_NOTSUP; goto done; } /* DYNAMIC/INTERP/TLS */
         if (p->type != 1) continue;
         if (p->filesz > p->memsz || p->offset > st.size || p->filesz > st.size - p->offset ||
             p->vaddr < CM_ELF_USER_MIN || p->vaddr >= CM_ELF_STACK_TOP - CM_ELF_STACK_PAGES * CM_PAGE_SIZE ||
@@ -396,7 +422,7 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     if (!im) { err = CM_ERR_NOMEM; goto done; }
     memset(im, 0, CM_PAGE_SIZE);
     memcpy(im->path, path, path_len + 1);
-    im->abi=abi;im->phdr=user_phdr;im->phnum=eh.phnum;im->phent=eh.phentsize;
+    im->rtld=rtld;im->abi=abi;im->phdr=user_phdr;im->phnum=eh.phnum;im->phent=eh.phentsize;
     err = cm_commit_charge(pages);
     if (err) goto done;
     im->charged = pages;im->pending=abi==CM_ABI_LINUX?pages:0; im->entry = im->main_entry = eh.entry;
@@ -435,7 +461,8 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     *out = im;
     kinfo("elf load: path=%s ET_EXEC entry=%llx PT_LOAD=%d pages=%u BSS zeroed",
           im->path, (unsigned long)im->entry, loads, im->npages);
-    if(im->interp_base)kinfo("linux L4a image ready: main_entry=%llx initial_rip=%llx AT_BASE=%llx handoff-only",
+    if(im->rtld)kinfo("linux ldso image ready: main_entry=%llx initial_rip=%llx AT_BASE=%llx dynamic tables deferred to user-space",(unsigned long)im->main_entry,(unsigned long)im->entry,(unsigned long)im->interp_base);
+    else if(im->interp_base)kinfo("linux L4a image ready: main_entry=%llx initial_rip=%llx AT_BASE=%llx handoff-only",
         (unsigned long)im->main_entry,(unsigned long)im->entry,(unsigned long)im->interp_base);
     if(im->abi==CM_ABI_LINUX && !im->interp_base)kinfo("linux static ELF: persona=LINUX phdr=%llx phnum=%u",(unsigned long)im->phdr,im->phnum);
     im = NULL;

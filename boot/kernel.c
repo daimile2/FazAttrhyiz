@@ -537,6 +537,7 @@ int capmix_selftest(void)
     fails += cm_linux_l4_selftest();
     fails += cm_linux_l5_selftest();
     fails += cm_linux_sh_selftest();
+    fails += cm_linux_ldso_selftest();
     extern int cm_concurrent_selftest(void);
     fails += cm_concurrent_selftest();
     extern int cm_control_selftest(void);

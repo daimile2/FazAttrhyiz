@@ -1,5 +1,7 @@
 # Linux ABI L4a：PT_INTERP 的最小用户态交接
 
+后续：[最小真实ld.so](LINUX_ABI_LDSO.md)使用独立路径实现真实共享库/符号/RELA；本篇L4a探针仍保留，不能将两者混为完整glibc动态生态。
+
 后续更新：[L5](LINUX_ABI_L5.md)已新增Linux匿名PRIVATE mmap/munmap、16MiB VA窗口及8MiB映射额度，并细化COW物理页commit归属；下文首版容量/全部mmap拒绝为阶段快照，原生限制不变。
 
 本轮是动态链接启动协议的第一步：**内核映射主程序和解释器，进入解释器，再由解释器跳转主程序**。

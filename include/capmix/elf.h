@@ -16,6 +16,7 @@
 #define CM_ELF_INTERP_BASE 0x600000ull
 #define CM_ELF_INTERP_END  0x700000ull
 #define CM_ELF_INTERP_PATH "/lib/ld-capmix-l4a.so"
+#define CM_ELF_LDSO_PATH "/lib/ld-capmix.so.1"
 #define CM_ELF_PATH_MAX 128u
 #define CM_ELF_ARG_MAX 32u
 #define CM_ELF_ENV_MAX 32u
@@ -48,6 +49,7 @@ typedef struct cm_elf_image {
     uint64_t phdr;
     uint16_t phnum,phent;
     unsigned npages,argc,envc;
+    int rtld; /* Linux DT_DYNAMIC path, separate from the L4a handoff probe */
     uint64_t pending; /* globally charged, not yet adopted by backing/reserve records */
     uint64_t charged; /* logical payload pages; Linux physical charges belong to refs */
     uint64_t brk_base,brk_end,brk_limit;
