@@ -1,0 +1,44 @@
+cc -std=c11 -Wall -Wextra -Wshadow -O2 -g -ffreestanding -fno-stack-protector -fno-pie -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-mmx -mgeneral-regs-only -fno-asynchronous-unwind-tables -Iinclude/freestanding -Iinclude -DCM_LINUX_ABI=0 -DCM_TCP_RX_BYTES=16384 -nostdlib -static -no-pie -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -Wl,-T,arch/x86_64/linker.ld -o capmix.elf console/fb.c console/ps2.c arch/x86_64/serial.c arch/x86_64/power.c arch/x86_64/paging.c arch/x86_64/idt.c arch/x86_64/lapic.c arch/x86_64/fault.c arch/x86_64/ctx.c arch/x86_64/switch.S arch/x86_64/syscall.S arch/x86_64/usermode.c arch/x86_64/ioapic.c arch/x86_64/ioapic_stub.S boot/limine.c mm/wkdm.c obs/trace.c obs/static_trace.c obs/etw.c mm/buddy.c mm/numa.c mm/slab.c mm/commit.c mm/pressure.c mm/cache.c mm/anon.c mm/vm.c cap/object.c cap/handle.c sched/eevdf.c ipc/channel.c proc/syscall.c proc/control.c proc/uaccess.c abi/linux.c abi/linux_futex.c abi/linux_signal.c abi/linux_file.c abi/linux_process.c abi/linux_socket.c abi/linux_pipe.c proc/spawn.c proc/elf.c proc/elf_args.c proc/init.c user/shell.c fs/vfs.c fs/cowfs.c io/irq.c io/blk.c io/disk_layout.c io/virtio_blk.c io/ahci.c io/uring.c io/driverkit.c net/if.c net/e1000.c net/virtio_net.c net/virtio_ip.c net/pkt.c net/udp.c net/runtime.c net/dhcp.c net/tcp.c net/ebpf.c net/filter.c security/seatbelt.c security/sip.c security/authz.c security/sign.c lib/sha256.c security/gate.c virt/job.c virt/kvm.c virt/hardware.c virt/vmcs.c virt/ept.c arch/x86_64/virt_probe.S arch/x86_64/vmcs.S boot/kernel.c boot/linux_migrate_test.c boot/linux_threads_test.c boot/linux_smp_test.c boot/linux_compat_test.c boot/linux_ldso_test.c boot/linux_sh_test.c boot/linux_l5_test.c boot/linux_l4_test.c boot/linux_l3_test.c boot/linux_l2_test.c boot/linux_l1_test.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c boot/phase9_test.c boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c boot/phase3_test.c  boot/kmain.c lib/kstring.c
+rm -rf iso
+mkdir -p iso/boot/limine iso/EFI/BOOT
+cp capmix.elf iso/boot/capmix.elf
+cp boot/limine-linux-off-selftest.conf iso/boot/limine/limine.conf
+cp third_party/limine/limine-bios.sys iso/boot/limine/ 2>/dev/null || true
+cp third_party/limine/limine-bios-cd.bin iso/boot/limine/
+cp third_party/limine/limine-uefi-cd.bin iso/EFI/BOOT/ 2>/dev/null || true
+cp third_party/limine/BOOTX64.EFI iso/EFI/BOOT/ 2>/dev/null || true
+xorriso -as mkisofs -R -r -J \
+	-b boot/limine/limine-bios-cd.bin -no-emul-boot \
+	-boot-load-size 4 -boot-info-table \
+	-eltorito-alt-boot -e EFI/BOOT/limine-uefi-cd.bin -no-emul-boot \
+	-efi-boot-part --efi-boot-image --protective-msdos-label \
+	iso -o capmix.iso
+xorriso 1.5.6 : RockRidge filesystem manipulator, libburnia project.
+
+Drive current: -outdev 'stdio:capmix.iso'
+Media current: stdio file, overwriteable
+Media status : is blank
+Media summary: 0 sessions, 0 data blocks, 0 data, 26.4g free
+Added to ISO image: directory '/'='<repo>/iso'
+xorriso : UPDATE :      10 files added in 1 seconds
+xorriso : UPDATE :      10 files added in 1 seconds
+ISO image produced: 3920 sectors
+Written to medium : 3920 sectors at LBA 0
+Writing to 'stdio:capmix.iso' completed successfully.
+
+Physical block size of 512 bytes.
+Installing to GPT. Logical block size of 512 bytes.
+Secondary header at LBA 0x3d3f.
+Secondary header valid.
+Detected ISOHYBRID with a GUID partition table (GPT).
+Converting to MBR for improved compatibility...
+Conversion successful.
+No active partition found, some systems may not boot.
+Setting partition 1 as active to work around the issue...
+Installing to MBR.
+Stage 2 to be located at 0x200 and 0x2800.
+Reminder: Remember to copy the limine-bios.sys file in either
+          the root, /boot, /limine, or /boot/limine directories of
+          one of the partitions on the device, or boot will fail!
+Limine BIOS stages installed successfully!
+built capmix.iso — run ./scripts/qemu.sh

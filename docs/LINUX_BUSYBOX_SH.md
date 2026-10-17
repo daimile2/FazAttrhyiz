@@ -174,4 +174,4 @@ QEMU网络回归使用本机TCP9998/UDP9999/HTTP8000测试端及httpd端口转�
 - 本文、总览/导航、L5文档和VBox手册：边界、复现、产品用法和矩阵。
 
 线程续作：已有 [有界clone/futex](LINUX_THREADS.md)。本文单线程/不支持线程的说明为此前范围；
-新子集仍不等于通用pthread，线程组内fork/exec/映射与fd表变更暂拒绝，未创建线程的原路径保留。
+新子集仍不等于通用pthread，线程组内fork/exec/映射变更仍拒绝；fd仅放宽[FILE/console dup/close白名单](LINUX_THREADS.md#受控fd白名单与仍冻结范围)，未创建线程的原路径保留。

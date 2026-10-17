@@ -10,8 +10,8 @@
 Linux不再把非零CPU请求强制改成BSP0。每个独立Linux进程可以在CPU0..N-1
 创建/运行；现有用户shell的普通run/run&轮转策略因此也适用于Linux。
 可信内核`cm_posix_spawn`可在AP创建Linux ELF；原生AP创建限制保持原样。
-未指定cpu的内核spawn默认仍为CPU0；无自动负载均衡或运行中迁移。
-进程执行位置固定；fork子进程跟随父CPU，exec替换镜像仍在该CPU。
+未指定cpu的内核spawn默认仍为CPU0；无自动负载均衡；显式单线程迁移见 [LINUX_MIGRATION.md](LINUX_MIGRATION.md)。
+通常固定执行位置；合格单线程进程可显式迁移，fork子进程仍跟随父CPU，exec在当前CPU。
 同一fork家族不会因此跨CPU执行，避免改变共享socket/fd的既有使用边界。
 
 新增只读Linux接口：
@@ -23,7 +23,7 @@ Linux不再把非零CPU请求强制改成BSP0。每个独立Linux进程可以在
 
 SMP4返回可用集合`0xf`。这是persona允许选择的CPU集合；调度器当前选择一个
 固定执行位置，不因查询而迁移，不保证在集合内各CPU轮转。它不是当前CPU编号；
-实际位置由getcpu返回。`sched_setaffinity`仍ENOSYS，无用户态迁移接口，
+实际位置由getcpu返回。`sched_setaffinity(203)`新增受控单目标迁移，禁止点和错误码见迁移文档；
 也不宣称Linux完整affinity控制。首版最多报告64位mask，内核现有CPU上限不扩大。
 
 ## 生命周期同步
@@ -114,4 +114,4 @@ SMP探针会额外产生8次故意ENOSYS，所以全量直方图中的负例总�
 导航/现状说明；不改原生user shell、KPTI、buddy、时钟、TCP RTO或IRQ核心。
 
 线程续作：已有 [有界clone/futex](LINUX_THREADS.md)。本文单线程/不支持线程的说明为此前范围；
-新子集仍不等于通用pthread，线程组内fork/exec/映射与fd表变更暂拒绝，未创建线程的原路径保留。
+新子集仍不等于通用pthread，线程组内fork/exec/映射变更仍拒绝；fd仅放宽[FILE/console dup/close白名单](LINUX_THREADS.md#受控fd白名单与仍冻结范围)，未创建线程的原路径保留。

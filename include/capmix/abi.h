@@ -9,6 +9,8 @@ int cm_linux_ldso_selftest(void);
 int cm_linux_sh_selftest(void);
 int cm_linux_compat_selftest(void);
 int cm_linux_smp_selftest(void);
+int cm_linux_migrate_selftest(void);
+int cm_linux_micropython_selftest(void);
 #define CM_LINUX_ENOSYS_BUCKETS 513 /* 0..511, then overflow */
 void cm_linux_enosys_snapshot(uint64_t out[CM_LINUX_ENOSYS_BUCKETS]);
 void cm_linux_enosys_dump(const char *,const uint64_t *);

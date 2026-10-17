@@ -1,0 +1,10 @@
+Linux L1 disabled/native retained: PASS
+Linux L2 disabled/native retained: PASS
+Linux L3 disabled/native retained: PASS
+Linux L4a gate-off/static retained: PASS
+Linux L5 disabled/native retained: PASS
+Linux fixed musl BusyBox sh disabled/native retained: PASS
+Linux bounded real ldso gate-off/static retained: PASS
+Linux bounded DSO initial-exec TLS: SKIP (gate/hosted)
+Linux dynamic W^X/RELRO: SKIP (gate)
+TCP32 pool/RX 16384 mechanism: PASS

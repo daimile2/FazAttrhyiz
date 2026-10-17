@@ -103,14 +103,14 @@ static int64_t l_arch_prctl(uint64_t code,uint64_t address,uint64_t c,uint64_t d
 static int64_t dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
 {
 #if CM_LINUX_ABI
-    cm_proc_t *active=cm_proc_current();if(active){active->linux_last_syscall=nr;active->linux_calls++;}
+    cm_proc_t *active=cm_proc_current();
     if(nr==24){cm_sched_yield();cm_usermode_resume_entry();return 0;}
     if(nr==56)return cm_linux_clone(a,b,c,d,active->linux_regs.r8);
     if(nr==202)return cm_linux_futex(a,b,c,d);
-    /* First thread ABI freezes fd-table mutation and socket operations for a
-     * threaded group; existing FILE/console read/write/seek remain usable. */
+    /* Threaded groups allow only bounded FILE/console dup/close. Mapping,
+     * fd creation, fcntl, pipe and socket mutations remain frozen. */
     if(cm_linux_group(active)->linux_grouped) {
-        if(nr==2 || nr==3 || nr==257 || nr==22 || nr==293 || nr==32 || nr==33 || nr==72 ||
+        if(nr==2 || nr==257 || nr==22 || nr==293 || nr==72 || nr==57 || nr==59 || nr==61 ||
            (nr>=41 && nr<=55) || nr==288 || nr==10 || nr==11 || nr==9 || nr==12)return -95;
         if((nr==0 || nr==1 || nr==19 || nr==20) && cm_linux_socket_is(active,a))return -95;
     }
@@ -125,7 +125,8 @@ static int64_t dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
         if(b && cm_copyout(active->elf,b,&node,4))return -14;
         return 0;
     }
-    if(nr==204) { /* eligible CPU set; placement stays fixed, migration API unsupported */
+    if(nr==203)return cm_linux_setaffinity(a,b,c);
+    if(nr==204) { /* eligible CPU set; singleton migration uses the separate 203 safe point */
         if(a && a!=active->pid && a!=cm_linux_group(active)->pid)return -3;
         if(b<8)return -22;
         uint64_t mask=cm_cpu_count()>=64?UINT64_MAX:(1ull<<cm_cpu_count())-1;
@@ -152,9 +153,39 @@ static int64_t dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
  * helpers. Fixed storage: 512 numbers and an explicit out-of-range bucket.
  * Atomics keep snapshots safe across CPUs; snapshots are not a global barrier. */
 static uint64_t enosys[CM_LINUX_ENOSYS_BUCKETS];
+/* No spinlock spans I/O or a scheduler switch. A competing member gets
+ * EAGAIN, while the owning continuation retains the gate until return. Pipe
+ * I/O must not hold it: its peer may need to run to unblock it. Pipe/socket
+ * slots cannot be replaced/closed by the grouped mutation whitelist. */
+#if CM_LINUX_ABI
+static int file_gate_needed(cm_proc_t *p,uint32_t nr,uint64_t fd)
+{
+    if(!p || !cm_linux_group(p)->linux_grouped)return 0;
+    switch(nr) {
+    case 0:case 1:case 19:case 20:
+        if(cm_linux_pipe_is(p,fd))return 0;
+        return 1;
+    case 3:case 5:case 8:case 16:case 32:case 33:case 217:case 262:return 1;
+    default:return 0;
+    }
+}
+#endif
 int64_t cm_linux_dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
 {
+#if CM_LINUX_ABI
+    cm_proc_t *owner=cm_proc_current(),*gate=NULL;
+    if(owner){owner->linux_last_syscall=nr;owner->linux_calls++;}
+    if(file_gate_needed(owner,nr,a)) {
+        gate=cm_linux_group(owner);uint64_t empty=0;
+        if(!__atomic_compare_exchange_n(&gate->linux_fd_owner,&empty,owner->pid,0,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED) && empty!=owner->pid)
+            return -11;
+        gate->linux_fd_depth++;
+    }
+#endif
     int64_t result=dispatch(nr,a,b,c,d);
+#if CM_LINUX_ABI
+    if(gate && !--gate->linux_fd_depth)__atomic_store_n(&gate->linux_fd_owner,0,__ATOMIC_RELEASE);
+#endif
     cm_proc_t *p=cm_proc_current();
     if(result==-38 && p && p->abi==CM_ABI_LINUX) {
         __atomic_fetch_add(&enosys[nr<512?nr:512],1,__ATOMIC_RELAXED);

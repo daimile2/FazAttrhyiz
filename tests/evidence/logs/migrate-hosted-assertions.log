@@ -1,0 +1,13 @@
+Linux L1 custom musl BusyBox subset + bounded BSS: PASS
+Linux L2 COW/commit/brk/exec/reap: PASS
+Linux L3 socket/fd/capability: PASS
+Linux L4a interpreter handoff/auxv/rollback: PASS
+Linux L5 mmap/window/COW reserve commit/reclaim: PASS
+Linux fixed musl BusyBox sh commands/fork/exec/pipe/error/reclaim: PASS
+Linux bounded real ldso RELA/symbol/DSO/negative/reclaim: PASS
+Linux bounded DSO initial-exec TLS: SKIP (gate/hosted)
+Linux dynamic W^X/RELRO: PASS
+TCP32 pool/RX 16384 mechanism: PASS
+Linux SMP: SKIP (gate/hosted)
+Linux bounded clone/futex: PASS
+Linux controlled migration: PASS

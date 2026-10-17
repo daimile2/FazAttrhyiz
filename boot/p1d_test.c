@@ -141,7 +141,13 @@ int cm_p1d_selftest(void)
     for(int which=0;which<2;which++) {
         if(!(which?cm_e1000_available():cm_virtio_net_available()))continue;
         interface_id=which?cm_e1000_ifid():cm_virtio_net_ifid();handle=-1;result=0;completed=0;
-        cm_iface_t *iface=cm_if_get(interface_id);uint32_t address=iface->addr,mask=iface->netmask,gateway=iface->gateway;
+        cm_iface_t *iface=cm_if_get(interface_id);
+        if(!iface){kerr("p1d TCP missing registered interface: %d",interface_id);failed++;continue;}
+        if(!iface->up) {
+            kinfo("p1d TCP echo/multi wire SKIP: if=%d reason=carrier-down; pool/RX/RTO mechanisms still tested",interface_id);
+            continue;
+        }
+        uint32_t address=iface->addr,mask=iface->netmask,gateway=iface->gateway;
         drop_test=cm_boot_has_option("capmix.tcp_drop=1");
         uint64_t retry_before=cm_tcp_retransmits();
         sender=cm_thread_create(client,echo_client,NULL,CM_QOS_USER_INTERACTIVE);

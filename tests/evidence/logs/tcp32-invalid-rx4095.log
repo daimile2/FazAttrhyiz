@@ -1,0 +1,4 @@
+In file included from <stdin>:1:
+include/capmix/tcp.h:11:1: error: static assertion failed: "TCP RX: 4..32KiB, no window scale"
+   11 | _Static_assert(CM_TCP_RX_BYTES>=4096u && CM_TCP_RX_BYTES<=32768u,"TCP RX: 4..32KiB, no window scale");
+      | ^~~~~~~~~~~~~~

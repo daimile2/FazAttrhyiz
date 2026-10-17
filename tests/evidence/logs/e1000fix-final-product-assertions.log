@@ -1,0 +1,2 @@
+product no-ISO first: PASS (native redirect/persist/nc/http-get/httpd/kill/poweroff)
+product no-ISO second: PASS (native redirect/persist/cold-read/poweroff)

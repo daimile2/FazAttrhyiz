@@ -5,6 +5,12 @@
 int cm_m8_selftest(void)
 {
     if(!cm_e1000_available()){kinfo("m8 e1000 skipped: no supported NIC");return 0;}
+    cm_error_t ready=cm_e1000_wait_link(6000);
+    if(ready==CM_ERR_AGAIN || ready==CM_ERR_NOTSUP) {
+        kinfo("m8 e1000 wire SKIP: link readiness=%d; carrier unavailable or uncalibrated clock, no tx/rx claim",ready);
+        return 0;
+    }
+    if(ready){kerr("m8 e1000 link check failed: %d",ready);return 1;}
     cm_iface_t *iface=cm_if_get(cm_e1000_ifid());
     uint64_t tx=iface->tx,rx=iface->rx;cm_error_t e=CM_OK;
     /* 18 TX/RX packets cross the 16-entry rings, verifying descriptor reuse. */

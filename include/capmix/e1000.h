@@ -4,6 +4,8 @@
 cm_error_t cm_e1000_init(void);
 int cm_e1000_available(void);
 int cm_e1000_ifid(void);
+/* Calibrated, bounded boot/test wait; no device lock or IRQ mask held. */
+cm_error_t cm_e1000_wait_link(unsigned timeout_ms);
 int cm_e1000_irq_enabled(void);
 uint64_t cm_e1000_irq_count(void);
 void cm_e1000_irq_isr(void);

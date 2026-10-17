@@ -1,0 +1,17 @@
+fixed fixture hashes verified; iso sha256=0ad867c2ce98f8c4d23abfc8cdc2dddf2fc7aded56bba3dfad79e716e769c508
+hush exact buckets (>=512 grouped, not individually ranked)
+nr	count	name
+total	0
+Linux L0 golden/auxv/FS/ENOSYS: PASS
+Linux L1 custom musl BusyBox subset + bounded BSS: PASS
+Linux L2 COW/commit/brk/exec/reap: PASS
+Linux L3 socket/fd/capability: PASS
+Linux L4a interpreter handoff/auxv/rollback: PASS
+Linux L5 mmap/window/COW reserve commit/reclaim: PASS
+Linux fixed musl BusyBox sh commands/fork/exec/pipe/error/reclaim: PASS
+Linux bounded real ldso RELA/symbol/DSO/negative/reclaim: PASS
+Linux bounded DSO initial-exec TLS: PASS
+Linux dynamic W^X/RELRO: PASS
+TCP32 pool/RX 16384 mechanism: PASS
+Linux SMP: PASS (4 CPUs/AP lifecycle/overlap/COW/exec/reap)
+Linux bounded clone/futex: PASS

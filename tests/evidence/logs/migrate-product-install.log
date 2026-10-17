@@ -1,0 +1,23 @@
+python3 scripts/install-disk.py "<temporary>/capmix-migrate-product-final.img" 
+mkfs.fat 4.2 (2021-01-31)
+ Volume in drive : is CAPMIXBOOT 
+ Volume Serial Number is F38D-8AC5
+Directory for ::/boot
+
+.            <DIR>     2026-10-17  20:51 
+..           <DIR>     2026-10-17  20:51 
+limine       <DIR>     2026-10-17  20:51 
+capmix   elf   4230648 2026-10-17  20:51 
+        4 files           4 230 648 bytes
+                         61 367 808 bytes free
+
+Physical block size of 512 bytes.
+Installing to MBR.
+Stage 2 to be located at 0x200 and 0x2800.
+Reminder: Remember to copy the limine-bios.sys file in either
+          the root, /boot, /limine, or /boot/limine directories of
+          one of the partitions on the device, or boot will fail!
+Limine BIOS stages installed successfully!
+install boot staged: <temporary>/capmix-migrate-product-final.img size=134217728 root_lba=2048 esp_lba=18432
+First boot from this disk (no ISO) initializes the blank COW root and fsyncs system ELF files.
+Second cold boot mounts that persisted root; existing data images and installed images are refused by this tool.

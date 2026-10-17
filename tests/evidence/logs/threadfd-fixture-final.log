@@ -1,0 +1,5 @@
+cc -nostdlib -static -no-pie -Wl,--build-id=none,-z,max-page-size=0x1000,-T,tests/linux_hello.ld -o build/linux-threads-rebuilt.elf tests/linux_threads.S
+python3 scripts/mark-linux.py build/linux-threads-rebuilt.elf
+cmp tests/fixtures/linux-threads.elf build/linux-threads-rebuilt.elf
+sha256sum -c tests/fixtures/linux-threads.sha256
+tests/fixtures/linux-threads.elf: OK

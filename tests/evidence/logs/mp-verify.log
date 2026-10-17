@@ -1,0 +1,6 @@
+sha256sum -c third_party/micropython/SHA256SUMS
+third_party/micropython/micropython-1.24.1.tar.gz: OK
+sha256sum -c tests/fixtures/micropython.sha256
+tests/fixtures/micropython.elf: OK
+python3 tests/check_micropython_fixture.py
+MicroPython static scalar fixture: PASS sha256=206ad3d7e1957e106541d2f53f1d3a9e22f3b3f89cd7ec0ed5fcbfca110180cf (host execution, bounds, errno/status, no SIMD/FP)

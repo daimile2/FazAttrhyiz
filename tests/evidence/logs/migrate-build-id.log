@@ -1,0 +1,15 @@
+2026-10-17 final migration evidence
+QEMU 8.2.2 KVM, 512 MiB, SMP4; single node e1000 usernet + host TCP9998/UDP9999 peers; dual node no NIC
+VirtualBox 7.2.20r175154, UEFI, AHCI DVD, 512 MiB, SMP4, no NIC
+Default product Linux persona remains off. Tests opt in with linux=1 and linux_interp=1.
+Probe canonical FILE symbol prevents random assembler temporary filenames.
+dddaacae9ceebb0f1653da30fb8cea0fb4c71acf17d348325f69d733c52107ba  tests/linux_migrate.S
+b1b5a294840855e91c8090b9babe64574101428dc23f1b6aacb9d9ef6d68a21d  build/linux-migrate.elf
+b1b5a294840855e91c8090b9babe64574101428dc23f1b6aacb9d9ef6d68a21d  build/linux-migrate-rebuilt.elf
+30bc52af9059fa34616b2f65f25a0200b7c33dfdb3475f240a3c0dd79d364a4d  capmix.elf
+6940d199beb2b0d29d4f77065f7c46a34e377a2f9806ec0d60a70c91993419cb  <temporary>/capmix-migrate-on.iso
+5f69225b98116db61180225b7ba93700da6d5871be71029bc5f67b8c68fc1a1f  <temporary>/capmix-migrate-off.iso
+a739c5453f5f9f7a00f99dd4dc6bbd018d5e4205c9ded018ce7bc9cb1e086d7a  <temporary>/capmix-migrate-compiled-off.iso
+bfc8fbec48b8c4598a8cd9278a453a1d2a84fe05f25c8a8cb06d0e6822955bf9  capmix.iso
+capmix.elf PT_LOAD 5f00d7e04300fa8d636805808b849fe024cd4e62a859cf58cdd3d3fc24801215
+<temporary>/capmix-migrate-tested-canonical.elf PT_LOAD 5f00d7e04300fa8d636805808b849fe024cd4e62a859cf58cdd3d3fc24801215

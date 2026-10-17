@@ -2,6 +2,7 @@
 #include "capmix/net.h"
 #include "capmix/mm.h"
 #include "capmix/arch.h"
+#include "capmix/sched.h"
 #include "capmix/klog.h"
 #include <string.h>
 /* Original implementation: Intel 8254x legacy descriptors; 82574 legacy
@@ -143,6 +144,33 @@ cm_error_t cm_e1000_init(void)
 }
 int cm_e1000_available(void) {return available;}
 int cm_e1000_ifid(void) {return iface_id;}
+cm_error_t cm_e1000_wait_link(unsigned timeout_ms)
+{
+#ifdef CAPMIX_HOSTED
+    CM_UNUSED(timeout_ms);return CM_ERR_NOTSUP;
+#else
+    if(timeout_ms>6000)return CM_ERR_INVAL;
+    uint64_t hz=cm_tsc_hz(),start=cm_rdtsc();
+    if(hz<1000)return CM_ERR_NOTSUP;
+    uint64_t deadline=start+(hz/1000)*timeout_ms;
+    uint32_t status=0;
+    do {
+        uint64_t flags=guard();
+        if(!available){unguard(flags);return CM_ERR_DEAD;}
+        status=reg(8);cm_if_get(iface_id)->up=!!(status&2);
+        unguard(flags);
+        if(status&2) {
+            kinfo("e1000 link ready: waited_ms=%llu status=%x",(unsigned long)((cm_rdtsc()-start)/(hz/1000)),status);
+            return CM_OK;
+        }
+        if(cm_rdtsc()>=deadline)break;
+        (void)cm_sched_run_until_idle(1);
+    }while(cm_rdtsc()<deadline);
+    kinfo("e1000 link unavailable: timeout_ms=%u status=%x reason=carrier-down (cable/backend/autonegotiation)",timeout_ms,status);
+    return CM_ERR_AGAIN;
+#endif
+}
+
 cm_error_t cm_e1000_transmit(const uint8_t *frame,uint16_t length)
 {
     if(!frame || length<14 || length>CM_PKT_MAX)return CM_ERR_INVAL;

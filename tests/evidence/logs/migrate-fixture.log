@@ -1,0 +1,5 @@
+cc -nostdlib -static -no-pie -Wl,--build-id=none,-z,max-page-size=0x1000,-T,tests/linux_hello.ld -o build/linux-migrate-rebuilt.elf tests/linux_migrate.S
+python3 scripts/mark-linux.py build/linux-migrate-rebuilt.elf
+cmp build/linux-migrate.elf build/linux-migrate-rebuilt.elf
+sha256sum -c tests/linux-migrate.sha256
+build/linux-migrate.elf: OK

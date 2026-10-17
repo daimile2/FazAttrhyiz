@@ -1,0 +1,5 @@
+Final kernel SHA-256: 709b5c9b6b67e91f99241e2642a9ab01a946e5b56c9d6d6a696180107150107d
+Final debug ISO SHA-256: f13e9527987836e3a645ba75cf57d90527468bf8eaca4985a99f2f25819a62de
+QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)
+VBoxManage 7.2.20r175154
+Final debug config: boot/limine-tcp-pool-selftest.conf; Linux=0; TCP RX=16384; slots=32

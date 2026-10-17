@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "<HOST_PATH>", line 9, in <module>
+    assert 'selftest result: PASS (0 failures)' in s
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+baseline four-failure log correctly rejected

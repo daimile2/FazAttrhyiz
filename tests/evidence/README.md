@@ -1,6 +1,6 @@
 # CapMix 验收日志归档
 
-归档日期：2026-10-17。此轮仅整理已有证据，没有重新启动 QEMU/VBox，也没有修改内核行为。
+归档日期：2026-10-17。最初归档轮次仅整理已有证据，没有重跑虚拟机。后续TCP_POOL/e1000修复及线程fd白名单已新增实际运行证据，见下节与逐文件`evidence_round`。
 各测试的日期、版本、硬件配置和验收范围以对应文档原环境矩阵为准，归档日期不是重测日期。
 
 ## 快速入口
@@ -98,3 +98,81 @@ ABI检查器可能随实现演进而增加断言；旧轮次日志应按其原�
 
 [redir-hosted-final.log](logs/redir-hosted-final.log)、[redir-qemu-debug-final.log](logs/redir-qemu-debug-final.log)、[redir-qemu-final1.log](logs/redir-qemu-final1.log)、[redir-qemu-final2.log](logs/redir-qemu-final2.log)、[redir-vbox-final1.log](logs/redir-vbox-final1.log)、[redir-vbox-final2.log](logs/redir-vbox-final2.log)
 
+
+## TCP_POOL / VBox e1000 debug修复（2026-10-17）
+
+[四项失败对账、关闭说明与完整矩阵](../../docs/TCP_POOL.md#vbox-e1000-debug原4项失败对账与关闭)。
+旧失败与新结果分开保留；拔线的全量0 failures不代表wire PASS。
+本轮新增checker要求实际载荷/IRQ/multi8，拔线checker则要求明确skip与无NIC回收路径。
+
+| 场景 | 证据 |
+| --- | --- |
+| 原FAIL(4)，独立VM复现 | [历史](logs/tcp32-vbox-debug.log)、[复现](logs/e1000fix-vbox-baseline.log) |
+| VBox LinkUpDelay=5000ms | [设备配置摘录](logs/e1000fix-vbox-device.log) |
+| VBox链路up，Linux关，全量与wire PASS | [日志](logs/e1000fix-vbox-off-final.log)、[断言](logs/e1000fix-check-vbox-off-final.log) |
+| VBox拔线，wire明确SKIP，机制PASS | [日志](logs/e1000fix-vbox-down-final.log)、[断言](logs/e1000fix-check-vbox-down-final.log) |
+| QEMU e1000 / 双NUMA virtio+e1000 | [单节点](logs/e1000fix-qemu-e1000-final.log)、[双节点](logs/e1000fix-qemu-dual-final.log) |
+| 无ISO产品网络/重定向/kill/关机与冷启动 | [首次](logs/e1000fix-final-product-first.log)、[冷启动](logs/e1000fix-final-product-second.log)、[断言](logs/e1000fix-final-product-assertions.log) |
+
+新增及原TCP_POOL归档文件：
+
+[e1000fix-build-id.log](logs/e1000fix-build-id.log)、[e1000fix-check-baseline-rejected.log](logs/e1000fix-check-baseline-rejected.log)、[e1000fix-check-hosted-off-final.log](logs/e1000fix-check-hosted-off-final.log)、[e1000fix-check-qemu-default-debug.log](logs/e1000fix-check-qemu-default-debug.log)、[e1000fix-check-qemu-dual-final.log](logs/e1000fix-check-qemu-dual-final.log)、[e1000fix-check-qemu-e1000-final.log](logs/e1000fix-check-qemu-e1000-final.log)、[e1000fix-check-vbox-down-final.log](logs/e1000fix-check-vbox-down-final.log)、[e1000fix-check-vbox-off-final.log](logs/e1000fix-check-vbox-off-final.log)、[e1000fix-default-product-assertions.log](logs/e1000fix-default-product-assertions.log)、[e1000fix-default-product.log](logs/e1000fix-default-product.log)、[e1000fix-final-install.log](logs/e1000fix-final-install.log)、[e1000fix-final-product-assertions.log](logs/e1000fix-final-product-assertions.log)、[e1000fix-final-product-first.log](logs/e1000fix-final-product-first.log)、[e1000fix-final-product-httpd-client.log](logs/e1000fix-final-product-httpd-client.log)、[e1000fix-final-product-second.log](logs/e1000fix-final-product-second.log)、[e1000fix-hosted-off-final.log](logs/e1000fix-hosted-off-final.log)、[e1000fix-iso-final.log](logs/e1000fix-iso-final.log)、[e1000fix-iso-product-final.log](logs/e1000fix-iso-product-final.log)、[e1000fix-kernel-final-diagnostics.log](logs/e1000fix-kernel-final-diagnostics.log)、[e1000fix-kernel-final.log](logs/e1000fix-kernel-final.log)、[e1000fix-primary.log](logs/e1000fix-primary.log)、[e1000fix-qemu-default-debug.log](logs/e1000fix-qemu-default-debug.log)、[e1000fix-qemu-dual-final.log](logs/e1000fix-qemu-dual-final.log)、[e1000fix-qemu-e1000-final.log](logs/e1000fix-qemu-e1000-final.log)、[e1000fix-vbox-baseline.log](logs/e1000fix-vbox-baseline.log)、[e1000fix-vbox-configuration.log](logs/e1000fix-vbox-configuration.log)、[e1000fix-vbox-device.log](logs/e1000fix-vbox-device.log)、[e1000fix-vbox-down-final.log](logs/e1000fix-vbox-down-final.log)、[e1000fix-vbox-off-final.log](logs/e1000fix-vbox-off-final.log)、[tcp32-compiled-off-matrix.log](logs/tcp32-compiled-off-matrix.log)、[tcp32-default-product.log](logs/tcp32-default-product.log)、[tcp32-final-httpd-client.log](logs/tcp32-final-httpd-client.log)、[tcp32-final-product-first.log](logs/tcp32-final-product-first.log)、[tcp32-final-product-second.log](logs/tcp32-final-product-second.log)、[tcp32-final-vbox-debug-nonic.log](logs/tcp32-final-vbox-debug-nonic.log)、[tcp32-final-vbox-first.log](logs/tcp32-final-vbox-first.log)、[tcp32-final-vbox-second.log](logs/tcp32-final-vbox-second.log)、[tcp32-hosted-off.log](logs/tcp32-hosted-off.log)、[tcp32-hosted-on.log](logs/tcp32-hosted-on.log)、[tcp32-hosted-rx32768.log](logs/tcp32-hosted-rx32768.log)、[tcp32-hosted-rx4096.log](logs/tcp32-hosted-rx4096.log)、[tcp32-hosted-static.log](logs/tcp32-hosted-static.log)、[tcp32-interp-off-matrix.log](logs/tcp32-interp-off-matrix.log)、[tcp32-invalid-rx32769.log](logs/tcp32-invalid-rx32769.log)、[tcp32-invalid-rx4095.log](logs/tcp32-invalid-rx4095.log)、[tcp32-linux-off-matrix.log](logs/tcp32-linux-off-matrix.log)、[tcp32-on-dual-vnet-matrix.log](logs/tcp32-on-dual-vnet-matrix.log)、[tcp32-on-e1000-matrix.log](logs/tcp32-on-e1000-matrix.log)、[tcp32-on-no-nic-matrix.log](logs/tcp32-on-no-nic-matrix.log)、[tcp32-rx32768-matrix.log](logs/tcp32-rx32768-matrix.log)、[tcp32-rx4096-matrix.log](logs/tcp32-rx4096-matrix.log)、[tcp32-vbox-debug.log](logs/tcp32-vbox-debug.log)
+
+## 线程组fd白名单（2026-10-17）
+
+[支持/拒绝表、黄金SHA及环境矩阵](../../docs/LINUX_THREADS.md#fd白名单续作验收2026-10-17)。
+默认Linux仍关，不是通用pthread；fd0–2、pipe/socket修改以及fork/exec/映射变更仍拒绝。
+本轮实际启动QEMU和VBox；首轮VBox失败、阶段诊断和缺少宿主网络测试端的失败均保留，未改写为PASS。
+负syscall返回rax在脱敏副本转成十进制（例如-11）；源日志哈希仍对应原字节。
+
+| 场景 | 证据 |
+| --- | --- |
+| hosted 机制/竞争/回收 | [Linux开](logs/threadfd-hosted-on-final.log)、[运行关](logs/threadfd-hosted-off-final.log)、[编译关](logs/threadfd-hosted-compiled-off.log) |
+| QEMU 真线程/hush/静态/动态/回收 | [单节点](logs/threadfd-on-final.log)、[双节点](logs/threadfd-dual-final.log)、[interp关](logs/threadfd-static-final.log) |
+| QEMU 原生关闭矩阵 | [运行关](logs/threadfd-off-final.log)、[编译关](logs/threadfd-compiled-off-final.log) |
+| VBox UEFI/SMP4/no-NIC，修复后两次全量PASS | [通过](logs/threadfd-vbox-fixed.log)、[复测](logs/threadfd-vbox-repeat.log) |
+| VBox 首轮失败，fork生命周期门拒绝次序问题 | [原失败](logs/threadfd-vbox-first-failure.log)、[阶段诊断](logs/threadfd-vbox-diag.log) |
+| QEMU 标准命令e1000实际wire | [补齐测试端后PASS](logs/threadfd-qemu-standard.log)、[断言](logs/threadfd-standard-assertions.log)、[先前缺测试端失败](logs/threadfd-standard-missing-peers.log) |
+| 默认Linux关产品shell/native hello/poweroff | [日志](logs/threadfd-default-product.log)、[断言](logs/threadfd-default-product-assertions.log) |
+
+本轮文件：
+
+[threadfd-hosted-on-final.log](logs/threadfd-hosted-on-final.log)、[threadfd-hosted-off-final.log](logs/threadfd-hosted-off-final.log)、[threadfd-hosted-compiled-off.log](logs/threadfd-hosted-compiled-off.log)、[threadfd-hosted-on-assertions.log](logs/threadfd-hosted-on-assertions.log)、[threadfd-hosted-off-assertions.log](logs/threadfd-hosted-off-assertions.log)、[threadfd-hosted-compiled-off-assertions.log](logs/threadfd-hosted-compiled-off-assertions.log)、[threadfd-on-final.log](logs/threadfd-on-final.log)、[threadfd-dual-final.log](logs/threadfd-dual-final.log)、[threadfd-static-final.log](logs/threadfd-static-final.log)、[threadfd-off-final.log](logs/threadfd-off-final.log)、[threadfd-compiled-off-final.log](logs/threadfd-compiled-off-final.log)、[threadfd-on-assertions.log](logs/threadfd-on-assertions.log)、[threadfd-dual-assertions.log](logs/threadfd-dual-assertions.log)、[threadfd-static-assertions.log](logs/threadfd-static-assertions.log)、[threadfd-off-assertions.log](logs/threadfd-off-assertions.log)、[threadfd-compiled-off-assertions.log](logs/threadfd-compiled-off-assertions.log)、[threadfd-vbox-fixed.log](logs/threadfd-vbox-fixed.log)、[threadfd-vbox-repeat.log](logs/threadfd-vbox-repeat.log)、[threadfd-vbox-assertions.log](logs/threadfd-vbox-assertions.log)、[threadfd-vbox-repeat-assertions.log](logs/threadfd-vbox-repeat-assertions.log)、[threadfd-vbox-first-failure.log](logs/threadfd-vbox-first-failure.log)、[threadfd-vbox-diag.log](logs/threadfd-vbox-diag.log)、[threadfd-standard-missing-peers.log](logs/threadfd-standard-missing-peers.log)、[threadfd-qemu-standard.log](logs/threadfd-qemu-standard.log)、[threadfd-standard-assertions.log](logs/threadfd-standard-assertions.log)、[threadfd-default-product.log](logs/threadfd-default-product.log)、[threadfd-default-product-assertions.log](logs/threadfd-default-product-assertions.log)、[threadfd-fixture-final.log](logs/threadfd-fixture-final.log)、[threadfd-kernel-final.log](logs/threadfd-kernel-final.log)、[threadfd-kernel-diagnostics.log](logs/threadfd-kernel-diagnostics.log)、[threadfd-iso-on.log](logs/threadfd-iso-on.log)、[threadfd-build-info.log](logs/threadfd-build-info.log)、[threadfd-iso-product.log](logs/threadfd-iso-product.log)
+
+## 2026-10-17：Linux 单线程受控迁移
+
+实现与禁止点见 [LINUX_MIGRATION.md](../../docs/LINUX_MIGRATION.md)。不是线程组迁移。
+以下均为本轮真实运行；hosted 不伪造硬件交接，关闭配置明确 skip。
+
+| 场景 | 证据 |
+| --- | --- |
+| hosted 开/运行关/编译关 | [开](logs/migrate-hosted-on.log)、[运行关](logs/migrate-hosted-off.log)、[编译关](logs/migrate-hosted-compiled-off.log) |
+| QEMU SMP4，Linux/interp 开，e1000 实际 UDP/TCP | [日志](logs/migrate-on-final.log)、[递归断言](logs/migrate-on-assertions.log) |
+| QEMU 双节点 SMP4，迁移/COW/commit | [日志](logs/migrate-dual-final.log)、[断言](logs/migrate-dual-assertions.log) |
+| QEMU 运行关闭/编译关闭 | [运行关](logs/migrate-off-final.log)、[编译关](logs/migrate-compiled-off-final.log) |
+| VBox 7.2.20 UEFI/SMP4/noNIC | [全量](logs/migrate-vbox-final.log)、[断言](logs/migrate-vbox-assertions.log) |
+| 默认产品，无 ISO 安装盘，重定向/持久化/nc/http-get/httpd/kill/poweroff | [首次](logs/migrate-product-first.log)、[冷启动](logs/migrate-product-second.log)、[宿主断言](logs/migrate-product-assertions.log) |
+| 首轮槽指针误匹配导致超时，保留失败 | [原日志](logs/migrate-qemu.log)、[状态诊断](logs/migrate-qemu-diag.log) |
+| 双节点首轮迁移通过、后续 KVM entry failed，保留失败 | [日志](logs/migrate-dual-first-failure.log) |
+
+双节点失败与 VBox/QEMU 同时运行发生在同一测试批次；这里只记录相关性，未断言根因。
+停止 VBox 后单独复测全量 PASS；失败日志不计入全绿证据。
+
+## 2026-10-17：静态 MicroPython 黄金展示品
+
+固定MicroPython1.24.1 + 定制musl1.2.5标量构建；不是通用Python/Linux。
+范围、哈希、配方及完整矩阵见 [LINUX_MICROPYTHON.md](../../docs/LINUX_MICROPYTHON.md)。
+
+| 场景 | 本轮证据 |
+| --- | --- |
+| 三个独立干净目录源码重建，字节一致 | [比较](logs/mp-repro-assertions.log)、[源码/工具链/产物摘要](logs/mp-build-summary.log)、[fixture及宿主断言](logs/mp-verify.log) |
+| hosted 开/运行关/编译关 | [开](logs/mp-hosted-on.log)、[运行关](logs/mp-hosted-off.log)、[编译关](logs/mp-hosted-compiled-off.log) |
+| QEMU SMP4，e1000实际wire，全量 | [单节点](logs/mp-on-final.log)、[递归断言](logs/mp-on-assertions.log) |
+| QEMU 双节点/interp关/运行关/编译关，全量 | [双节点](logs/mp-dual-final.log)、[interp关](logs/mp-static-final.log)、[运行关](logs/mp-off-final.log)、[编译关](logs/mp-compiled-off-final.log) |
+| VBox7.2.20 UEFI/SMP4/AHCI光驱/noNIC，全量 | [日志](logs/mp-vbox.log)、[断言](logs/mp-vbox-assertions.log) |
+| 解释器scope ENOSYS精确差值 | [单节点0](logs/mp-enosys.log)、[双节点0](logs/mp-dual-enosys.log) |
+| 无ISO产品盘，Linux开启，两次启动脚本+重定向持久化+原生网络/kill/poweroff | [首次](logs/mp-product-on-first.log)、[冷启动](logs/mp-product-on-second.log)、[断言](logs/mp-product-on-assertions.log) |
+| 无ISO产品盘，Linux默认关闭，原生回归 | [首次](logs/mp-product-off-first.log)、[冷启动](logs/mp-product-off-second.log)、[断言](logs/mp-product-off-assertions.log) |
+
+hosted明确skip guest执行；实际脚本/异常/GC/回收由CPL3 guest日志证明。
+产品断言不是全量selftest。原生/hush/ldso等既有黄金由递归断言保留。

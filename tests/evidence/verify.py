@@ -20,4 +20,4 @@ for doc in [base / 'README.md', *[root / name for name in sorted({d for e in man
         if 'tests/evidence/' in target or (doc == base / 'README.md' and not re.match(r'https?://', target)):
             assert (doc.parent / target.split('#')[0]).exists(), (str(doc), target)
             count += 1
-print(f'evidence verification: PASS ({len(manifest["files"])} log hashes, {count} repository links; no VM rerun)')
+print(f'evidence verification: PASS ({len(manifest["files"])} log hashes, {count} repository links; verification only, no VMs launched by this checker)')

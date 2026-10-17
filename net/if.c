@@ -52,5 +52,7 @@ void cm_net_dump_if(void)
 cm_iface_t *cm_net_primary_iface(void)
 {
     cm_iface_t *v=cm_if_get(cm_if_find("vnet0"));
-    return v?v:cm_if_get(cm_if_find("enet0"));
+    if(v && v->up)return v;
+    cm_iface_t *e=cm_if_get(cm_if_find("enet0"));
+    return e && e->up?e:NULL;
 }

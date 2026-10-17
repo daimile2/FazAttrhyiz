@@ -73,9 +73,19 @@ static int64_t open_at(int dirfd,uint64_t name,uint64_t flags)
     if(fd<3)caller()->stdio_mask|=1u<<fd;
     return fd;
 }
+/* Called under the group fd gate. Only FILE and synthetic console slots
+ * may change; blocking pipe/socket lifetimes remain outside this rollout. */
+static int grouped_file_slot(uint64_t fd)
+{
+    if(caller()->linux_console[fd])return 1;
+    cm_object_t *o=NULL;
+    if(cm_native_file_acquire((int)fd,0,&o))return 0;
+    cm_obj_release(o);return 1;
+}
 static int64_t close_file(uint64_t fd)
 {
     if(!valid(fd))return -9;
+    if(cm_linux_group(caller())->linux_grouped && (fd<3 || !grouped_file_slot(fd)))return -95;
     if(caller()->linux_console[fd]){caller()->fd[fd]=-1;caller()->linux_console[fd]=0;caller()->linux_cloexec[fd]=0;return 0;}
     int64_t r=cm_native_close(fd);if(!r)caller()->linux_cloexec[fd]=0;
     return cm_linux_errno(r);
@@ -96,6 +106,8 @@ static int64_t read_file(uint64_t fd,uint64_t address,uint64_t n)
 static int64_t dup_to(uint64_t fd,uint64_t target)
 {
     if(!valid(fd) || target>=CM_FD_MAX)return -9;
+    if(cm_linux_group(caller())->linux_grouped &&
+       (target<3 || !grouped_file_slot(fd) || (valid(target) && !grouped_file_slot(target))))return -95;
     if(fd==target)return (int64_t)target;
     if(cm_linux_pipe_is(caller(),fd))return cm_linux_pipe_dup(caller(),fd,target);
     if(cm_linux_socket_is(caller(),fd))return cm_linux_socket_dup(caller(),fd,target);

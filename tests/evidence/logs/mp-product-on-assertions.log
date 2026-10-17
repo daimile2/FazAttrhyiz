@@ -1,0 +1,4 @@
+micropython product no-ISO first: PASS (script/exit/native redirect/persist/Linux-L0/hush)
+product no-ISO first: PASS (native redirect/persist/nc/http-get/httpd/kill/poweroff)
+micropython product no-ISO second: PASS (script/exit/native redirect/persist/Linux-L0/hush)
+product no-ISO second: PASS (native redirect/persist/cold-read/poweroff)

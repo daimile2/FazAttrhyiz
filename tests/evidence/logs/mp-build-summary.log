@@ -1,0 +1,29 @@
+2026-10-17 actual static MicroPython builds and fixture identity
+gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+GNU ld (GNU Binutils for Ubuntu) 2.42
+Python 3.12.3
+QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)
+7.2.20r175154
+No kernel syscall, FPU, COW/commit, timer, buddy, KPTI or network core changes.
+mp-recipe1: raw source log sha256=946dc80123d3e647795512c9233ac3cb3c53fb8c93f564e5b429f0f8f8c99be5 bytes=1573267
+src/unistd/getcwd.c:25:1: warning: function may return address of local variable [-Wreturn-local-addr]
+src/unistd/getcwd.c:25:1: warning: function may return address of local variable [-Wreturn-local-addr]
+<temporary>/capmix-micropython-build1/micropython-1.24.1/ports/capmix/../../py/makeversionhdr.py:120: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+mp-recipe2: raw source log sha256=3e3cf6d45fd8b59e78cd47825c795f1fab7621589dbd588d632c1b8273654ce8 bytes=1573267
+src/unistd/getcwd.c:25:1: warning: function may return address of local variable [-Wreturn-local-addr]
+src/unistd/getcwd.c:25:1: warning: function may return address of local variable [-Wreturn-local-addr]
+<temporary>/capmix-micropython-build2/micropython-1.24.1/ports/capmix/../../py/makeversionhdr.py:120: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+mp-recipe-inrepo: raw source log sha256=8f9700b17adcb0a71787b8d0828938fcb391790659432c1ee7e71a03f1198b88 bytes=1581642
+src/unistd/getcwd.c:25:1: warning: function may return address of local variable [-Wreturn-local-addr]
+src/unistd/getcwd.c:25:1: warning: function may return address of local variable [-Wreturn-local-addr]
+<repo>/build/micropython-repro-check/micropython-1.24.1/ports/capmix/../../py/makeversionhdr.py:120: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+Three clean builds are byte-identical to the pinned fixture (including final recipe inside parent Git checkout).
+44d4937a8a4e8d3824e6eb62dcc32beb2ef337add70bf9be20a10bde0c55f498  scripts/build-micropython.sh
+206ad3d7e1957e106541d2f53f1d3a9e22f3b3f89cd7ec0ed5fcbfca110180cf  tests/fixtures/micropython.elf
+a291173de1d680786a66dd2381805b6d134defaecea670a560dc7e7d8de540ad  third_party/micropython/micropython-1.24.1.tar.gz
+d0242c74fa4c174aa6e760320fcede26fdd28174d3681759590198a98cbec51e  capmix.elf
+f499e6880bb5a31020707cf111c18aa11f2b80e784826d8b1c6f1d96e00c94f4  <temporary>/capmix-mp-on.iso
+1c8dd94ab558bb6da7304d6577387132e5adb71ec9c20fddea8a16fd9e3d549c  <temporary>/capmix-mp-off.iso
+70ae6545b309af4394ca5406e0041de3c24680e0a282a3362b6e50ff6f60bb64  <temporary>/capmix-mp-static.iso
+4cded957a97305860dc735f858f9828e635f93e06f121529521813978b425243  <temporary>/capmix-mp-compiled-off.iso
+972bffa5d161799461c5928e4b6460eb070639268abd17cb73820f324da3dab5  capmix.iso

@@ -94,6 +94,7 @@ cm_error_t cm_net_init(void);
 int        cm_if_add(const char *name, uint32_t addr);
 cm_iface_t *cm_if_get(int id);
 int cm_if_find(const char *name);
+/* First link-up hardware interface: virtio-net > e1000; NULL if none up. */
 cm_iface_t *cm_net_primary_iface(void);
 
 cm_error_t cm_pkt_parse(const uint8_t *raw, uint16_t len, cm_pkt_view_t *v);

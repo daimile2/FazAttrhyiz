@@ -163,4 +163,4 @@ arch硬件桩unused警告。本轮没有修改KPTI、buddy锁、时钟、TCP/RTO
 - 本文、文档导航/总览、L0/L1/L2/L4阶段快照提示及VBox手册：当前边界和实测矩阵。
 
 线程续作：已有 [有界clone/futex](LINUX_THREADS.md)。本文单线程/不支持线程的说明为此前范围；
-新子集仍不等于通用pthread，线程组内fork/exec/映射与fd表变更暂拒绝，未创建线程的原路径保留。
+新子集仍不等于通用pthread，线程组内fork/exec/映射变更仍拒绝；fd仅放宽[FILE/console dup/close白名单](LINUX_THREADS.md#受控fd白名单与仍冻结范围)，未创建线程的原路径保留。

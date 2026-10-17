@@ -16,7 +16,7 @@ p.add_argument('--log', type=Path, default=Path('/tmp/capmix-enosys.log'))
 p.add_argument('--report', type=Path)
 p.add_argument('--parse-only', action='store_true')
 p.add_argument('--legacy', action='store_true', help='read truncated old per-process lines; lower bounds only')
-p.add_argument('--scope', choices=('all', 'hush', 'negative'), default='hush')
+p.add_argument('--scope', choices=('all', 'hush', 'negative', 'micropython'), default='hush')
 p.add_argument('--nic', choices=('none', 'e1000', 'virtio-net-pci'), default='none')
 p.add_argument('--dual', action='store_true')
 p.add_argument('--disabled', action='store_true')
@@ -24,7 +24,7 @@ p.add_argument('--timeout', type=int, default=30)
 a = p.parse_args()
 if not a.parse_only:
     for manifest in ('tests/fixtures/linux-l0.sha256', 'tests/fixtures/busybox-l1.sha256',
-                     'tests/fixtures/busybox-sh.sha256', 'tests/fixtures/ldso/SHA256SUMS'):
+                     'tests/fixtures/busybox-sh.sha256', 'tests/fixtures/micropython.sha256', 'tests/fixtures/ldso/SHA256SUMS'):
         for line in Path(manifest).read_text().splitlines():
             if not line.strip() or line.startswith('#'):
                 continue
@@ -80,8 +80,10 @@ else:
         assert 'linux sh selftest: PASS (0 failures)' in text
     if not (a.disabled and a.scope != 'all'):
         assert len(totals) == 1 and sum(counts.values()) == int(totals[0]), 'missing/partial/duplicate histogram'
-    if a.scope == 'hush':
-        assert not counts, 'fixed hush corpus must have ENOSYS=0'
+    if a.scope in ('hush', 'micropython'):
+        assert not counts, 'fixed '+a.scope+' corpus must have ENOSYS=0'
+    if a.scope == 'micropython' and not a.disabled:
+        assert 'micropython selftest: PASS (0 failures)' in text
     label = a.scope + ' exact buckets (>=512 grouped, not individually ranked)'
 names = {13: 'rt_sigaction', 14: 'rt_sigprocmask', 41: 'socket', 54: 'setsockopt', 55: 'getsockopt'}
 lines = [label, 'nr\tcount\tname']

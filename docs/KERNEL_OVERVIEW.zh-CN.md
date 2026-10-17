@@ -1139,5 +1139,21 @@ MSS、单待确认段、RTO、原生/Linux I/O 与 fd 上限不变。
 ### 有界Linux线程续作
 
 已有同CPU线程组clone、进程内FUTEX_WAIT/WAKE、独立FS与最后线程回收；
-每组累计最多8个执行记录，线程组内映射/fd表变更和fork/exec暂拒绝。
+每组累计最多8个执行记录、固定同CPU；映射变更和fork/exec仍拒绝，fd仅允许[受控FILE/console dup/close](LINUX_THREADS.md#受控fd白名单与仍冻结范围)。
 固定静态探针与完整边界见 [LINUX_THREADS](LINUX_THREADS.md)，不宣称通用pthread。
+
+### Linux 单线程受控跨 CPU 迁移
+
+新增 Linux 203 `sched_setaffinity` 的单目标、自身迁移子集；syscall 完整退栈后，
+旧 CPU 调度器重建入口现场，目标 CPU 恢复用户寄存器与 FS/TLS。
+线程组、fork 子进程/未回收子进程、socket/pipe 持有者暂拒绝；没有自动负载均衡。
+跨 CPU 往返、失败回滚、迁移后真实 fork/COW 与页/commit 回收已在 QEMU 和 VBox
+本轮验证。范围、禁止点与仓库证据见 [LINUX_MIGRATION.md](LINUX_MIGRATION.md)。
+
+### 静态解释器展示品：MicroPython
+
+Linux opt-in 产品路径可运行钉住的 MicroPython1.24.1 + musl1.2.5 静态标量子集，
+支持打印、整数/大整数、最小脚本文件与退出码。固定256KiB GC、8KiB源码缓冲，
+禁用浮点、线程、外部模块、JIT和REPL；不是通用Python/Linux兼容。
+配方、哈希、限制和本轮证据见 [LINUX_MICROPYTHON.md](LINUX_MICROPYTHON.md)。
+默认Linux仍关闭，原生/hush/ldso黄金保留。

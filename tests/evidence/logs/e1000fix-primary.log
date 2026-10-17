@@ -1,0 +1,1 @@
+net primary verified: absent/down=none up-recovery=ok priority=virtio>e1000 fallback=ok

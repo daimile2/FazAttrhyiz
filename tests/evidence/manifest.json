@@ -1,7 +1,355 @@
 {
   "archive_date": "2026-10-17",
-  "kind": "sanitized retained logs; no tests rerun",
+  "kind": "sanitized historical logs and dated regression evidence; see per-file evidence_round and documents",
   "files": [
+    {
+      "source_name": "e1000fix-build-id.log",
+      "source_sha256": "271d568ad9c04bfb64fad68dbf8f946d4ce02e8c180561361e6bfc0aa62515b1",
+      "archive": "logs/e1000fix-build-id.log",
+      "archive_sha256": "271d568ad9c04bfb64fad68dbf8f946d4ce02e8c180561361e6bfc0aa62515b1",
+      "source_bytes": 350,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-check-baseline-rejected.log",
+      "source_sha256": "e8f714e861379e85eb7e2f3419ebbad3e3227863f7217fdcde0d8ad758238a06",
+      "archive": "logs/e1000fix-check-baseline-rejected.log",
+      "archive_sha256": "0b6505cb3ef4c683c56cfdcbbdbe7c8bc035b766cdf81f4f130bb3d22a0198e7",
+      "source_bytes": 294,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-check-hosted-off-final.log",
+      "source_sha256": "4bc93ff8ca7a0b255a764da3af4fdf634ec7f0c38ef9d87f248fdaa9ddbc6991",
+      "archive": "logs/e1000fix-check-hosted-off-final.log",
+      "archive_sha256": "4bc93ff8ca7a0b255a764da3af4fdf634ec7f0c38ef9d87f248fdaa9ddbc6991",
+      "source_bytes": 443,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-check-qemu-default-debug.log",
+      "source_sha256": "bd82bcabb650ec6ec5ddaa1ad5a63e9ae595b70a08c198b36cd1599205889b76",
+      "archive": "logs/e1000fix-check-qemu-default-debug.log",
+      "archive_sha256": "bd82bcabb650ec6ec5ddaa1ad5a63e9ae595b70a08c198b36cd1599205889b76",
+      "source_bytes": 483,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-check-qemu-dual-final.log",
+      "source_sha256": "4d90cad6d0e1b7d5940c3e127dafd5a56f03e9e487385d37996ba3cce1898cc6",
+      "archive": "logs/e1000fix-check-qemu-dual-final.log",
+      "archive_sha256": "4d90cad6d0e1b7d5940c3e127dafd5a56f03e9e487385d37996ba3cce1898cc6",
+      "source_bytes": 485,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-check-qemu-e1000-final.log",
+      "source_sha256": "58cce94d04a977261f3f56e0c7c517d8b70e6fff05e4314f9f38a24e42f7fbe2",
+      "archive": "logs/e1000fix-check-qemu-e1000-final.log",
+      "archive_sha256": "58cce94d04a977261f3f56e0c7c517d8b70e6fff05e4314f9f38a24e42f7fbe2",
+      "source_bytes": 575,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-check-vbox-down-final.log",
+      "source_sha256": "9940f36fa932918694ece6445a79058e666a036bbf2690ceaaa7e66a42ab22ac",
+      "archive": "logs/e1000fix-check-vbox-down-final.log",
+      "archive_sha256": "9940f36fa932918694ece6445a79058e666a036bbf2690ceaaa7e66a42ab22ac",
+      "source_bytes": 580,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-check-vbox-off-final.log",
+      "source_sha256": "58cce94d04a977261f3f56e0c7c517d8b70e6fff05e4314f9f38a24e42f7fbe2",
+      "archive": "logs/e1000fix-check-vbox-off-final.log",
+      "archive_sha256": "58cce94d04a977261f3f56e0c7c517d8b70e6fff05e4314f9f38a24e42f7fbe2",
+      "source_bytes": 575,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-default-product-assertions.log",
+      "source_sha256": "c2f4a20e754cb86f4e6b8813a2ab7dc811a7f067da264b0e6aec014a7f8f7926",
+      "archive": "logs/e1000fix-default-product-assertions.log",
+      "archive_sha256": "c2f4a20e754cb86f4e6b8813a2ab7dc811a7f067da264b0e6aec014a7f8f7926",
+      "source_bytes": 68,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-default-product.log",
+      "source_sha256": "f1d98c2fd2eae815a4d757e63b72d41ffeee77294cad5734f2abf9d21b045e37",
+      "archive": "logs/e1000fix-default-product.log",
+      "archive_sha256": "7fb8603cd937d4bd796b2fb904ecda517cbec07d32b18f33c20bd65b18b894bb",
+      "source_bytes": 10718,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-final-install.log",
+      "source_sha256": "e243648f7c1d976e213b93cdd2c7d04c474a0f5b30e352c0c7394324972f123f",
+      "archive": "logs/e1000fix-final-install.log",
+      "archive_sha256": "23dbae54e9a436a2299d46d16d8b5d4aed73d0eb02b81aaee82e3ddea9c49ff6",
+      "source_bytes": 1014,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-final-product-assertions.log",
+      "source_sha256": "f71016f51315b8ff2cef378493467cc278cddde6db83ef01d148d80ca264c2ee",
+      "archive": "logs/e1000fix-final-product-assertions.log",
+      "archive_sha256": "f71016f51315b8ff2cef378493467cc278cddde6db83ef01d148d80ca264c2ee",
+      "source_bytes": 158,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-final-product-first.log",
+      "source_sha256": "0af1e0dbcb31dc3f962ede6fee23bbf32839c55a5260f9dc2b07ec8ed164d02e",
+      "archive": "logs/e1000fix-final-product-first.log",
+      "archive_sha256": "75f853300dd979e8098c05a01cd981d8225e7286fd69d351076e63d5c91b34e1",
+      "source_bytes": 17230,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-final-product-httpd-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/e1000fix-final-product-httpd-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-final-product-second.log",
+      "source_sha256": "2303fc566eff8d6f9dc07fbc77b8172d6ce86ad7532308c283a19beba9a00e42",
+      "archive": "logs/e1000fix-final-product-second.log",
+      "archive_sha256": "c7971d392e701f5946edcac4c93eb69a4bb00de7cc3eb9f0fc3e8147465c005b",
+      "source_bytes": 10498,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-hosted-off-final.log",
+      "source_sha256": "bc5d04fe19d785931e691c0a7bd114c269351bf3756d0da527f58640baa54fc7",
+      "archive": "logs/e1000fix-hosted-off-final.log",
+      "archive_sha256": "9ddede2643070c02a72f458479820ea144033d509cd8de71f539bcb947067e3f",
+      "source_bytes": 60744,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-iso-final.log",
+      "source_sha256": "95596c2341b8a5a99c5f2a1bb7d97287fcf1fc9663c7a3de294f0b0150983bb4",
+      "archive": "logs/e1000fix-iso-final.log",
+      "archive_sha256": "ad1ffcf14a41f05e17e86b3d52a7e82153864c537b79e748943c5c92a949adf9",
+      "source_bytes": 1961,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-iso-product-final.log",
+      "source_sha256": "162638ec7a88200bde0a2eb889f7426b1261773d348263755748c9d1024b86ed",
+      "archive": "logs/e1000fix-iso-product-final.log",
+      "archive_sha256": "a9b272efc4b6d72f0922b703b3b719c74187e9b80c7ff82f9cbf66589763af95",
+      "source_bytes": 1943,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-kernel-final-diagnostics.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive": "logs/e1000fix-kernel-final-diagnostics.log",
+      "archive_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_bytes": 0,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-kernel-final.log",
+      "source_sha256": "e7a9428260c810498585facceb7662d07122de6accdbbad12ee85602b3061a15",
+      "archive": "logs/e1000fix-kernel-final.log",
+      "archive_sha256": "e7a9428260c810498585facceb7662d07122de6accdbbad12ee85602b3061a15",
+      "source_bytes": 2244,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-primary.log",
+      "source_sha256": "21b59b338b1dfcbc3a1c180efcca12ab08f3558538b98c9a8e5f7eaeff0973d4",
+      "archive": "logs/e1000fix-primary.log",
+      "archive_sha256": "21b59b338b1dfcbc3a1c180efcca12ab08f3558538b98c9a8e5f7eaeff0973d4",
+      "source_bytes": 88,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-qemu-default-debug.log",
+      "source_sha256": "4855887dce45289338a3fe04fb0be61c3159a1023c3159c0257b6c1ae375acab",
+      "archive": "logs/e1000fix-qemu-default-debug.log",
+      "archive_sha256": "66135a5f30a1e1b28b07bb23c5e9a27a130c72d470f3c417e17a0d558fbf113e",
+      "source_bytes": 87167,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-qemu-dual-final.log",
+      "source_sha256": "d19d194255dfd5865e55f4168a22e7c28860618a0c0916ac579b31a8cf12ee74",
+      "archive": "logs/e1000fix-qemu-dual-final.log",
+      "archive_sha256": "2d280081fd2d2a5931563f706fb6e3c35bd9c91eaa6fc538f8b386050a6c97c4",
+      "source_bytes": 96501,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-qemu-e1000-final.log",
+      "source_sha256": "60ac4b9cb3ef95977c694f88ba1b5255f5ec1d59f623deeaf2e2428a3cb2c65b",
+      "archive": "logs/e1000fix-qemu-e1000-final.log",
+      "archive_sha256": "4c9caa0bf96bf4b62c8117c1a0707a3cd0f783ce0aeb6e4a3ff0d73f94d5d945",
+      "source_bytes": 87083,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-vbox-baseline.log",
+      "source_sha256": "bed87feb152311446083a9f09ae0726cad0dcb437339b3ee5047f7fd20bc652d",
+      "archive": "logs/e1000fix-vbox-baseline.log",
+      "archive_sha256": "46d854a4fcca1c6ce233bc9526aebce020c766524990f245c62d0b8a21a97826",
+      "source_bytes": 68934,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-vbox-configuration.log",
+      "source_sha256": "702688f1b3cf473bf4167c524d6ac746f6c6661f9d9554244c32371cb6e08761",
+      "archive": "logs/e1000fix-vbox-configuration.log",
+      "archive_sha256": "c5bb809a8b4722d49f308a001b302b2a0a922c460edb80d0b5bc3db80a1cb184",
+      "source_bytes": 204,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-vbox-device.log",
+      "source_sha256": "7c3e0d9db7a2aabb40f93af9188fcd4d93c4fa38e39e6cd4c12d6ae91381f141",
+      "archive": "logs/e1000fix-vbox-device.log",
+      "archive_sha256": "7c3e0d9db7a2aabb40f93af9188fcd4d93c4fa38e39e6cd4c12d6ae91381f141",
+      "source_bytes": 702,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-vbox-down-final.log",
+      "source_sha256": "e05ff5f1bd60ff14c552cfb976dcd11f4b45d21fc866eba9a142e294e97ea3d0",
+      "archive": "logs/e1000fix-vbox-down-final.log",
+      "archive_sha256": "a328de3b59b98d8f72e4dc1ea908347669a837d9dbab6382d4b3a113eb3fb39a",
+      "source_bytes": 69216,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
+    {
+      "source_name": "e1000fix-vbox-off-final.log",
+      "source_sha256": "5eab40b5bbfebeef9d02196e446219ffaecfc73cb4f5a9e5e49d5b0d08d80186",
+      "archive": "logs/e1000fix-vbox-off-final.log",
+      "archive_sha256": "168b285b728d98d0a9a5c2408eb0f2696605fd8b0c4dbb5e1ef7ddbb5a44d5d5",
+      "source_bytes": 75246,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "e1000-debug-fix-2026-10-17"
+    },
     {
       "source_name": "enosys-compiled-off.log",
       "source_sha256": "a31a044c3d989d08630d398e8810f08e8b331198efce8359f467856ff8bacc77",
@@ -1814,6 +2162,678 @@
       ]
     },
     {
+      "source_name": "tcp32-compiled-off-matrix.log",
+      "source_sha256": "dc0ac2aa555879b0672e93f8e5ed1707f3509f818b45d3e53c67889c784bbdf5",
+      "archive": "logs/tcp32-compiled-off-matrix.log",
+      "archive_sha256": "fc2b8783f9cd01421fd697a7676340eac54df117465045d2dd22944e4e594081",
+      "source_bytes": 85528,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-default-product.log",
+      "source_sha256": "25d9474653e5dc236b518b000e5a7f7a2594dacc4345b447109e386506fd9c44",
+      "archive": "logs/tcp32-default-product.log",
+      "archive_sha256": "0118f345d987c1e94075ac7587fe7218386f2a71f724fefa3221ac2183603e83",
+      "source_bytes": 10718,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-final-httpd-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/tcp32-final-httpd-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-final-product-first.log",
+      "source_sha256": "f2387e42c2029bb076455fe50872c481de73f368404751041e25ab596c57eb04",
+      "archive": "logs/tcp32-final-product-first.log",
+      "archive_sha256": "7e9d98d13d40f674f9da12dcea7231f632d155267cb547cb546621ae4ad3acd0",
+      "source_bytes": 37828,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-final-product-second.log",
+      "source_sha256": "898db6d55a8fae2c8332ce23a342cb09e12eacdb6582ac4beaf92ba5e3ec3b40",
+      "archive": "logs/tcp32-final-product-second.log",
+      "archive_sha256": "e7b4a37aaec301faf5b11a0a16aea7755ed958dfbea030cf95b0cb16c471562f",
+      "source_bytes": 22889,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-final-vbox-debug-nonic.log",
+      "source_sha256": "87d42b98aac140b82f86d9e1aef65ccd896cb7b6a4b8f7a151506d9d8654758c",
+      "archive": "logs/tcp32-final-vbox-debug-nonic.log",
+      "archive_sha256": "eda703895e65cd74fc4a34f6e485fee4695b81a2497084f81051ef734653f814",
+      "source_bytes": 68275,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-final-vbox-first.log",
+      "source_sha256": "b6dc60256b1df4891ffccdbf2878a141bed9e245e5cbb15ced43c398a18d5ed1",
+      "archive": "logs/tcp32-final-vbox-first.log",
+      "archive_sha256": "56fe0e9586e07d92e43ec7941632ff023914e61b1634bf18fbdfbad20ec04ae1",
+      "source_bytes": 26605,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-final-vbox-second.log",
+      "source_sha256": "5ff70ed3dd02f37bc60154d59e5e060622039384ac24f94f06f5d019e95f31a8",
+      "archive": "logs/tcp32-final-vbox-second.log",
+      "archive_sha256": "2e82e666922015b4f544e9db65716da9ff1f1b6ceae537b74c1735d1b199be89",
+      "source_bytes": 23928,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-hosted-off.log",
+      "source_sha256": "4b7d40d08dc054e5c13056e862f11cc44aefbe8d63ace6c7a8f9ce3a5649e435",
+      "archive": "logs/tcp32-hosted-off.log",
+      "archive_sha256": "53b7f2a6c672b1ea79df00e8d3f662228763c8e624399024a333282e54d0124d",
+      "source_bytes": 55325,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-hosted-on.log",
+      "source_sha256": "c4cb058472cba3fb09d0d21a138863511e5e2e5e3cbfd3a2d29fbba0944ade7d",
+      "archive": "logs/tcp32-hosted-on.log",
+      "archive_sha256": "38bf6ae131891da978cba01be740b493e418195ba3bfe56b389527b866fbbffd",
+      "source_bytes": 64353,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-hosted-rx32768.log",
+      "source_sha256": "6c9c1e8059cc4a1d894358c50cbfd4512e30587a1640e55ca8eccfa75c2aa839",
+      "archive": "logs/tcp32-hosted-rx32768.log",
+      "archive_sha256": "7bb4f3cc2216f1652025d51f3be9f2483f45ec12527f2616ff81ff1bbed0128d",
+      "source_bytes": 67907,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-hosted-rx4096.log",
+      "source_sha256": "344345d3f57494e9d5d9c7be7d87865d9613af2d88ffc44b5631bf6e144dc90c",
+      "archive": "logs/tcp32-hosted-rx4096.log",
+      "archive_sha256": "4754db171361dd560e683f028e39f1462e8a33ed0d45bcf8aed2eb18207569dd",
+      "source_bytes": 67903,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-hosted-static.log",
+      "source_sha256": "ff8e94e9b03412871e46c17c4104749ea07ccc67b36607c824c9b9083781350e",
+      "archive": "logs/tcp32-hosted-static.log",
+      "archive_sha256": "6f4847fb5d8f6293affee50ea5b8073e3363c0039e547120a98ec4eee2f37c11",
+      "source_bytes": 67907,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-interp-off-matrix.log",
+      "source_sha256": "a51615063bd632b598ba7ac64bb72992ffe1f208347619cff3bddca5c52316d8",
+      "archive": "logs/tcp32-interp-off-matrix.log",
+      "archive_sha256": "c31ca41370a5e8d7846abb67b075c723568e528024744bbd35993ce223019e92",
+      "source_bytes": 112337,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-invalid-rx32769.log",
+      "source_sha256": "63c00a5516328a3e00034f2a91e1aed69da408eedd759c7dcce24bed86f68c4c",
+      "archive": "logs/tcp32-invalid-rx32769.log",
+      "archive_sha256": "63c00a5516328a3e00034f2a91e1aed69da408eedd759c7dcce24bed86f68c4c",
+      "source_bytes": 262,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-invalid-rx4095.log",
+      "source_sha256": "63c00a5516328a3e00034f2a91e1aed69da408eedd759c7dcce24bed86f68c4c",
+      "archive": "logs/tcp32-invalid-rx4095.log",
+      "archive_sha256": "63c00a5516328a3e00034f2a91e1aed69da408eedd759c7dcce24bed86f68c4c",
+      "source_bytes": 262,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-linux-off-matrix.log",
+      "source_sha256": "ee1e3887722bfc6551cba4e7a99bb273ed0b05178143cedf07272793b078e908",
+      "archive": "logs/tcp32-linux-off-matrix.log",
+      "archive_sha256": "b00c3a102b58f93d487c15eb40059d917d9a2c236e4595b007f7107bbc71313b",
+      "source_bytes": 76014,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-on-dual-vnet-matrix.log",
+      "source_sha256": "234ed247ac236b45552a291a721cc83ec56cc7db4859064dde485fc4529642b1",
+      "archive": "logs/tcp32-on-dual-vnet-matrix.log",
+      "archive_sha256": "9c6de9e660f273f80596d6d0161f63b7d2d9b5447828556738fc8365ee715de2",
+      "source_bytes": 145265,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-on-e1000-matrix.log",
+      "source_sha256": "2214dc552e44905f4daef431e902bb8b7f4c809c4f01512114e57f50ce992678",
+      "archive": "logs/tcp32-on-e1000-matrix.log",
+      "archive_sha256": "c29f913c17ed26ceb33711ad60e983d75a1e98f7a4852cc9b4f4227164bcdde7",
+      "source_bytes": 135925,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-on-no-nic-matrix.log",
+      "source_sha256": "48d168b2939b194a728a031c45b5e2e36c897fd3fb14ec003c076bf9df89b8b3",
+      "archive": "logs/tcp32-on-no-nic-matrix.log",
+      "archive_sha256": "672e12defddb9b0b4e6d68836f25e5058428d5d5e19c687a7d589310e5f1433b",
+      "source_bytes": 124932,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-rx32768-matrix.log",
+      "source_sha256": "19f27841f086187383d9da0f17e7b079ca130210e061d4cd4c76f3d408b9f037",
+      "archive": "logs/tcp32-rx32768-matrix.log",
+      "archive_sha256": "b03421ddfd4d2662425ec4eba854f2d0a00018a34b985c51f9ed9a83c7ae5e90",
+      "source_bytes": 145175,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-rx4096-matrix.log",
+      "source_sha256": "68560aae839bcda16d2b8fafa9b850e7e0983caf667b09af41e5d9a2c508cb3e",
+      "archive": "logs/tcp32-rx4096-matrix.log",
+      "archive_sha256": "5be256a21bead9e3ebea57e312415f5c4e3e04a8e5a69858f60c7b33d1522bae",
+      "source_bytes": 135931,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "tcp32-vbox-debug.log",
+      "source_sha256": "c4bdc9e07e519871c8d01be5d1a487f0fe360149f9ad006b4890da4412d37ce2",
+      "archive": "logs/tcp32-vbox-debug.log",
+      "archive_sha256": "3a37476ece7fddfb4d7d11ca0b1245e55cbcd0a720befd40a6421d7ff25aa79a",
+      "source_bytes": 69828,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/TCP_POOL.md"
+      ],
+      "evidence_round": "tcp-pool-original"
+    },
+    {
+      "source_name": "threadfd-build-info.log",
+      "source_sha256": "ffe4a59ad8f2fac92bfecc056f3f51e3966378a9c8c6eece8bf3797403769245",
+      "archive": "logs/threadfd-build-info.log",
+      "archive_sha256": "ffe4a59ad8f2fac92bfecc056f3f51e3966378a9c8c6eece8bf3797403769245",
+      "source_bytes": 808,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-compiled-off-assertions.log",
+      "source_sha256": "d15303a01b2bdfc8be5fade7d16ac4c08390a0b017faadcbfa8421ea8116b8c8",
+      "archive": "logs/threadfd-compiled-off-assertions.log",
+      "archive_sha256": "d15303a01b2bdfc8be5fade7d16ac4c08390a0b017faadcbfa8421ea8116b8c8",
+      "source_bytes": 751,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-compiled-off-final.log",
+      "source_sha256": "b0f9aa16aa8fab4f0c2a2816f52c608ca4724b768dbf28bf45a90dc425aa9cb8",
+      "archive": "logs/threadfd-compiled-off-final.log",
+      "archive_sha256": "72a117ad0b8da062b9dba1ecb17d305981a222f91c1eb4f93106048d7f323a60",
+      "source_bytes": 79297,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-default-product-assertions.log",
+      "source_sha256": "c2f4a20e754cb86f4e6b8813a2ab7dc811a7f067da264b0e6aec014a7f8f7926",
+      "archive": "logs/threadfd-default-product-assertions.log",
+      "archive_sha256": "c2f4a20e754cb86f4e6b8813a2ab7dc811a7f067da264b0e6aec014a7f8f7926",
+      "source_bytes": 68,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-default-product.log",
+      "source_sha256": "d788fb553b883d33110eb0a0916e06626dfb5a0fbd76819e241d70e67d11034d",
+      "archive": "logs/threadfd-default-product.log",
+      "archive_sha256": "16789e860ffbe9e2f57e749e1e71de142954275ff1a9d91f4361bfb4656fc073",
+      "source_bytes": 10639,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-dual-assertions.log",
+      "source_sha256": "fdc637a6dff9d6c0bb33850191e87c91d0122ffa7a203c34d019414cdc13e959",
+      "archive": "logs/threadfd-dual-assertions.log",
+      "archive_sha256": "fdc637a6dff9d6c0bb33850191e87c91d0122ffa7a203c34d019414cdc13e959",
+      "source_bytes": 796,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-dual-final.log",
+      "source_sha256": "6a74f848ecce8674ac5477199fac8b3116fcd1d1f23c47aefa35b28681d5e176",
+      "archive": "logs/threadfd-dual-final.log",
+      "archive_sha256": "4b22229725a035210edf69df5bb0239930ff168fa289a2d0b46e5378f4e0bdf7",
+      "source_bytes": 157048,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-fixture-final.log",
+      "source_sha256": "c7270f4c9825f78dacc6b97de76852c839c1001edaf14a277dcb910dd36d74aa",
+      "archive": "logs/threadfd-fixture-final.log",
+      "archive_sha256": "c7270f4c9825f78dacc6b97de76852c839c1001edaf14a277dcb910dd36d74aa",
+      "source_bytes": 371,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-hosted-compiled-off-assertions.log",
+      "source_sha256": "03778fe701caa2eab741419078c8af0c72bb722f8e4231614b0b264405f4f788",
+      "archive": "logs/threadfd-hosted-compiled-off-assertions.log",
+      "archive_sha256": "03778fe701caa2eab741419078c8af0c72bb722f8e4231614b0b264405f4f788",
+      "source_bytes": 522,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-hosted-compiled-off.log",
+      "source_sha256": "1924593e501b8110e6b9028f72d3505a43b32dd6cde58e2398e471dc8aa1b1c2",
+      "archive": "logs/threadfd-hosted-compiled-off.log",
+      "archive_sha256": "0b3496c6e12c152eec23c790de3d63b301a069b5ada773df1cc13b0307f6c986",
+      "source_bytes": 60745,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-hosted-off-assertions.log",
+      "source_sha256": "03778fe701caa2eab741419078c8af0c72bb722f8e4231614b0b264405f4f788",
+      "archive": "logs/threadfd-hosted-off-assertions.log",
+      "archive_sha256": "03778fe701caa2eab741419078c8af0c72bb722f8e4231614b0b264405f4f788",
+      "source_bytes": 522,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-hosted-off-final.log",
+      "source_sha256": "c85955a91922aefcfb45d8fb1122a84b010aa60dd61b3037907143d22bb81e13",
+      "archive": "logs/threadfd-hosted-off-final.log",
+      "archive_sha256": "7f2a2f31122f80e8f7a50812f81ef2b3025dcfe42ada08e02407b442f54b0a29",
+      "source_bytes": 55651,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-hosted-on-assertions.log",
+      "source_sha256": "34290dc19b77973fb00126e839751609b79bcbda7e58982d090c7e9818967fb6",
+      "archive": "logs/threadfd-hosted-on-assertions.log",
+      "archive_sha256": "34290dc19b77973fb00126e839751609b79bcbda7e58982d090c7e9818967fb6",
+      "source_bytes": 554,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-hosted-on-final.log",
+      "source_sha256": "91f351791c6e62c84c6ad8c8d61de7e80e248fe2535ae2af90a588d913e85880",
+      "archive": "logs/threadfd-hosted-on-final.log",
+      "archive_sha256": "8c3cdeff1c67c2951c388f0abd0e156133f7342bf64a2e22a26d041dce5cd2fa",
+      "source_bytes": 72295,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-iso-on.log",
+      "source_sha256": "fe46d9df3ac9e4e52bd8b188985c637906cd0041c1bab58d9d6d8d5803a65444",
+      "archive": "logs/threadfd-iso-on.log",
+      "archive_sha256": "9f3efc3db29fb36b5ed6d504e823b689da3007f2a12dae7fc26b814620121811",
+      "source_bytes": 1961,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-iso-product.log",
+      "source_sha256": "f62926d3ba2098d334f51c0b08ca6a8d3a86550ee2ca7563afe2595d6b33addb",
+      "archive": "logs/threadfd-iso-product.log",
+      "archive_sha256": "2940ca1c9b6dfc08abcf59da616c4bd9e798d5d656a8c19e524040193ebcd582",
+      "source_bytes": 1943,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-kernel-diagnostics.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive": "logs/threadfd-kernel-diagnostics.log",
+      "archive_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_bytes": 0,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-kernel-final.log",
+      "source_sha256": "e7a9428260c810498585facceb7662d07122de6accdbbad12ee85602b3061a15",
+      "archive": "logs/threadfd-kernel-final.log",
+      "archive_sha256": "e7a9428260c810498585facceb7662d07122de6accdbbad12ee85602b3061a15",
+      "source_bytes": 2244,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-off-assertions.log",
+      "source_sha256": "1ae5ca6a7aaac9aa8119655bf663b62dfaaf9f04073a657506c6af30d35d83a4",
+      "archive": "logs/threadfd-off-assertions.log",
+      "archive_sha256": "1ae5ca6a7aaac9aa8119655bf663b62dfaaf9f04073a657506c6af30d35d83a4",
+      "source_bytes": 751,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-off-final.log",
+      "source_sha256": "4e329d5262811b58b745e4d97002eb906f608974e549000cc402aa036e47c29a",
+      "archive": "logs/threadfd-off-final.log",
+      "archive_sha256": "ba94292bcdb1d49964c5d0086f50e895cb69e94bb003f9a1d604472089b567a6",
+      "source_bytes": 79297,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-on-assertions.log",
+      "source_sha256": "fdc637a6dff9d6c0bb33850191e87c91d0122ffa7a203c34d019414cdc13e959",
+      "archive": "logs/threadfd-on-assertions.log",
+      "archive_sha256": "fdc637a6dff9d6c0bb33850191e87c91d0122ffa7a203c34d019414cdc13e959",
+      "source_bytes": 796,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-on-final.log",
+      "source_sha256": "044424f71f1e4ff287d148e0a09edb565d8e733ea955b90f3c637eb1b3b05736",
+      "archive": "logs/threadfd-on-final.log",
+      "archive_sha256": "b48ff1a2272bb2f77398f76869183cd5a3bb466e99a8167af5d755f98bebf8f4",
+      "source_bytes": 152025,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-qemu-standard.log",
+      "source_sha256": "754b6acf90c776051a222bb20afa84050744d250931cf7e541a425e70a186a7d",
+      "archive": "logs/threadfd-qemu-standard.log",
+      "archive_sha256": "e3066fa00e5fb16a19d8f16405697dc9ac306aa1b5a9aa4c116b5192b4b990b6",
+      "source_bytes": 139312,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-standard-assertions.log",
+      "source_sha256": "94c3daff9b7f7d470b2e4e6a401dcf98983e050a9ae2fb3994f11ce132dffb0a",
+      "archive": "logs/threadfd-standard-assertions.log",
+      "archive_sha256": "94c3daff9b7f7d470b2e4e6a401dcf98983e050a9ae2fb3994f11ce132dffb0a",
+      "source_bytes": 613,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-standard-missing-peers.log",
+      "source_sha256": "c3db8d970d0e348020592cda929122a52903f14f022dd8f8d22def8a06002b2d",
+      "archive": "logs/threadfd-standard-missing-peers.log",
+      "archive_sha256": "db542202bc9a3848073402828c1c4ef0deb98bec0d4b3fa2aaa2f68bbd44ca0b",
+      "source_bytes": 134370,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-static-assertions.log",
+      "source_sha256": "b7d0ca8f8b41aec0d5f4d65c17e0bfaf8e44231b241210edd640638baed557fa",
+      "archive": "logs/threadfd-static-assertions.log",
+      "archive_sha256": "b7d0ca8f8b41aec0d5f4d65c17e0bfaf8e44231b241210edd640638baed557fa",
+      "source_bytes": 800,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-static-final.log",
+      "source_sha256": "41180dabade20b0bf77d0e44aaf6119c060eea56dafed5ea94d43a02113dc23a",
+      "archive": "logs/threadfd-static-final.log",
+      "archive_sha256": "cb08c87b383d118db5a3f68d78c516655d451fba16b1049ce1913969d0e4ed37",
+      "source_bytes": 128305,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-vbox-assertions.log",
+      "source_sha256": "09284cf6fb04a775cf229cf0adb97896face0724cbdcc1ad88e090940fbd6365",
+      "archive": "logs/threadfd-vbox-assertions.log",
+      "archive_sha256": "09284cf6fb04a775cf229cf0adb97896face0724cbdcc1ad88e090940fbd6365",
+      "source_bytes": 607,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-vbox-diag.log",
+      "source_sha256": "3d2d86f9643d0567d7957c5ca9d61ba0fdbb869959e9287771c82660ba6f407a",
+      "archive": "logs/threadfd-vbox-diag.log",
+      "archive_sha256": "467e54036bb13a78f6607a0e28f0df7f74bac8332d709ff788da8ad10f7aa851",
+      "source_bytes": 140052,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-vbox-first-failure.log",
+      "source_sha256": "6077c00b1a10c5b41b508a62ca902da29cbf10712fdc17c5e038a8241bf249f8",
+      "archive": "logs/threadfd-vbox-first-failure.log",
+      "archive_sha256": "754bd88b53e78d18b67de5fe6afda5571ac2c2858e2816a12def7e5678b23041",
+      "source_bytes": 140182,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-vbox-fixed.log",
+      "source_sha256": "e409f3bbe06eebafa584814c0e8b5bcbf06222d8530aea209f0ccd196ad910ac",
+      "archive": "logs/threadfd-vbox-fixed.log",
+      "archive_sha256": "9e6274163b718e7f13ab0cc9b80beaf9e8392d82f4dec85cbc036212ae30f435",
+      "source_bytes": 140392,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-vbox-repeat-assertions.log",
+      "source_sha256": "09284cf6fb04a775cf229cf0adb97896face0724cbdcc1ad88e090940fbd6365",
+      "archive": "logs/threadfd-vbox-repeat-assertions.log",
+      "archive_sha256": "09284cf6fb04a775cf229cf0adb97896face0724cbdcc1ad88e090940fbd6365",
+      "source_bytes": 607,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
+      "source_name": "threadfd-vbox-repeat.log",
+      "source_sha256": "03d7675c78f7cca9996f51cf86dcc8e8f3b81f23f7bf4ad0b6cd466bc1f1ec57",
+      "archive": "logs/threadfd-vbox-repeat.log",
+      "archive_sha256": "f9ecf78116b834ab3a2f99396279eedce54ede9af402438d75b0f114ca40b34b",
+      "source_bytes": 140401,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_THREADS.md"
+      ],
+      "evidence_round": "thread-fd-whitelist-2026-10-17"
+    },
+    {
       "source_name": "tls-compiled-off-matrix.log",
       "source_sha256": "f15227d4302bbc921a9dea42de0583390c77ac7fffcd75d0c1a553ac92ff8789",
       "archive": "logs/tls-compiled-off-matrix.log",
@@ -2180,6 +3200,906 @@
       "documents": [
         "docs/LINUX_ABI_WX_RELRO.md"
       ]
+    },
+    {
+      "source_name": "migrate-hosted-on.log",
+      "source_sha256": "34a338c129856ccc6dbdfb6dedf70abdd2eb2632e7d863751ea5b2b19c93ecb6",
+      "archive": "logs/migrate-hosted-on.log",
+      "archive_sha256": "34a338c129856ccc6dbdfb6dedf70abdd2eb2632e7d863751ea5b2b19c93ecb6",
+      "source_bytes": 68274,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-hosted-off.log",
+      "source_sha256": "684ccc41c1f2d40d84b8ba550ac77ad165a50b953be14bf9cf1106b091d74251",
+      "archive": "logs/migrate-hosted-off.log",
+      "archive_sha256": "684ccc41c1f2d40d84b8ba550ac77ad165a50b953be14bf9cf1106b091d74251",
+      "source_bytes": 55717,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-hosted-compiled-off.log",
+      "source_sha256": "456b7def517b75c89c0b159fecaa6b7f4d50c470b713619e863f596137b81b0c",
+      "archive": "logs/migrate-hosted-compiled-off.log",
+      "archive_sha256": "456b7def517b75c89c0b159fecaa6b7f4d50c470b713619e863f596137b81b0c",
+      "source_bytes": 60801,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-hosted-final.log",
+      "source_sha256": "db7007ef6c5b07bbee128b660b0361ebf988c5351ad41a951d1b4b34fd5fa5a9",
+      "archive": "logs/migrate-hosted-final.log",
+      "archive_sha256": "db7007ef6c5b07bbee128b660b0361ebf988c5351ad41a951d1b4b34fd5fa5a9",
+      "source_bytes": 72130,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-hosted-assertions.log",
+      "source_sha256": "76e244ead3842dfb114e2e89d7d99ed7b3895f6ad9fae3104e2788ffd62636f9",
+      "archive": "logs/migrate-hosted-assertions.log",
+      "archive_sha256": "76e244ead3842dfb114e2e89d7d99ed7b3895f6ad9fae3104e2788ffd62636f9",
+      "source_bytes": 587,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-hosted-off-assertions.log",
+      "source_sha256": "f086cf86dcb063bd52c0eb6a4376555e3b42077b733d4af2e7aa7bcf46599214",
+      "archive": "logs/migrate-hosted-off-assertions.log",
+      "archive_sha256": "f086cf86dcb063bd52c0eb6a4376555e3b42077b733d4af2e7aa7bcf46599214",
+      "source_bytes": 564,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-compiled-hosted-assertions.log",
+      "source_sha256": "f086cf86dcb063bd52c0eb6a4376555e3b42077b733d4af2e7aa7bcf46599214",
+      "archive": "logs/migrate-compiled-hosted-assertions.log",
+      "archive_sha256": "f086cf86dcb063bd52c0eb6a4376555e3b42077b733d4af2e7aa7bcf46599214",
+      "source_bytes": 564,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-hosted-interpoff-assertions.log",
+      "source_sha256": "1907550fa259254026b298347a063a6dd3e7e33d2816267faba37fccf9ce07bf",
+      "archive": "logs/migrate-hosted-interpoff-assertions.log",
+      "archive_sha256": "1907550fa259254026b298347a063a6dd3e7e33d2816267faba37fccf9ce07bf",
+      "source_bytes": 577,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-on-final.log",
+      "source_sha256": "a18d6de7f8b3cabc3d3bfdbf002f827b4e52e9cbb964b81b0df596102cc79ffd",
+      "archive": "logs/migrate-on-final.log",
+      "archive_sha256": "2c5a501ab2efe05e7285d436673a1daf46cf5322f92d775eca2f9f0a4434bbd5",
+      "source_bytes": 169174,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-on-assertions.log",
+      "source_sha256": "34c09c07485a3d625126af225ae08c30210f5b6d2f800d772bdffc6f8b03513f",
+      "archive": "logs/migrate-on-assertions.log",
+      "archive_sha256": "34c09c07485a3d625126af225ae08c30210f5b6d2f800d772bdffc6f8b03513f",
+      "source_bytes": 642,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-dual-final.log",
+      "source_sha256": "fb04700801af3624fbd342160be098ad5ef12aae0c4fb87acaaabbf477ea9525",
+      "archive": "logs/migrate-dual-final.log",
+      "archive_sha256": "f79576859779e67fd71377485b000f051f24bd1f2a22880efcad85793891686f",
+      "source_bytes": 152448,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-dual-assertions.log",
+      "source_sha256": "a3561a54100551c6181ed0c3e5db384844cf94464343f0c7bdd7aed4496ae818",
+      "archive": "logs/migrate-dual-assertions.log",
+      "archive_sha256": "a3561a54100551c6181ed0c3e5db384844cf94464343f0c7bdd7aed4496ae818",
+      "source_bytes": 640,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-off-final.log",
+      "source_sha256": "a16f204540c39556fadef72b6b8eec48e32cb4021f7784af68b5e930e02e2ecf",
+      "archive": "logs/migrate-off-final.log",
+      "archive_sha256": "006933bb74e72c14454fde1f220e41f0304ec2a42ecb1d7039c8bc4f0b40c198",
+      "source_bytes": 68628,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-off-assertions.log",
+      "source_sha256": "7c889eee8a1ca297d3b9f40ad3f983b0e19dc4391bcb330dca42f78d004ee616",
+      "archive": "logs/migrate-off-assertions.log",
+      "archive_sha256": "7c889eee8a1ca297d3b9f40ad3f983b0e19dc4391bcb330dca42f78d004ee616",
+      "source_bytes": 604,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-compiled-off-final.log",
+      "source_sha256": "f77487a05c6f8def7d20e63e37bba81217f0550b3816db75e5ab5835c892cea9",
+      "archive": "logs/migrate-compiled-off-final.log",
+      "archive_sha256": "8c5c6f5339296bdeb1f9b47d3e1aa5441e4a7eb7238064f1e6806118c648846f",
+      "source_bytes": 68542,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-compiled-off-assertions.log",
+      "source_sha256": "7c889eee8a1ca297d3b9f40ad3f983b0e19dc4391bcb330dca42f78d004ee616",
+      "archive": "logs/migrate-compiled-off-assertions.log",
+      "archive_sha256": "7c889eee8a1ca297d3b9f40ad3f983b0e19dc4391bcb330dca42f78d004ee616",
+      "source_bytes": 604,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-vbox-final.log",
+      "source_sha256": "4c21bd50c675b657e74e274183c2230b3b6efd8a48f804d95723c05a8fb732a2",
+      "archive": "logs/migrate-vbox-final.log",
+      "archive_sha256": "267b067982b85e707747bf5f02446e33eefc64a63b8363137be962b66e552193",
+      "source_bytes": 146632,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-vbox-assertions.log",
+      "source_sha256": "a3561a54100551c6181ed0c3e5db384844cf94464343f0c7bdd7aed4496ae818",
+      "archive": "logs/migrate-vbox-assertions.log",
+      "archive_sha256": "a3561a54100551c6181ed0c3e5db384844cf94464343f0c7bdd7aed4496ae818",
+      "source_bytes": 640,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-product-first.log",
+      "source_sha256": "18b8979668bfa8c4939985097495155f6a3d751322d99718696fbd8eda205541",
+      "archive": "logs/migrate-product-first.log",
+      "archive_sha256": "33cc899d4e63d67db912564a32f3e724332602540fdd4f8cd14a2f01c5d0a89a",
+      "source_bytes": 18353,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-product-second.log",
+      "source_sha256": "b86f09f72b0f2d6852bc9be719df0ea483dbe35fc7570fd70ef5f2bbfe227187",
+      "archive": "logs/migrate-product-second.log",
+      "archive_sha256": "38b306c9723c0753dbacce9bf6a41bf50fd99bdd81d5f7d8cf738567f9e5c0f4",
+      "source_bytes": 10577,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-product-assertions.log",
+      "source_sha256": "f71016f51315b8ff2cef378493467cc278cddde6db83ef01d148d80ca264c2ee",
+      "archive": "logs/migrate-product-assertions.log",
+      "archive_sha256": "f71016f51315b8ff2cef378493467cc278cddde6db83ef01d148d80ca264c2ee",
+      "source_bytes": 158,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-product-httpd-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/migrate-product-httpd-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-product-install.log",
+      "source_sha256": "e0a40ce5839ae88f78e512f8bf32273adec536d04ac7ea67ecc28c9c9acfd1eb",
+      "archive": "logs/migrate-product-install.log",
+      "archive_sha256": "4bc95e0583d1626affa56fa0f3dba6eab830951ec027783da4d1b09c56c94c78",
+      "source_bytes": 1093,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-kernel-final.log",
+      "source_sha256": "3664dee263c98d33490a8e59f689e6d4132aad9b386e3652180621071a6d31c7",
+      "archive": "logs/migrate-kernel-final.log",
+      "archive_sha256": "3664dee263c98d33490a8e59f689e6d4132aad9b386e3652180621071a6d31c7",
+      "source_bytes": 2270,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-iso-final.log",
+      "source_sha256": "9695f288f22f4c043ccfeb38f252bb7432668012e842332f2500a40151d48eaa",
+      "archive": "logs/migrate-iso-final.log",
+      "archive_sha256": "23c73caf3c428d24a1992f85e7a84d274c7ad3a9841501f939bedad221bfb0fc",
+      "source_bytes": 1961,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-iso-off.log",
+      "source_sha256": "ed82b7865ad5b0a2aa11d5da849c3f843a06943ea0e1449af849c30fb470c2e1",
+      "archive": "logs/migrate-iso-off.log",
+      "archive_sha256": "0040afffa700b8235f00142b5f8714bf1bc27bc15dcc89ebf8bca425228bf90c",
+      "source_bytes": 1962,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-iso-compiled-off.log",
+      "source_sha256": "0f9583701373b801236f0a8f2584afbdb056244b46fc2283f215f4de7510ba4f",
+      "archive": "logs/migrate-iso-compiled-off.log",
+      "archive_sha256": "979784d45084f6168aa5521125ea86043769bf76a302e58142be7b3ec12a6e72",
+      "source_bytes": 4232,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-iso-product.log",
+      "source_sha256": "9f3e2eda89f5bf4351ef66d1ac66703c99b0f1db07f671fad665b37298b397ab",
+      "archive": "logs/migrate-iso-product.log",
+      "archive_sha256": "59847d92bb0f8423575a59ff6235b30af6603b25d98ef428d37572f783c46321",
+      "source_bytes": 1943,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-fixture.log",
+      "source_sha256": "c9cf5c709b0372ccfd90c3db722265f45515403663d05f0379c7cd475d826042",
+      "archive": "logs/migrate-fixture.log",
+      "archive_sha256": "c9cf5c709b0372ccfd90c3db722265f45515403663d05f0379c7cd475d826042",
+      "source_bytes": 344,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-qemu.log",
+      "source_sha256": "079e5865c5d6dda7353b1e3c254351bd03fd47c90973102c50c80c807b430871",
+      "archive": "logs/migrate-qemu.log",
+      "archive_sha256": "e8f87f28e7890ee488342fa1a33638d4a2bf74bbd2a1249e82e3035539f13c69",
+      "source_bytes": 53166,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-qemu-diag.log",
+      "source_sha256": "99f913daffd9bcec2c8e4dcff4ea5bdbcaed36ede581fa3cae1ebfd6a7d65ba8",
+      "archive": "logs/migrate-qemu-diag.log",
+      "archive_sha256": "2bddaebc615bba61ca503b9a2788cb34182b0667cbd9d65d9ff06280da96f810",
+      "source_bytes": 42716,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-dual-first-failure.log",
+      "source_sha256": "9d9b1c9c26cdae4281c9998ef96c65417f4e16d150bbb0a5087d9fe7adad8fed",
+      "archive": "logs/migrate-dual-first-failure.log",
+      "archive_sha256": "c6b5d42eeec918f6758f0770fed5b4eefd054c84dd24b973638567f434c6c631",
+      "source_bytes": 121447,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17"
+    },
+    {
+      "source_name": "migrate-build-id.log",
+      "archive": "logs/migrate-build-id.log",
+      "documents": [
+        "docs/LINUX_MIGRATION.md"
+      ],
+      "evidence_round": "linux-migration-2026-10-17",
+      "source_sha256": "f41299f3a69ad1a4975f58ad1d14ec370d75988b6e7636115fc7318d986f1977",
+      "archive_sha256": "79c6738e439465fd359e87f2f506c11dff3615b754f1047cb4079907b458739c",
+      "source_bytes": 1286,
+      "full_selftest_pass_marker": false
+    },
+    {
+      "source_name": "mp-build-summary.log",
+      "source_sha256": "7838e31eb681017dcc1c6e34d7ba56f4218466b5b146c0853df6b1ca5e8f445f",
+      "archive": "logs/mp-build-summary.log",
+      "archive_sha256": "7c2c78397d1a60f4292a1d95f7e72e89d897a94b398013e960bbd27e59f56e4b",
+      "source_bytes": 3242,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-repro-assertions.log",
+      "source_sha256": "2da6a7c4071ad87d4198391b964ce93390f21376f48719fcdb710f5a4923e3c1",
+      "archive": "logs/mp-repro-assertions.log",
+      "archive_sha256": "6fd20b0f517458f037e41ab6354a6a7b24c177a640acc603dbdb0f991dc85e15",
+      "source_bytes": 496,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-verify.log",
+      "source_sha256": "480f51d8b5788803c877e61f83ecd6f651163de7994ccfcda852e711174ed279",
+      "archive": "logs/mp-verify.log",
+      "archive_sha256": "480f51d8b5788803c877e61f83ecd6f651163de7994ccfcda852e711174ed279",
+      "source_bytes": 390,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-fixture-check.log",
+      "source_sha256": "f36abd942f19b0d5dd5490c4da728fbcad55b2d5cf7b2218df2de9a87077e223",
+      "archive": "logs/mp-fixture-check.log",
+      "archive_sha256": "f36abd942f19b0d5dd5490c4da728fbcad55b2d5cf7b2218df2de9a87077e223",
+      "source_bytes": 163,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-hosted-final.log",
+      "source_sha256": "e7a0284764fa082636c9440d4c291431c869c786e894e37617b10088bb5c9bf3",
+      "archive": "logs/mp-hosted-final.log",
+      "archive_sha256": "e7a0284764fa082636c9440d4c291431c869c786e894e37617b10088bb5c9bf3",
+      "source_bytes": 72431,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-hosted-on.log",
+      "source_sha256": "9e7f991b6a2cec5935cd3033d0a280d0c30e9194eb1cc18ad2285fb8f1392560",
+      "archive": "logs/mp-hosted-on.log",
+      "archive_sha256": "9e7f991b6a2cec5935cd3033d0a280d0c30e9194eb1cc18ad2285fb8f1392560",
+      "source_bytes": 68731,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-hosted-off.log",
+      "source_sha256": "78b1f2f70a2db5762e3fd50ba131535873d91e8018cf92375982066b6d348a82",
+      "archive": "logs/mp-hosted-off.log",
+      "archive_sha256": "78b1f2f70a2db5762e3fd50ba131535873d91e8018cf92375982066b6d348a82",
+      "source_bytes": 55769,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-hosted-compiled-off.log",
+      "source_sha256": "17095bae274f42b595ee8cd0942a20b2fbeb78efbda318cb3f8ae49be6bc8c10",
+      "archive": "logs/mp-hosted-compiled-off.log",
+      "archive_sha256": "17095bae274f42b595ee8cd0942a20b2fbeb78efbda318cb3f8ae49be6bc8c10",
+      "source_bytes": 60918,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-hosted-assertions.log",
+      "source_sha256": "80eb4d91afc1b54ffc6291f61396a259a89f2cc8fac18572610ec48ec4695729",
+      "archive": "logs/mp-hosted-assertions.log",
+      "archive_sha256": "80eb4d91afc1b54ffc6291f61396a259a89f2cc8fac18572610ec48ec4695729",
+      "source_bytes": 611,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-hosted-interpoff-assertions.log",
+      "source_sha256": "edc8150a5e15572c53b4fe935caffc43f13cd5b667255961d9fd033141b9558b",
+      "archive": "logs/mp-hosted-interpoff-assertions.log",
+      "archive_sha256": "edc8150a5e15572c53b4fe935caffc43f13cd5b667255961d9fd033141b9558b",
+      "source_bytes": 601,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-hosted-off-assertions.log",
+      "source_sha256": "e45b5aac4826534415d82acaa0355ccb923c63c20574c4226587179964956b6a",
+      "archive": "logs/mp-hosted-off-assertions.log",
+      "archive_sha256": "e45b5aac4826534415d82acaa0355ccb923c63c20574c4226587179964956b6a",
+      "source_bytes": 597,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-compiled-hosted-assertions.log",
+      "source_sha256": "e45b5aac4826534415d82acaa0355ccb923c63c20574c4226587179964956b6a",
+      "archive": "logs/mp-compiled-hosted-assertions.log",
+      "archive_sha256": "e45b5aac4826534415d82acaa0355ccb923c63c20574c4226587179964956b6a",
+      "source_bytes": 597,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-kernel-final.log",
+      "source_sha256": "243cb4df54f6cc68e40f6de3c95b5bb641aa996594efd9b10073e380b92ee5e2",
+      "archive": "logs/mp-kernel-final.log",
+      "archive_sha256": "243cb4df54f6cc68e40f6de3c95b5bb641aa996594efd9b10073e380b92ee5e2",
+      "source_bytes": 2300,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-iso-final.log",
+      "source_sha256": "d4f5e36169949bf8a76b083b269ae7270be12bfca11ff921a2fa9c65ff97bff0",
+      "archive": "logs/mp-iso-final.log",
+      "archive_sha256": "1737aab4f9c972257b21138a24540a3232ea32b7498a2098c134b84fef05ee55",
+      "source_bytes": 1961,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-iso-off.log",
+      "source_sha256": "174e8d12cfd2c8d620f4742b6e4452619514f0b5870b91fa5578268cecc71163",
+      "archive": "logs/mp-iso-off.log",
+      "archive_sha256": "71da9464186ae5535c691d4313bb0c3ee6601ed80961e0c1c0a53c07b0807ba7",
+      "source_bytes": 2035,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-iso-static.log",
+      "source_sha256": "a52b9ae0b98f6dc0a8424e044a2ce9acb5d7ce13f8206ac90c785a113ba00739",
+      "archive": "logs/mp-iso-static.log",
+      "archive_sha256": "7796c331a7c46251b42ef75137fdc39c5c3d54145693bb79e6d4e6bd8331c606",
+      "source_bytes": 1958,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-iso-compiled-off.log",
+      "source_sha256": "3ea3eb9c7f1683535dc1c033b458252ceda748fc06796d30448755df6e8a30c6",
+      "archive": "logs/mp-iso-compiled-off.log",
+      "archive_sha256": "87faf2fbeb94f57656699a9dffd7548a7dfd6b1082fb96591078c96357f6053f",
+      "source_bytes": 4262,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-iso-product.log",
+      "source_sha256": "583236def621fc7225aa8d5af7af549f49a36de01a27ea9e661b297e20323b05",
+      "archive": "logs/mp-iso-product.log",
+      "archive_sha256": "7a4b8e29086c4fd3cfa326daff8af7d380eb5bbfc5d384d6c8d245a49a48dae4",
+      "source_bytes": 1943,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-on-final.log",
+      "source_sha256": "519c632fe22e7fb7f7ef32c661a071fa8972685766f8ab0e28a21427baa629dc",
+      "archive": "logs/mp-on-final.log",
+      "archive_sha256": "7194f096b912206dd5a0cdcbd227af4ca459ecd5c5cee9c4e467b28c82b17224",
+      "source_bytes": 179874,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-on-assertions.log",
+      "source_sha256": "862eba5197d20b736910f2d5397fd8d5704a46d75e0f5ad6e4cfafcd5520f32d",
+      "archive": "logs/mp-on-assertions.log",
+      "archive_sha256": "862eba5197d20b736910f2d5397fd8d5704a46d75e0f5ad6e4cfafcd5520f32d",
+      "source_bytes": 666,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-dual-final.log",
+      "source_sha256": "e7a2e1683b499d6f532a021986bb7394f476c393260bc6566da90097bc532a2a",
+      "archive": "logs/mp-dual-final.log",
+      "archive_sha256": "7ff6bd7e510e73cc9f6cdaad6635cd77bb548c0138e4f4c885eb99eef4524ead",
+      "source_bytes": 163099,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-dual-assertions.log",
+      "source_sha256": "ae10584324eb79e5ce3d17dcb8d44e9883ef504a8264ad4f4c5b109288a3d0af",
+      "archive": "logs/mp-dual-assertions.log",
+      "archive_sha256": "ae10584324eb79e5ce3d17dcb8d44e9883ef504a8264ad4f4c5b109288a3d0af",
+      "source_bytes": 664,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-enosys.log",
+      "source_sha256": "73992f6d2e96d1c249944f65b369473ba32a0e1d90305e6ad1a5262aff6bb015",
+      "archive": "logs/mp-enosys.log",
+      "archive_sha256": "73992f6d2e96d1c249944f65b369473ba32a0e1d90305e6ad1a5262aff6bb015",
+      "source_bytes": 89,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-dual-enosys.log",
+      "source_sha256": "73992f6d2e96d1c249944f65b369473ba32a0e1d90305e6ad1a5262aff6bb015",
+      "archive": "logs/mp-dual-enosys.log",
+      "archive_sha256": "73992f6d2e96d1c249944f65b369473ba32a0e1d90305e6ad1a5262aff6bb015",
+      "source_bytes": 89,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-off-final.log",
+      "source_sha256": "68c2c1a1d4c46f16574095efe4ecb6c8cd1633623cd7348fda0fdc6418c77e80",
+      "archive": "logs/mp-off-final.log",
+      "archive_sha256": "a436976894765ee4e164b8e0b7df3a41122c50df14262461b943febb1c83c050",
+      "source_bytes": 68612,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-off-assertions.log",
+      "source_sha256": "5c87cd4287d956890318a76ca6723c6e9a2c36a5283f634138cfe57d285eeacd",
+      "archive": "logs/mp-off-assertions.log",
+      "archive_sha256": "5c87cd4287d956890318a76ca6723c6e9a2c36a5283f634138cfe57d285eeacd",
+      "source_bytes": 637,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-static-final.log",
+      "source_sha256": "f14305ebea8befe4fa28477a6b9b33decbe77bad30016d571596724902fc0452",
+      "archive": "logs/mp-static-final.log",
+      "archive_sha256": "a7df797f36e0c651527343cedda98fdbe09722d51b875ef2334384d06d3813e2",
+      "source_bytes": 134494,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-static-assertions.log",
+      "source_sha256": "ff9d42badee59079cd8fa0d3cfaa9a444f6340c73b1e76289482c8d47961ef4d",
+      "archive": "logs/mp-static-assertions.log",
+      "archive_sha256": "ff9d42badee59079cd8fa0d3cfaa9a444f6340c73b1e76289482c8d47961ef4d",
+      "source_bytes": 668,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-compiled-off-final.log",
+      "source_sha256": "4e6b105a630866b58dc6f235f3b97fb03aba76a7d363038fe24cc6114ff4b9b3",
+      "archive": "logs/mp-compiled-off-final.log",
+      "archive_sha256": "5aab115e38f4b9c0f34c599e0cdb02c8daea8090ac49e1ee2cf4b4dc5345e646",
+      "source_bytes": 68707,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-compiled-off-assertions.log",
+      "source_sha256": "5c87cd4287d956890318a76ca6723c6e9a2c36a5283f634138cfe57d285eeacd",
+      "archive": "logs/mp-compiled-off-assertions.log",
+      "archive_sha256": "5c87cd4287d956890318a76ca6723c6e9a2c36a5283f634138cfe57d285eeacd",
+      "source_bytes": 637,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-vbox.log",
+      "source_sha256": "651b49a3fb3faba04224b581903a078c986d1a8750bc9ebbb6f9d5784af76932",
+      "archive": "logs/mp-vbox.log",
+      "archive_sha256": "6f3e1e4c77458fd6b4920ef0bbc35ce7ea316f1db9cce162aa3f0fab897990b0",
+      "source_bytes": 157274,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-vbox-assertions.log",
+      "source_sha256": "ae10584324eb79e5ce3d17dcb8d44e9883ef504a8264ad4f4c5b109288a3d0af",
+      "archive": "logs/mp-vbox-assertions.log",
+      "archive_sha256": "ae10584324eb79e5ce3d17dcb8d44e9883ef504a8264ad4f4c5b109288a3d0af",
+      "source_bytes": 664,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-product-on-install.log",
+      "source_sha256": "023a553dc6e02313fc430af06fef5a8c1c5a987995036982163c30b2824815e2",
+      "archive": "logs/mp-product-on-install.log",
+      "archive_sha256": "743db7b15731f01e8b49be7cd63f47576ea2f926cfdd5eae235028233f1aa6d1",
+      "source_bytes": 1084,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-product-on-first.log",
+      "source_sha256": "1a7320e779b9ee6064453ff01b9a700d0d56a82cd350f8321770e9ad4d2f827f",
+      "archive": "logs/mp-product-on-first.log",
+      "archive_sha256": "a9bbe794dc576cd7f560b93662d36111f862cef98fc2ccd32a04eddc4352fbdb",
+      "source_bytes": 31275,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-product-on-second.log",
+      "source_sha256": "45dfc11a453564274c06aed4c51153b5ac188bdd78341eb650d9053bcac25e50",
+      "archive": "logs/mp-product-on-second.log",
+      "archive_sha256": "c1651198e82e68084450fcbc139ca5a13cbab28a36489f873baad77a5929a5e8",
+      "source_bytes": 22153,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-product-on-assertions.log",
+      "source_sha256": "eaac2907d07be1af358f9051a22399f9e5db4d28d8f47535789b8a94928c1b14",
+      "archive": "logs/mp-product-on-assertions.log",
+      "archive_sha256": "eaac2907d07be1af358f9051a22399f9e5db4d28d8f47535789b8a94928c1b14",
+      "source_bytes": 341,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-product-on-httpd-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/mp-product-on-httpd-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-product-off-install.log",
+      "source_sha256": "c2ac8ecc3c2e7c08fc835a3860e2984334d1562276992f2ec2d3be6dadbf7986",
+      "archive": "logs/mp-product-off-install.log",
+      "archive_sha256": "63c2956dcf36079437e3dd9aa1e6d186ec1cc7cafd002ef60a152bceaf8ba361",
+      "source_bytes": 1079,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-product-off-first.log",
+      "source_sha256": "f13da36e96c15a3e083a562ef31527b31b29ce95845f8597b5fa532b905a2be6",
+      "archive": "logs/mp-product-off-first.log",
+      "archive_sha256": "bd338a13672a8454f4881d38abd22ec0274b6d8fd5f1f47b9a9dcd68f73b6b7c",
+      "source_bytes": 18355,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-product-off-second.log",
+      "source_sha256": "58dd9b5d6321e33f97c7cc3e4e01f0546cfcc2b2eed89073c42895ad16fb761d",
+      "archive": "logs/mp-product-off-second.log",
+      "archive_sha256": "f6a8b77046fe8f924b246dc2524f0ca11d4becb17bad0a8949a8a279c9544446",
+      "source_bytes": 10578,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-product-off-assertions.log",
+      "source_sha256": "f71016f51315b8ff2cef378493467cc278cddde6db83ef01d148d80ca264c2ee",
+      "archive": "logs/mp-product-off-assertions.log",
+      "archive_sha256": "f71016f51315b8ff2cef378493467cc278cddde6db83ef01d148d80ca264c2ee",
+      "source_bytes": 158,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "mp-product-off-httpd-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/mp-product-off-httpd-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_MICROPYTHON.md"
+      ],
+      "evidence_round": "micropython-static-2026-10-17"
     }
   ]
 }

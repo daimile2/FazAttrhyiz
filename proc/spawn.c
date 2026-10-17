@@ -8,6 +8,7 @@
 #include "capmix/elf.h"
 #include "capmix/uaccess.h"
 #include "capmix/linux_socket.h"
+#include "capmix/linux_pipe.h"
 
 #include <string.h>
 #include <stdint.h>
@@ -165,7 +166,7 @@ int cm_proc_task_cpu_allowed(const cm_task_t *task,int cpu)
         cm_proc_t *p=&g_procs[i];
         if(!p->used || p->task!=task)continue;
         if(!__atomic_load_n(&p->published,__ATOMIC_ACQUIRE))return 0;
-        if(p->elf)return cpu==p->elf_cpu;
+        if(p->elf)return __atomic_load_n(&p->linux_migrate,__ATOMIC_ACQUIRE)!=2 && cpu==p->elf_cpu;
         if(!cm_boot_is_selftest() && p->pid==1)return cpu==0;
     }
     return 1;
@@ -585,5 +586,56 @@ int cm_linux_thread_finish(cm_proc_t *p,int64_t code)
     g->linux_cleanup=1;
     if(g->main && g->main->id!=g->elf_thread_id)g->main=NULL;
     cm_proc_finish_exit(g,g->exit_code);
+    return 1;
+}
+
+/* No live kernel continuation migrates. Only cm_syscall_frame may park this
+ * request, once dispatch has released all resource references and gates. */
+int64_t cm_linux_setaffinity(uint64_t pid,uint64_t size,uint64_t address)
+{
+    cm_proc_t *p=cm_proc_current();uint64_t mask;
+    if(!p || !p->elf || p->abi!=CM_ABI_LINUX)return -38;
+    if(pid && pid!=p->pid)return -3;
+    if(size!=8)return -22;
+    if(cm_copyin(p->elf,&mask,address,8))return -14;
+    if(!mask || (mask&(mask-1)))return -22;
+    unsigned target=0;while(!(mask&(1ull<<target)))target++;
+    if(target>=(unsigned)cm_cpu_count())return -22;
+    if(p->linux_grouped || p->linux_group || p->linux_fork_child || cm_proc_children_pending(p->pid))return -95;
+    if(p->exited || p->kill_pending || p->linux_fd_owner || p->linux_migrate)return -11;
+    /* Shared socket/pipe backend ownership is deliberately outside this MVP. */
+    for(unsigned fd=0;fd<CM_FD_MAX;fd++)
+        if(cm_linux_socket_is(p,fd) || cm_linux_pipe_is(p,fd))return -95;
+    if((int)target==p->elf_cpu)return 0;
+    if(!p->linux_frame || !p->main || !p->main->kstack)return -95;
+#ifdef CAPMIX_HOSTED
+    return -95; /* host model never pretends to execute a cross-CPU IRET */
+#else
+    p->linux_migrate_cpu=(int)target;
+    __atomic_store_n(&p->linux_migrate,1,__ATOMIC_RELEASE);
+    return 0;
+#endif
+}
+int cm_proc_migrate_stopped(cm_thread_t *th)
+{
+    cm_proc_t *p=NULL;
+    for(unsigned i=0;i<CM_MAX_PROCS;i++)
+        if(g_procs[i].used && g_procs[i].main==th && g_procs[i].elf_thread_id==th->id &&
+           __atomic_load_n(&g_procs[i].linux_migrate,__ATOMIC_ACQUIRE)==2){p=&g_procs[i];break;}
+    if(!p || __atomic_load_n(&p->linux_migrate,__ATOMIC_ACQUIRE)!=2)return 0;
+    int old=p->elf_cpu,target=p->linux_migrate_cpu;
+    int rollback=p->linux_migrate_fail_once || target<0 || target>=cm_cpu_count() || p->kill_pending;
+    p->linux_migrate_fail_once=0;
+    /* Old scheduler owns this stopped context, holding rq lock. The new
+     * landing discards the resource-free syscall tail, not a blocked syscall. */
+    if(cm_arch_ctx_init(th->ctx_slot,th->entry,th->arg,th->kstack,2*CM_PAGE_SIZE))
+        cm_panic("linux migrate: validated context could not be rebuilt");
+    p->linux_resume=1;
+    if(rollback){p->linux_regs.rax=(uint64_t)-11;p->linux_migrate_rollbacks++;}
+    else {p->elf_cpu=target;p->linux_migrations++;}
+    kinfo("linux migrate: pid=%llu from=%d to=%d rollback=%s off-cpu=1 FS=%llx",
+          (unsigned long)p->pid,old,p->elf_cpu,rollback?"ok":"not-needed",(unsigned long)p->linux_fs);
+    /* Caller drops old CPU's claim before releasing rq lock. */
+    __atomic_store_n(&p->linux_migrate,0,__ATOMIC_RELEASE);
     return 1;
 }

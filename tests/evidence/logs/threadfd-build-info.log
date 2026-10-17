@@ -1,0 +1,12 @@
+Thread-group fd whitelist regression 2026-10-17
+95fcf202f65643056c91cf54ff36574b7e1da77141ae6f92435fd774178f75ef  capmix.elf
+0306559518f8fbeb4e5600a2b3adc7b4217e7f5e79ae0d8ca9df9c5d35dcb22e  tests/fixtures/linux-threads.elf
+4b2907276acca3a2248df08a5c33239a79eb4e042e818c94c4153338afa77042  abi/linux.c
+13c64ae0d010a0a4e6f411447d6f27696662ccfc0ff284e076ccf92ac4c54697  abi/linux_file.c
+bf4f29c153ac81b43af8e74b1af75fa667fd9dcb1a06b3e065415b2279598632  include/capmix/proc.h
+9b572ccb9ffd1c320e64384dd5b8260181e378c91336732c68f45c6fc03d1b88  boot/linux_threads_test.c
+597e2957bc076ed60cb77035e532c657841f7b2e875b7b29241a50951e84f6eb  tests/linux_threads.S
+cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+GNU ld (GNU Binutils for Ubuntu) 2.42
+QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)
+7.2.20r175154

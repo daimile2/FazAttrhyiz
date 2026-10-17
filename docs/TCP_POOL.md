@@ -117,29 +117,29 @@ python3 tests/check_tcp_pool.py --wire /tmp/capmix_run.log
 `tcp multi verified: ... simultaneous=8 ... bytes_each=8193`、`pages/commit unchanged`。
 最终仍以全量 `selftest result: PASS (0 failures)` 为准。
 
-## 环境矩阵
+## 环境矩阵（连接池扩容原轮次）
 
 2026-10-17，Ubuntu 宿主，KVM SMP4 / VBox 7.2.20。以下为实际结果。
 
 | 环境 | 结果 | 日志 |
 | --- | --- | --- |
-| hosted 默认16KiB，Linux关/开且interp关/双开 | 3份全量 `PASS (0 failures)`，池/RX/L3 fd与backend边界通过；硬件ELF跳过 | `/tmp/tcp32-hosted-{off,static,on}.log` |
-| hosted RX=4096/32768 | 两份全量 `PASS (0 failures)` | `/tmp/tcp32-hosted-rx4096.log`、`/tmp/tcp32-hosted-rx32768.log` |
-| KVM默认RX，Linux/interp双开，e1000 | 全量 `PASS (0 failures)`，multi8/payload/清理通过 | `/tmp/tcp32-on-e1000-matrix.log` |
-| KVM默认RX，双NUMA，virtio-net+e1000 | 全量 `PASS (0 failures)`，两块网卡各自multi8通过 | `/tmp/tcp32-on-dual-vnet-matrix.log` |
-| KVM默认RX，双开，无网卡 | 全量 `PASS (0 failures)`，机制通过，wire明确skip | `/tmp/tcp32-on-no-nic-matrix.log` |
-| KVM默认RX，Linux开/interp关 | 全量 `PASS (0 failures)`，静态Linux与原生、multi8通过 | `/tmp/tcp32-interp-off-matrix.log` |
-| KVM默认RX，Linux运行时关 | 全量 `PASS (0 failures)` | `/tmp/tcp32-linux-off-matrix.log` |
-| KVM默认RX，编译Linux关，双节点/两网卡 | 全量 `PASS (0 failures)` | `/tmp/tcp32-compiled-off-matrix.log` |
-| KVM RX=4096，e1000 | 全量 `PASS (0 failures)`，multi8×8193B通过 | `/tmp/tcp32-rx4096-matrix.log` |
-| KVM RX=32768，双节点/两网卡 | 全量 `PASS (0 failures)`，两网卡multi8通过 | `/tmp/tcp32-rx32768-matrix.log` |
-| 无ISO产品盘，virtio-blk+e1000 | Linux-net echo、native nc/http-get/httpd两次200、文件重定向、动态/TLS/hush、关机通过 | `/tmp/tcp32-final-product-first.log`、`/tmp/tcp32-final-httpd-client.log` |
-| 默认产品ISO，Linux关闭 | pool=32/RX=16384，用户shell、原生hello、ACPI关机通过 | `/tmp/tcp32-default-product.log` |
-| 同盘无ISO冷启动 | 动态/TLS、hush、持久文件读回及关机通过 | `/tmp/tcp32-final-product-second.log` |
-| VBox UEFI/AHCI/SMP4，两次产品启动 | 池初始化32/16KiB，动态/TLS/L0/hush、原生持久文件读回、关机通过；NIC显示down，未宣称wire通过 | `/tmp/tcp32-final-vbox-first.log`、`/tmp/tcp32-final-vbox-second.log` |
-| VBox SMP4，debug，**禁用网卡**，Linux关 | 全量 `PASS (0 failures)`；TCP池/RX机制通过，wire跳过；宿主checker通过 | `/tmp/tcp32-final-vbox-debug-nonic.log` |
-| VBox SMP4，debug，NAT e1000 | **FAIL (4 failures)**；M8 e1000收发=-9，随后P1b UDP、P1d echo、TCP ELF失败；本轮池/RX机制通过 | `/tmp/tcp32-vbox-debug.log` |
-| 非法 RX=4095/32769 | 编译期边界断言按预期拒绝 | `/tmp/tcp32-invalid-rx4095.log`、`/tmp/tcp32-invalid-rx32769.log` |
+| hosted 默认16KiB，Linux关/开且interp关/双开 | 3份全量 `PASS (0 failures)`，池/RX/L3 fd与backend边界通过；硬件ELF跳过 | [tcp32-hosted-off.log](../tests/evidence/logs/tcp32-hosted-off.log)、[tcp32-hosted-static.log](../tests/evidence/logs/tcp32-hosted-static.log)、[tcp32-hosted-on.log](../tests/evidence/logs/tcp32-hosted-on.log) |
+| hosted RX=4096/32768 | 两份全量 `PASS (0 failures)` | [tcp32-hosted-rx4096.log](../tests/evidence/logs/tcp32-hosted-rx4096.log)、[tcp32-hosted-rx32768.log](../tests/evidence/logs/tcp32-hosted-rx32768.log) |
+| KVM默认RX，Linux/interp双开，e1000 | 全量 `PASS (0 failures)`，multi8/payload/清理通过 | [tcp32-on-e1000-matrix.log](../tests/evidence/logs/tcp32-on-e1000-matrix.log) |
+| KVM默认RX，双NUMA，virtio-net+e1000 | 全量 `PASS (0 failures)`，两块网卡各自multi8通过 | [tcp32-on-dual-vnet-matrix.log](../tests/evidence/logs/tcp32-on-dual-vnet-matrix.log) |
+| KVM默认RX，双开，无网卡 | 全量 `PASS (0 failures)`，机制通过，wire明确skip | [tcp32-on-no-nic-matrix.log](../tests/evidence/logs/tcp32-on-no-nic-matrix.log) |
+| KVM默认RX，Linux开/interp关 | 全量 `PASS (0 failures)`，静态Linux与原生、multi8通过 | [tcp32-interp-off-matrix.log](../tests/evidence/logs/tcp32-interp-off-matrix.log) |
+| KVM默认RX，Linux运行时关 | 全量 `PASS (0 failures)` | [tcp32-linux-off-matrix.log](../tests/evidence/logs/tcp32-linux-off-matrix.log) |
+| KVM默认RX，编译Linux关，双节点/两网卡 | 全量 `PASS (0 failures)` | [tcp32-compiled-off-matrix.log](../tests/evidence/logs/tcp32-compiled-off-matrix.log) |
+| KVM RX=4096，e1000 | 全量 `PASS (0 failures)`，multi8×8193B通过 | [tcp32-rx4096-matrix.log](../tests/evidence/logs/tcp32-rx4096-matrix.log) |
+| KVM RX=32768，双节点/两网卡 | 全量 `PASS (0 failures)`，两网卡multi8通过 | [tcp32-rx32768-matrix.log](../tests/evidence/logs/tcp32-rx32768-matrix.log) |
+| 无ISO产品盘，virtio-blk+e1000 | Linux-net echo、native nc/http-get/httpd两次200、文件重定向、动态/TLS/hush、关机通过 | [tcp32-final-product-first.log](../tests/evidence/logs/tcp32-final-product-first.log)、[tcp32-final-httpd-client.log](../tests/evidence/logs/tcp32-final-httpd-client.log) |
+| 默认产品ISO，Linux关闭 | pool=32/RX=16384，用户shell、原生hello、ACPI关机通过 | [tcp32-default-product.log](../tests/evidence/logs/tcp32-default-product.log) |
+| 同盘无ISO冷启动 | 动态/TLS、hush、持久文件读回及关机通过 | [tcp32-final-product-second.log](../tests/evidence/logs/tcp32-final-product-second.log) |
+| VBox UEFI/AHCI/SMP4，两次产品启动 | 池初始化32/16KiB，动态/TLS/L0/hush、原生持久文件读回、关机通过；NIC显示down，未宣称wire通过 | [tcp32-final-vbox-first.log](../tests/evidence/logs/tcp32-final-vbox-first.log)、[tcp32-final-vbox-second.log](../tests/evidence/logs/tcp32-final-vbox-second.log) |
+| VBox SMP4，debug，**禁用网卡**，Linux关 | 全量 `PASS (0 failures)`；TCP池/RX机制通过，wire跳过；宿主checker通过 | [tcp32-final-vbox-debug-nonic.log](../tests/evidence/logs/tcp32-final-vbox-debug-nonic.log) |
+| VBox SMP4，debug，NAT e1000 | **FAIL (4 failures)**；M8 e1000收发=-9，随后P1b UDP、P1d echo、TCP ELF失败；本轮池/RX机制通过 | [tcp32-vbox-debug.log](../tests/evidence/logs/tcp32-vbox-debug.log) |
+| 非法 RX=4095/32769 | 编译期边界断言按预期拒绝 | [tcp32-invalid-rx4095.log](../tests/evidence/logs/tcp32-invalid-rx4095.log)、[tcp32-invalid-rx32769.log](../tests/evidence/logs/tcp32-invalid-rx32769.log) |
 
 8份 QEMU 与5份 hosted日志均经 `tests/check_tcp_pool.py` 递归检查既有 Linux/动态/TLS/W^X
 及全量结果，启用wire时强制检查8连接payload。QEMU每趟为512MiB、4CPU、30秒上限；
@@ -147,12 +147,109 @@ python3 tests/check_tcp_pool.py --wire /tmp/capmix_run.log
 实际RTO丢SYN/data/FIN恢复日志仍在，且源函数体比较确认retain/acknowledge/due/submitted/
 service/advance/connect/send/recv/close未改。
 
-VBox结果按场景区分，不能把禁网卡PASS写成VBox网络PASS，也未声称已修复e1000问题。
-专用VM为 `CapMix-TCP32-20261017`，磁盘均为本轮 `/tmp/tcp32-*` 测试文件，未修改旧VM/用户盘。
-带网卡debug的失败是实际保留记录，不在本轮扩大范围修网卡或修改RTO。
+原轮次VBox结果按场景区分：禁网卡PASS不是网络PASS，当时尚未修复e1000问题；本轮结果见下方续作。
+历史测试使用独立VM与临时盘，未修改旧VM/用户盘。
+带网卡debug的失败作为历史记录保留；下方续作给出原4项关闭证据，没有修改RTO算法。
 
 ## 修改文件
 
 `include/capmix/tcp.h`、`net/tcp.c`、`Makefile`；
 `boot/p1d_test.c`、`boot/linux_l3_test.c`、`tests/check_tcp_pool.py`；
 本文及总览、HTTPD、USER_NETWORK_ABI、P1D_TCP、TCP_RTO 与文档导航的当前容量说明。
+
+## VBox e1000 debug：原4项失败对账与关闭
+
+2026-10-17续作。旧失败保留在[原始轮次日志](../tests/evidence/logs/tcp32-vbox-debug.log)，
+[独立VM复现](../tests/evidence/logs/e1000fix-vbox-baseline.log)仍为`FAIL (4 failures)`。
+这些记录不改写为PASS；下文最终日志对应修复后的构建。
+
+| 原失败断言 | 根因与处理 | 关闭证据 |
+| --- | --- | --- |
+| M8 `tx/rx failed: -9` | `cm_net_probe()`看见`iface->up=0`即返回DEAD；原测试把设备存在当成链路就绪。M8现在等待并重读STATUS.LU，最多6000ms | 最终VBox `e1000 link ready`、9轮probe跨16项环、`tx_delta=18 rx_delta=18` |
+| P1b open/bind断言 | UDP bind明确拒绝down接口，失败在开始收包之前。按接口up筛选，down明确SKIP | `irq rx verified: enet0`、UDP `bytes=1730`、用户UDP `bytes=1/257/1472` |
+| P1d echo `result=-2 bytes=0` | connect参数检查拒绝down接口，未进入SYN握手；不是RTO或连接池耗尽。down明确跳过wire，始终执行池/RX/RTO机制 | `tcp payload verified`、`simultaneous=8 clients=8 bytes_each=8193` |
+| TCP ELF `report==(nic?1u:2u)` | 原primary selector返回存在但down的enet0，测试预期联网；PRIMARY connect却找不到up接口，ELF报告无NIC。primary与syscall统一选择up接口，virtio-net优先；PRIMARY无up接口为NOENT，显式选择down接口仍DEAD；PRIMARY无up接口为NOENT，显式选择down接口仍DEAD | `tcp ELF syscall verified: CPL=3 send/recv=2049`；拔线时`connect=NOENT skip exit=0 rights denied` |
+
+[VBox设备配置证据](../tests/evidence/logs/e1000fix-vbox-device.log)记录
+`LinkUpDelay=5000ms`；硬件STATUS在等待后变为up，本机约等3秒（不是从VM上电起计时）。
+[VirtualBox官方设备源码](https://github.com/VirtualBox/virtualbox/blob/main/src/VBox/Devices/Network/DevE1000.cpp)
+也定义`LinkUpDelay`默认5000ms。源码链接用于解释机制，实际本机值以归档设备日志为准。
+没有通过关闭VBox延迟、强制写up或放宽payload断言来消除失败。
+
+`cm_e1000_wait_link()`仅在M8启动验收中调用，不给产品启动强加6秒延迟；
+每次读STATUS时短暂持设备锁，调度/等待时释放锁并恢复原中断状态，使用既有标定TSC。
+超时返回AGAIN；无可用标定时返回NOTSUP并明确说明限制；设备死亡/内部错误仍FAIL。
+注册接口丢失仍FAIL。链路已经up后发生ARP/ICMP/UDP/TCP、IRQ或payload错误仍FAIL，
+不把任意网络错误转成skip。未修改TCP RTO算法、KPTI、buddy锁或定时器标定。
+
+### 降级范围，不能写成网络PASS
+
+[拔线负例](../tests/evidence/logs/e1000fix-vbox-down-final.log)使用同一ISO、NAT e1000、
+`--cableconnected1 off`。6秒后日志逐项包含：
+
+- `m8 e1000 wire SKIP: ... no tx/rx claim`
+- `p1b UDP/bg RX wire SKIP`及`p1b UDP user ELF SKIP`
+- `p1d TCP echo/multi wire SKIP`，池/RX/RTO机制照常执行
+- `tcp ELF wire SKIP`，继续验证无可用NIC错误码、CPL3正常退出与页/槽回收
+
+该场景全量`PASS (0 failures)`仅指实际执行的机制断言通过，wire覆盖明确缺失，
+不代表拔线可联网。自定义更长的link-up延迟、后端不可用等导致6秒内无carrier时也按此限制报告；
+本轮不承诺完整热插拔/链路恢复策略。
+
+### 最终环境矩阵
+
+Linux产品默认仍关；本轮主验收ISO显式`capmix.linux=0`。无盘selftest不需格式化用户盘。
+以下wire测试启动宿主`python3 scripts/tcp-echo.py`和`python3 scripts/udp-echo.py`。
+产品http-get另用127.0.0.1:8000提供`/hello.txt`，httpd用宿主18083转发guest8080。
+
+| 环境 | 结果与范围 | 仓库证据 |
+| --- | --- | --- |
+| hosted Linux关，默认16KiB | 全量0 failures；硬件路径按原规则skip | [日志](../tests/evidence/logs/e1000fix-hosted-off-final.log) |
+| hosted selector机制 | 两块up优先virtio；virtio down回退e1000；全down/缺设备返回NULL；状态up后可重选。仅selector，不是物理热插拔测试 | [断言](../tests/evidence/logs/e1000fix-primary.log) |
+| VBox7.2.20r175154，UEFI/PIIX3/SMP4/512MiB/NAT 82540EM，Linux关 | **全量PASS (0 failures)**，原4项全过；IRQ RX、8连接×8193B及回收通过 | [最终日志](../tests/evidence/logs/e1000fix-vbox-off-final.log)、[断言](../tests/evidence/logs/e1000fix-check-vbox-off-final.log) |
+| VBox同配置，拔线 | 全量0 failures；wire明确SKIP，池/lo/无NIC ELF通过；**不计网络PASS** | [最终日志](../tests/evidence/logs/e1000fix-vbox-down-final.log)、[断言](../tests/evidence/logs/e1000fix-check-vbox-down-final.log) |
+| QEMU8.2.2/KVM，SMP4/512MiB/e1000，Linux关 | 全量0 failures，原4项、multi8及RTO丢包恢复通过 | [日志](../tests/evidence/logs/e1000fix-qemu-e1000-final.log)、[断言](../tests/evidence/logs/e1000fix-check-qemu-e1000-final.log) |
+| QEMU双NUMA2×256MiB，virtio-net+e1000，Linux关 | 全量0 failures，两网卡各自multi8/UDP；virtio IRQ，e1000按既有路由策略poll fallback；virtio优先 | [日志](../tests/evidence/logs/e1000fix-qemu-dual-final.log)、[断言](../tests/evidence/logs/e1000fix-check-qemu-dual-final.log) |
+| QEMU标准串口验收，无支持网卡，Linux关 | 全量0 failures，wire按原规则skip | [日志](../tests/evidence/logs/e1000fix-qemu-default-debug.log) |
+| QEMU无ISO安装盘，virtio-blk+e1000/SMP4，Linux关 | 原生hello、`> >> <`持久文件、nc echo、http-get 200、httpd两次200、kill137/reap及关机通过；冷启动读回一致 | [首次](../tests/evidence/logs/e1000fix-final-product-first.log)、[冷启动](../tests/evidence/logs/e1000fix-final-product-second.log)、[客户端](../tests/evidence/logs/e1000fix-final-product-httpd-client.log)、[宿主断言](../tests/evidence/logs/e1000fix-final-product-assertions.log) |
+
+产品测试不是全量selftest，不能给它补写`selftest result`标志。双卡QEMU的e1000日志明确`irq rx skipped ... fallback=poll-10ms`；其单卡IRQ已另验通过，不把双卡轮询写成IRQ通过。
+VM均独立创建，未修改用户旧VM/盘。
+历史矩阵中VBox NIC-down产品和禁网卡debug记录保持原范围；新增成功只适用于本表配置。
+
+### 复现与检查
+
+```sh
+make kernel 2>&1 | grep -iE 'warn|error'
+make test
+cc -std=c11 -Wall -Wextra -Werror -DCAPMIX_HOSTED -Iinclude \
+  net/if.c tests/net_primary.c -o /tmp/net-primary-test
+/tmp/net-primary-test
+make iso LIMINE_CONFIG=boot/limine-tcp-pool-selftest.conf
+# 在独立VBox UEFI/SMP4/512MiB/NAT 82540EM VM挂此ISO，网线on，UART保存到新日志。
+# 保留默认LinkUpDelay，启动宿主TCP/UDP echo；QEMU不要与VBox同时运行。
+# 完整关机后将网线off，再启动一次生成拔线负例。
+python3 tests/check_e1000_debug.py /tmp/vbox-up.log
+python3 tests/check_tcp_pool.py --disabled --wire /tmp/vbox-up.log
+python3 tests/check_e1000_debug.py --carrier-down /tmp/vbox-down.log
+python3 tests/check_tcp_pool.py --disabled /tmp/vbox-down.log
+```
+
+两组checker分别要求真实wire与明确skip；不能把down日志交给wire checker获取PASS。
+归档旧4失败日志也必须被checker拒绝。
+无ISO产品回归可在**新建的可丢弃盘**运行（需要前述echo和HTTP测试端）：
+
+```sh
+python3 scripts/install-disk.py /tmp/capmix-net-regression.img --kernel capmix.elf
+python3 tests/check_tcp_pool_product.py --disk /tmp/capmix-net-regression.img
+```
+
+脚本经QEMU monitor发送PS/2按键，两次冷启动，实际断言响应、持久文件与进程回收。
+它会在测试根写`/irq-net*.txt`，不要对用户盘执行。
+
+普通`make iso`依然使用默认产品配置；本轮没有改默认persona、安装布局或shell命令。
+
+修改文件：`net/e1000.c`、`net/if.c`、`include/capmix/{e1000,net}.h`、
+`proc/syscall.c`（只统一PRIMARY选择）、`boot/{m8,p1b,p1d,tcp_elf}_test.c`、
+`boot/limine-tcp-pool-selftest.conf`、`tests/{net_primary.c,check_e1000_debug.py,check_tcp_pool_product.py}`、
+本文与`tests/evidence/`。

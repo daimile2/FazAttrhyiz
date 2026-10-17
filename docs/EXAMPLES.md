@@ -178,3 +178,16 @@ run /bin/http-get.elf 10.0.2.2 8000 /hello.txt
 
 新增 `/bin/httpd.elf`：`run /bin/httpd.elf 8080 &`，监听后串行accept并返回HTTP/1.0 200。
 使用宿主端口转发访问；非阻塞accept、容量/超时/回收、QEMU/VBox命令及验收矩阵见 [HTTPD.md](HTTPD.md)。
+
+## 可选静态解释器展示品
+
+仅在Linux persona开启时，产品init补缺 `/bin/micropython.elf` 和演示脚本：
+
+```text
+run /bin/micropython.elf /data/linux/micropython-demo.py
+```
+
+预期打印 `micropython golden`、`42`，退出0；可以使用已有 `> /mp-result.txt`
+重定向，再用原生cat读回。固定256KiB GC、无浮点/线程/外部模块/REPL；
+不是通用MicroPython/Python生态。配方、哈希、窗口与测试矩阵见
+[LINUX_MICROPYTHON.md](LINUX_MICROPYTHON.md)。默认Linux仍关闭。

@@ -486,10 +486,9 @@ static int64_t sys_tcp_connect(uint64_t hid,uint64_t address,uint64_t a,uint64_t
     if(request.reserved || !request.address || !request.port || !request.timeout_ms || request.timeout_ms>10000)return CM_ERR_INVAL;
     int id;
     if(request.ifid==CM_TCP_IF_PRIMARY) {
-        id=cm_if_find("vnet0");cm_iface_t *iface=cm_if_get(id);
-        if(!iface || !iface->up) {int alternative=cm_if_find("enet0");cm_iface_t *other=cm_if_get(alternative);
-            if(other && other->up)id=alternative;}
-        if(id<0)return CM_ERR_NOENT;
+        cm_iface_t *primary=cm_net_primary_iface();
+        if(!primary)return CM_ERR_NOENT;
+        id=cm_if_find(primary->name);
     } else {
         if(request.ifid>=CM_MAX_IFACE)return CM_ERR_INVAL;
         id=(int)request.ifid;

@@ -68,7 +68,7 @@ void cm_pcpu_init(int cpu, uint64_t kstack_top)
 }
 
 /* Snapshot the entry ABI and both SWAPGS phases along with every context.
- * Fixed affinity prevents a user context from carrying an old CPU GS address. */
+ * GS bases are rebound locally; explicit migration also rebuilds the kernel continuation. */
 #ifndef CAPMIX_HOSTED
 static struct { cm_pcpu_t p; uint64_t gs, kgs; int valid; }
     g_entry_state[CM_MAX_THREADS + CM_MAX_CPUS];
@@ -348,8 +348,10 @@ void cm_usermode_run_elf(struct cm_proc *p)
     g_pcpu[cpu].leave_user = 0;
     g_pcpu[cpu].entry_top=entry_top;
     extern uint64_t cm_entry_user_irqs;
-    p->elf_timer_before = cm_entry_user_irqs;
-    p->elf_start_tsc=cm_rdtsc();
+    if(!p->elf_started) {
+        p->elf_timer_before = cm_entry_user_irqs;
+        p->elf_start_tsc=cm_rdtsc();
+    }
     p->elf_started = 1;
     kinfo("exec ring3: pid=%llu entry=%llx rsp=%llx cpu=%d",
           (unsigned long)p->pid, (unsigned long)(p->linux_resume?p->linux_regs.rcx:p->elf->entry),
@@ -464,5 +466,25 @@ int64_t cm_syscall_frame(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d
     }
     int64_t result=cm_syscall(nr,a,b,c,d);
     if(p)p->linux_frame=NULL;
+    /* A kill handled during dispatch uses the normal exit path. */
+    if(p && (p->exited || p->linux_thread_dead))
+        __atomic_store_n(&p->linux_migrate,0,__ATOMIC_RELEASE);
+#ifndef CAPMIX_HOSTED
+    if(p && __atomic_load_n(&p->linux_migrate,__ATOMIC_ACQUIRE)==1) {
+        /* Dispatch has unwound. Disable IRQs before saving the live FS and
+         * entry frame; no resource-owning C continuation is transported. */
+        (void)cm_irq_save();
+        memcpy(&p->linux_regs,frame,120);
+        p->linux_regs.rax=(uint64_t)result;
+        p->linux_regs.rsp=g_pcpu[cm_cpu_id()].user_rsp;
+        p->linux_fs=cm_arch_user_fs_get();
+        __atomic_store_n(&p->linux_migrate,2,__ATOMIC_RELEASE);
+        /* Mirror the normal exit's SWAPGS phase without changing KPTI entry. */
+        __asm__ volatile("swapgs" ::: "memory");
+        cm_space_load(cm_paging_cr3());
+        cm_arch_ctx_swap(p->main->ctx_slot,-1);
+        cm_panic("linux migrate: discarded syscall tail resumed");
+    }
+#endif
     return result;
 }

@@ -40,9 +40,14 @@ typedef struct cm_proc {
     struct cm_proc *linux_group; /* NULL on leader; shared mm/task/files */
     uint64_t linux_clear_tid;
     int linux_grouped,linux_thread_dead,linux_cleanup,linux_group_exit;
+    uint64_t linux_fd_owner; /* leader: nonblocking syscall gate, owner TID */
+    unsigned linux_fd_depth; /* recursive writev -> write by the same owner */
     uint64_t linux_fs;
     uint64_t linux_sigmask,linux_sigignored; /* single-thread metadata; no delivery */
     int linux_resume,linux_fork_child;
+    /* 0 idle, 1 requested, 2 off-user-stack handoff; rq lock publishes CPU. */
+    int linux_migrate,linux_migrate_cpu,linux_migrate_fail_once;
+    unsigned linux_migrations,linux_migrate_rollbacks;
     uint8_t linux_console_store[CM_FD_MAX],linux_cloexec_store[CM_FD_MAX];
     uint8_t *linux_console,*linux_cloexec;
     cm_id_t       pid;
@@ -97,7 +102,10 @@ int cm_proc_children_pending(cm_id_t parent);
 cm_error_t cm_proc_request_kill(cm_id_t parent, cm_id_t child);
 void cm_proc_finish_exit(cm_proc_t *p, int64_t code);
 int cm_proc_reap_orphans(void);
-/* Each ELF has fixed CPU affinity, including blocked/exit cleanup. */
+int64_t cm_linux_setaffinity(uint64_t pid,uint64_t size,uint64_t mask);
+/* Called with rq lock, after swap to the OLD CPU scheduler. */
+int cm_proc_migrate_stopped(cm_thread_t *th);
+/* ELF placement changes only at an explicit, off-CPU syscall handoff. */
 int cm_proc_task_is_elf(const cm_task_t *task);
 int cm_proc_task_cpu_allowed(const cm_task_t *task, int cpu);
 

@@ -1,0 +1,11 @@
+memory=512
+chipset="piix3"
+firmware="EFI64"
+cpus=4
+VMState="poweroff"
+natnet1="nat"
+cableconnected1="off"
+nic1="nat"
+nictype1="82540EM"
+uart1="0x03f8,4"
+uartmode1="file,<HOST_TMP_PATH>"

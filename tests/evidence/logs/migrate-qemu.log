@@ -1,0 +1,857 @@
+CPU Reset (CPU 0)
+EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000000
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+EIP=00000000 EFL=00000000 [-------] CPL=0 II=0 A20=0 SMM=0 HLT=0
+ES =0000 00000000 00000000 00000000
+CS =0000 00000000 00000000 00000000
+SS =0000 00000000 00000000 00000000
+DS =0000 00000000 00000000 00000000
+FS =0000 00000000 00000000 00000000
+GS =0000 00000000 00000000 00000000
+LDT=0000 00000000 00000000 00000000
+TR =0000 00000000 00000000 00000000
+GDT=     00000000 00000000
+IDT=     00000000 00000000
+CR0=00000000 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+DR6=0000000000000000 DR7=0000000000000000
+CCS=00000000 CCD=00000000 CCO=DYNAMIC
+EFER=0000000000000000
+FCW=0000 FSW=0000 [ST=0] FTW=ff MXCSR=00000000
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
+XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
+XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
+XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
+CPU Reset (CPU 1)
+EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000000
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+EIP=00000000 EFL=00000000 [-------] CPL=0 II=0 A20=0 SMM=0 HLT=0
+ES =0000 00000000 00000000 00000000
+CS =0000 00000000 00000000 00000000
+SS =0000 00000000 00000000 00000000
+DS =0000 00000000 00000000 00000000
+FS =0000 00000000 00000000 00000000
+GS =0000 00000000 00000000 00000000
+LDT=0000 00000000 00000000 00000000
+TR =0000 00000000 00000000 00000000
+GDT=     00000000 00000000
+IDT=     00000000 00000000
+CR0=00000000 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+DR6=0000000000000000 DR7=0000000000000000
+CCS=00000000 CCD=00000000 CCO=DYNAMIC
+EFER=0000000000000000
+FCW=0000 FSW=0000 [ST=0] FTW=ff MXCSR=00000000
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
+XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
+XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
+XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
+CPU Reset (CPU 2)
+EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000000
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+EIP=00000000 EFL=00000000 [-------] CPL=0 II=0 A20=0 SMM=0 HLT=0
+ES =0000 00000000 00000000 00000000
+CS =0000 00000000 00000000 00000000
+SS =0000 00000000 00000000 00000000
+DS =0000 00000000 00000000 00000000
+FS =0000 00000000 00000000 00000000
+GS =0000 00000000 00000000 00000000
+LDT=0000 00000000 00000000 00000000
+TR =0000 00000000 00000000 00000000
+GDT=     00000000 00000000
+IDT=     00000000 00000000
+CR0=00000000 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+DR6=0000000000000000 DR7=0000000000000000
+CCS=00000000 CCD=00000000 CCO=DYNAMIC
+EFER=0000000000000000
+FCW=0000 FSW=0000 [ST=0] FTW=ff MXCSR=00000000
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
+XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
+XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
+XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
+CPU Reset (CPU 3)
+EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000000
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+EIP=00000000 EFL=00000000 [-------] CPL=0 II=0 A20=0 SMM=0 HLT=0
+ES =0000 00000000 00000000 00000000
+CS =0000 00000000 00000000 00000000
+SS =0000 00000000 00000000 00000000
+DS =0000 00000000 00000000 00000000
+FS =0000 00000000 00000000 00000000
+GS =0000 00000000 00000000 00000000
+LDT=0000 00000000 00000000 00000000
+TR =0000 00000000 00000000 00000000
+GDT=     00000000 00000000
+IDT=     00000000 00000000
+CR0=00000000 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+DR6=0000000000000000 DR7=0000000000000000
+CCS=00000000 CCD=00000000 CCO=DYNAMIC
+EFER=0000000000000000
+FCW=0000 FSW=0000 [ST=0] FTW=ff MXCSR=00000000
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
+XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
+XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
+XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
+CPU Reset (CPU 0)
+EAX=00000000 EBX=00000000 ECX=00000000 EDX=000b06a2
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+EIP=0000fff0 EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0000 00000000 0000ffff 00009300
+CS =f000 ffff0000 0000ffff 00009b00
+SS =0000 00000000 0000ffff 00009300
+DS =0000 00000000 0000ffff 00009300
+FS =0000 00000000 0000ffff 00009300
+GS =0000 00000000 0000ffff 00009300
+LDT=0000 00000000 0000ffff 00008200
+TR =0000 00000000 0000ffff 00008b00
+GDT=     00000000 0000ffff
+IDT=     00000000 0000ffff
+CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+DR6=00000000ffff0ff0 DR7=0000000000000400
+CCS=00000000 CCD=00000000 CCO=DYNAMIC
+EFER=0000000000000000
+FCW=037f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
+XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
+XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
+XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
+CPU Reset (CPU 1)
+EAX=00000000 EBX=00000000 ECX=00000000 EDX=000b06a2
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+EIP=0000fff0 EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0000 00000000 0000ffff 00009300
+CS =f000 ffff0000 0000ffff 00009b00
+SS =0000 00000000 0000ffff 00009300
+DS =0000 00000000 0000ffff 00009300
+FS =0000 00000000 0000ffff 00009300
+GS =0000 00000000 0000ffff 00009300
+LDT=0000 00000000 0000ffff 00008200
+TR =0000 00000000 0000ffff 00008b00
+GDT=     00000000 0000ffff
+IDT=     00000000 0000ffff
+CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+DR6=00000000ffff0ff0 DR7=0000000000000400
+CCS=00000000 CCD=00000000 CCO=DYNAMIC
+EFER=0000000000000000
+FCW=037f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
+XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
+XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
+XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
+CPU Reset (CPU 2)
+EAX=00000000 EBX=00000000 ECX=00000000 EDX=000b06a2
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+EIP=0000fff0 EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0000 00000000 0000ffff 00009300
+CS =f000 ffff0000 0000ffff 00009b00
+SS =0000 00000000 0000ffff 00009300
+DS =0000 00000000 0000ffff 00009300
+FS =0000 00000000 0000ffff 00009300
+GS =0000 00000000 0000ffff 00009300
+LDT=0000 00000000 0000ffff 00008200
+TR =0000 00000000 0000ffff 00008b00
+GDT=     00000000 0000ffff
+IDT=     00000000 0000ffff
+CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+DR6=00000000ffff0ff0 DR7=0000000000000400
+CCS=00000000 CCD=00000000 CCO=DYNAMIC
+EFER=0000000000000000
+FCW=037f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
+XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
+XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
+XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
+CPU Reset (CPU 3)
+EAX=00000000 EBX=00000000 ECX=00000000 EDX=000b06a2
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+EIP=0000fff0 EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0000 00000000 0000ffff 00009300
+CS =f000 ffff0000 0000ffff 00009b00
+SS =0000 00000000 0000ffff 00009300
+DS =0000 00000000 0000ffff 00009300
+FS =0000 00000000 0000ffff 00009300
+GS =0000 00000000 0000ffff 00009300
+LDT=0000 00000000 0000ffff 00008200
+TR =0000 00000000 0000ffff 00008b00
+GDT=     00000000 0000ffff
+IDT=     00000000 0000ffff
+CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+DR6=00000000ffff0ff0 DR7=0000000000000400
+CCS=00000000 CCD=00000000 CCO=DYNAMIC
+EFER=0000000000000000
+FCW=037f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
+XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
+XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
+XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
+[INF] boot mode: selftest (Limine cmdline snapshot)
+[INF] req: mmap=0xffff80001ff57000 hhdm=0xffff80001f1b4000 kaddr=0xffff80001ff48000
+[INF] kaddr: phys=1f1b8000 virt=ffffffff80000000 size=9977856 (excluded from buddy)
+[INF] limine: usable phys=100000 pages=127122 hhdm=ffff800000000000 → buddy virt=ffff800000110000 n=16384
+[INF] gdt: lgdt + ltr 0x30 cpu=0 ist1=0xffffffff80087000 ist2=0xffffffff80067000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] gdt: lgdt + ltr 0x30 cpu=0 ist1=0xffffffff80087000 ist2=0xffffffff80067000
+[INF] gdt: seg reload was cs=8 ds=10 ss=10 -> now cs=8 ss=10
+[INF] idt: lidt base=0xffffffff800a4000 #PF/#GP/#DF/#SS IST=1 timer=0x40 IST=0
+[INF] ====================================================
+[INF] CapMix 0.8.0-phase8 — capability hybrid kernel
+[INF] skeleton: capability hybrid (Zircon + L4 IPC + XNU split)
+[INF] mm: no-overcommit + buddy/SLUB + 4-level pressure
+[INF] sched: EEVDF + QoS bands + turnstile
+[INF] obs: trace_id on every IPC (day-0, not bolted on)
+[INF] proc: posix_spawn first-class, fork is compat-only
+[INF] fs: COW volume (APFS + Btrfs csum + XFS AG + ReFS scrub)
+[INF] io: irq split + uring + blk-mq + user-mode drivers
+[INF] net: in-kernel + XDP/eBPF (kill-switch) + nft
+[INF] sec: cap + Seatbelt + SIP + one-shot authz + signing
+[INF] virt: Type-1 KVM + job/cgroup v2
+[INF] obs: ETW session + hist + cap-gated consume
+[INF] ====================================================
+[INF] mm: commit limit 15401 pages (no-overcommit, reserve 983)
+[INF] mm: watermarks min=256 low=512 high=768 pages
+[INF] mm: commit limit 16425 pages (+1024 backed by swap)
+[INF] anon: 52428 page slots, compressor pool <= 8192 segs, swap 1024 x 4 KiB segs
+[INF] mm: buddy ready, 16384 pages (65536 KiB), max order 11
+[INF] paging: active levels=4 max=5 folded=1
+[INF] paging: mapped kernel virt=ffffffff80000000 phys=1f1b8000 pages=2436
+[INF] paging: mapped heap virt=ffff800000110000 phys=110000 pages=16384
+[INF] lapic: mapped phys=fee00000 -> ffffffff8fee0000 (PCD)
+[INF] probe rsp=ffffffff80275150 (boot_stack=0xffffffff80255170) land
+[INF] paging: CR3=4100000 tables=44 mapped=18821 stack=bss (own walker live)
+[INF] paging: KPTI enabled, PGE disabled
+[INF] fb console ready: 1280x800 pitch=5120 bpp=32 text=100x40 serial retained
+[INF] mp: mapped 1 response page(s) on demand at ffff80001f1b3000
+[INF] mp: mapped 1 response page(s) on demand at ffff8000000f5000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ffe1000
+[INF] numa: single node0 fallback (SRAT absent/invalid or one domain), existing arena unchanged
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ffe0000
+[INF] acpi poweroff ready: S5=0/0 PM1=604/0
+[INF] irq: top/bottom half ready, 32 lines
+[INF] mp: mapped 1 response page(s) on demand at ffff8000000f5000
+[INF] mp: mapped 2 response page(s) on demand at ffff80001ffe1000
+[INF] ioapic: MADT addr=fec00000 IRQ1 gsi=1
+[INF] ioapic: version=170011
+[INF] ioapic: IRQ1 gsi=1 -> vec 0x41 dest=0
+[INF] ps2: ready set1 IRQ1 echo (bounded i8042 initialization)
+[INF] io: uring SQ/CQ 256 entries, IOCP inflight counter on
+[INF] virtio-blk skipped: no supported PCI device
+[INF] ahci skipped: no supported controller
+[INF] disk install skipped: no supported disk; RAM root fallback unchanged
+[INF] blk root backend: ramdisk
+[INF] blk: mq 4 queues x qd 32, ramdisk 16384 sectors (raw 64 / swap 8192 / fs 8128)
+[INF] drv: user-mode framework, capability IRQ broker ready
+[INF] cowfs: no valid superblock — formatting
+[INF] cowfs: mkfs 1016 blocks x 4096 B, 256 inodes, 4 AGs, gen=1
+[INF] vfs: '/' = cowfs (in-kernel, no IPC hop); snapshots under /.snap
+[INF] m3 persist skipped: no supported disk; ramdisk root unchanged
+[INF] ebpf: verifier on, kill-switch available, JIT later
+[INF] udp: lo/NIC datagrams, 16 capability endpoints x 8 queued, max payload=1472
+[INF] tcp pool: slots=32 backlog=8 rx_bytes=16384 slot_bytes=17072 pool_bytes=546304 static-resident commit=0
+[INF] virtio-net skipped: no supported PCI device
+[INF] e1000 skipped: no supported PCI NIC (82540/82545/82574)
+[INF] net primary: unavailable (priority virtio-net > e1000)
+[INF] net: in-kernel stack (XNU lesson), XDP + nft
+[INF] sip: mask=f cr4=20
+[INF] mitigations=0 SMEP=0 SMAP=0 KPTI=0 kpti_configured=1 kaslr=unimplemented kaslr_slide=0
+[INF] mitigations: KPTI awaiting actual ring3 shadow/full CR3 verification (hosted has no hardware entry)
+[INF] sec: cap deny-by-default + Seatbelt + SIP + one-shot authz + sign
+[INF] virt: Type-1 KVM + VFIO/SR-IOV stubs, job/cgroup v2 ready
+[INF] lapic: cpuid1 edx.apic=1 ecx.tsc_deadline=1
+[INF] lapic: tsc_freq=3187280082 Hz (3187 MHz, src=pit-median)
+[INF] lapic: TSC-deadline tick_tsc=3187280 (target 1000000 ns), armed after sti
+[INF] lapic: BSP tsc-deadline=1 calib_hz=3187280082 target_ns=1000000 initial_count=0
+[INF] lapic: readback lvt(0x320)=40040 dcr(0x3E0)=0
+[INF] probe rsp=ffffffff80275140 (boot_stack=0xffffffff80255170) after_paging
+[INF] fault: installed error-code stubs for 8,10,11,12,13,14,17 (IST=1)
+[INF] smp: probe enter cpu_id=0
+[INF] mp: response=0xffff80001ff59000 max_ids=8
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ff59000
+[INF] mp: revision=0 flags=0 bsp=0 cpu_count=4 cpus=0xffff80001ff58000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ff58000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ff6d000
+[INF] mp:   [0] info=0xffff80001ff6d000 lapic_id=0
+[INF] mp:   [1] info=0xffff80001ff6d020 lapic_id=1
+[INF] mp:   [2] info=0xffff80001ff6d040 lapic_id=2
+[INF] mp:   [3] info=0xffff80001ff6d060 lapic_id=3
+[INF] smp: cm_limine_mp rc=0 n=4 bsp=0
+[INF] smp: cpu_count=4 bsp_lapic_id=0 (this cpu=0, index=0)
+[INF] smp:   cpu[0] lapic_id=0 (BSP)
+[INF] smp:   cpu[1] lapic_id=1
+[INF] smp:   cpu[2] lapic_id=2
+[INF] smp:   cpu[3] lapic_id=3
+[INF] numa: node=0 domain=0 cpu_mask=f total=16384 free=13775
+[INF] numa: distance node0->node0=10
+[INF] gdt: lgdt + ltr 0x30 cpu=1 ist1=0xffffffff8008b000 ist2=0xffffffff8006b000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=1 timer armed tsc-deadline=1 calib_hz=3187280082 initial_count=0
+[INF] ap: cpu=1 lapic_id=1 up on stack 0xffffffff8027d270
+[INF] gdt: lgdt + ltr 0x30 cpu=2 ist1=0xffffffff8008f000 ist2=0xffffffff8006f000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=2 timer armed tsc-deadline=1 calib_hz=3187280082 initial_count=0
+[INF] ap: cpu=2 lapic_id=2 up on stack 0xffffffff80281270
+[INF] gdt: lgdt + ltr 0x30 cpu=3 ist1=0xffffffff80093000 ist2=0xffffffff80073000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=3 timer armed tsc-deadline=1 calib_hz=3187280082 initial_count=0
+[INF] ap: cpu=3 lapic_id=3 up on stack 0xffffffff80285270
+[INF] smp: started 3 AP(s), online=4/4
+[INF] fault: installed error-code stubs for 8,10,11,12,13,14,17 (IST=1)
+[INF] idt[64]: off=ffffffff8006013e sel=8 ist=0 type=8e present=1
+[INF] idt[64]: timer stub is MATCHED (cm_timer_stub=ffffffff8006013e)
+[INF] probe rsp=ffffffff80275130 (boot_stack=0xffffffff80255170) pre-sti
+[INF] lapic: pre-sti lvt=40040 id=0 svr=1ff
+[INF] lapic: armed dl=8ffcbe64 tsc=8fcc3220 (dl>tsc=1)
+[INF] irq: after bare-spin IF=1 firings=48 ticks=3 ccr=0
+[INF] timer: tick=1 tsc=8ffccaee (baseline, no delta yet)
+[INF] timer: tick=2 tsc=902d7a49 delta_tsc=3190619 (~1001 us, target 1000 us)
+[INF] timer: tick=3 tsc=905e2826 delta_tsc=3190237 (~1000 us, target 1000 us)
+[INF] timer: tick=4 tsc=90b6ffac delta_tsc=5822342 (~1826 us, target 1000 us)
+[INF] freestanding: paging live — selftest
+[INF] probe rsp=ffffffff80274f10 (boot_stack=0xffffffff80255170) selftest
+[INF] smp: selftest on cpu 0 of 4
+[INF] checkpoint A
+[INF] fb selftest: active log output chars=5595
+[INF] ps2 selftest: make/break/shift/caps/enter/backspace verified
+help | echo TEXT | ls [PATH] | cat PATH | run ELF_PATH [ARGS] [&] | exit | poweroff/shutdown
+m5 parser verified
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+[INF] shell error: -6 (help lists commands)
+capmix> a [INF] m5 shell selftest: command/mode/bounds/backspace/missing-ELF verified
+[INF] acpi poweroff parser: root-Scope/truncated/element-count/buffer-method fake verified
+[INF] ahci selftest skipped: no supported disk
+[INF] disk install layout selftest: PASS (0 failures) legacy/offset/bounds/overlap/tamper refusal verified
+[INF] timer calib cpu=0 tsc-deadline=1 samples=128 elapsed_tsc=405208205 mean_ns=1001046 target_ns=1000000 error_permille=1 PASS
+[INF] timer calib cpu=1 tsc-deadline=1 samples=128 elapsed_tsc=405216312 mean_ns=1001066 target_ns=1000000 error_permille=1 PASS
+[INF] timer calib cpu=2 tsc-deadline=1 samples=128 elapsed_tsc=405214596 mean_ns=1001062 target_ns=1000000 error_permille=1 PASS
+[INF] timer calib cpu=3 tsc-deadline=1 samples=128 elapsed_tsc=405195551 mean_ns=1001015 target_ns=1000000 error_permille=1 PASS
+[INF] timer calib selftest: PASS (0 failures)
+[INF] buddy SMP soak start: cpus=4 rounds/cpu=10000 batch=4 orders=0..3
+[INF] buddy SMP soak: PASS cpus=4 rounds=40000 alloc/free=160000 duplicate=0 corrupt=0 invalid=0 nomem=0 retained=0 free=13775/13775
+[INF] rdtsc: 32 cycles/call
+[INF] checkpoint B
+[INF] obs_emit: 1 cycles/call
+[INF] checkpoint C
+[INF] checkpoint D
+[INF] timer-spin i=0 firings=958 ticks=217 ccr=0 tsc=bcc1767b dl=bccdce6a d=808943
+[INF] timer-spin i=200000 firings=965 ticks=218 ccr=0 tsc=bd071511 dl=bd33d6f5 d=2933220
+[INF] timer-spin i=400000 firings=969 ticks=219 ccr=0 tsc=bd4a7bb5 dl=bd773cfa d=2933061
+[INF] timer-spin i=600000 firings=975 ticks=220 ccr=0 tsc=bd8ac53b dl=bdb7868c d=2933073
+[INF] timer-spin i=800000 firings=980 ticks=221 ccr=0 tsc=bdcaf8cc dl=bdf7bb04 d=2933304
+[INF] timer-spin i=1000000 firings=984 ticks=222 ccr=0 tsc=be0cea16 dl=be39acd7 d=2933441
+[INF] timer-spin i=1200000 firings=991 ticks=223 ccr=0 tsc=be505bb9 dl=be7d1e80 d=2933447
+[INF] timer-spin i=1400000 firings=995 ticks=224 ccr=0 tsc=be910511 dl=bebd9933 d=2921506
+[INF] timer-spin i=1600000 firings=999 ticks=225 ccr=0 tsc=bed3a49a dl=bf0037e1 d=2921287
+[INF] timer-spin i=1800000 firings=1006 ticks=226 ccr=0 tsc=bf165692 dl=bf42eb72 d=2921696
+[INF] timer: ticks 217 -> 227
+[INF] probe: after-timer-spin firings=1013 ticks=227
+[INF] checkpoint E
+[INF] --- selftest: wkdm roundtrip + configurable page walk ---
+[INF] phase0: 4-level walker folding, KPTI=1, node0 buddy/bind: PASS (0 failures)
+[INF] numa: balance verified nodes=1 online_memory_nodes=1 visited_mask=1 (round-robin/strict bind)
+[INF] numa selftest: PASS (0 failures)
+[INF] wkdm: 4096 → 1092 bytes, roundtrip ok
+[INF] paging: tables=59 mapped_pages=20064 pml4=0xffff800004100000 cr3_would=4100000
+[INF] paging: kernel text ffffffff80001000..ffffffff80060000 (95 pages) write_protected=1
+[INF] ctx: fiber switch seq=111 (want 111)
+[INF] sched: reaped 40 threads, slot recycled
+[INF] --- selftest: buddy / commit ---
+[WRN] mm: commit denied 0+16426 > limit 16425
+[INF] no-overcommit correctly refused over-limit charge
+[INF] mm: total=16384 free=13765 commit=0/16425 cache=0 anon=0 comp=0(pool 0) swapped=0(segs 0/1024) jetsam=0 oom=0 press=idle
+[INF]   buddy node=0 arena=0 pages=16384 free=13765
+[INF] probe: after-buddy firings=1080 ticks=237
+[INF] --- selftest: capabilities + channel IPC ---
+[INF] sched ran 32 steps, ping=1 pong=1 replies=1 bg_work=27
+[INF] probe: after-ipc firings=1091 ticks=239
+[INF] sched IPC background joined: work=201 stack/pages reclaimed
+[INF] --- selftest: phase1 VMO/VMAR zero-copy IPC ---
+[INF] vmo transfer ok: bytes=65536 sender_va=1000000 receiver_va=2000000 sender_h=3 receiver_h=4
+[INF] vmo zero-copy: shared backing=16 pages checksum=8355840 shared-write ok
+[INF] vmo lifecycle ok: mapping pins, pages and commit reclaimed
+[INF] vmo transfer rollback ok: invalid/rights/queue-full/handle-table-full/retry/peer-close
+[INF] vmo queued lifetime ok: sender-close delivery and receiver-close reclaim
+[WRN] mm: commit denied 16425+1 > limit 16425
+[INF] vmo allocation rollback ok: commit-denied/backing-OOM/page-table-OOM/retry
+[INF] phase1 selftest: PASS (0 failures)
+[INF] --- selftest: posix_spawn + first user process ---
+[INF] spawn: pid=1 path=/bin/hello commit=12 pages qos=UserInitiated
+[INF] user[1]: hello world from userspace
+[INF] sys: exit pid=1 code=0
+[INF] user hello: pid=1 steps=2 ran=1 exited=1 code=0
+[WRN] fork: compat stub — use posix_spawn (race-free, one syscall)
+[INF] fork correctly refused (conflict #2)
+[INF] --- selftest: phase 3 (pressure pipeline + VFS + COW volume) ---
+[INF] --- p3: VFS (namespace, multi-block I/O, persistence) ---
+[INF] cowfs: mounted gen=13 (slot B, other slot valid/older) snaps=0
+[INF] p3: vfs ok — 100 KiB file via indirect block, readdir/unlink/trunc/append, survives remount at gen 13
+[INF] --- p3: file syscalls through fdio -> capability handles ---
+[INF] spawn: pid=2 path=/bin/filetest commit=6 pages qos=UserInitiated
+[INF] sys: exit pid=2 code=0
+[INF] p3: syscalls ok — open/read/write/fsync/close, read-only handle refused write
+[INF] --- p3: COW (pointer flip, snapshot, clone, nocow, sparse) ---
+[INF] cowfs: snapshot 's1' = gen 20 (zero-copy, read-only at /.snap/s1)
+[INF] cowfs: clone /data/note -> /data/note.clone (blocks shared, zero copy)
+[INF] cowfs: snapshot 's2' = gen 27 (zero-copy, read-only at /.snap/s2)
+[INF] p3: cow ok — moved blocks, snapshot read-only+zero-copy, clone, nocow in-place until shared, sparse holes, snapshot delete frees 12 blocks
+[INF] --- p3: crash at every commit stage, remount from disk ---
+[WRN] cowfs: *** simulated power cut at commit stage 1 ***
+[INF] cowfs: mounted gen=37 (slot B, other slot valid/older) snaps=0
+[INF] cowfs: scrub meta=4 (repaired 0, lost 0) data=35 (errors 0)
+[INF] p3: crash after-data -> mounted gen 37, old data intact, 0 leaked blocks
+[WRN] cowfs: *** simulated power cut at commit stage 2 ***
+[INF] cowfs: mounted gen=39 (slot B, other slot valid/older) snaps=0
+[INF] cowfs: scrub meta=4 (repaired 0, lost 0) data=35 (errors 0)
+[INF] p3: crash after-itab -> mounted gen 39, old data intact, 0 leaked blocks
+[WRN] cowfs: *** simulated power cut at commit stage 3 ***
+[INF] cowfs: mounted gen=41 (slot B, other slot valid/older) snaps=0
+[INF] cowfs: scrub meta=4 (repaired 0, lost 0) data=35 (errors 0)
+[INF] p3: crash after-omap -> mounted gen 41, old data intact, 0 leaked blocks
+[WRN] cowfs: *** simulated power cut at commit stage 4 ***
+[INF] cowfs: mounted gen=43 (slot B, other slot invalid) snaps=0
+[INF] cowfs: scrub meta=4 (repaired 0, lost 0) data=35 (errors 0)
+[INF] p3: crash torn-super -> mounted gen 43, old data intact, 0 leaked blocks
+[INF] cowfs: mounted gen=44 (slot A, other slot valid/older) snaps=0
+[INF] --- p3: bit rot under the FS (data EIO, metadata self-heal) ---
+[ERR] cowfs: blk 363 checksum mismatch (want 5bffd854da1ba10d) — EIO
+[ERR] cowfs: scrub: data blk 363 checksum mismatch (no redundant copy)
+[INF] cowfs: scrub meta=4 (repaired 0, lost 0) data=37 (errors 1)
+[INF] cowfs: scrub meta=4 (repaired 0, lost 0) data=37 (errors 0)
+[WRN] cowfs: blk 153 bad checksum, healed from DUP copy 368
+[INF] cowfs: mounted gen=48 (slot A, other slot valid/older) snaps=0
+[WRN] cowfs: scrub repaired metadata blk 153/368
+[INF] cowfs: scrub meta=4 (repaired 1, lost 0) data=37 (errors 0)
+[INF] cowfs: scrub meta=4 (repaired 0, lost 0) data=37 (errors 0)
+[INF] cowfs: mounted gen=49 (slot B, other slot invalid) snaps=0
+[INF] cowfs: scrub meta=4 (repaired 0, lost 0) data=37 (errors 0)
+[INF] cowfs: mounted gen=51 (slot B, other slot valid/older) snaps=0
+[INF] p3: integrity ok — data rot -> EIO + scrub, metadata rot -> DUP heal, torn/rotten superblock -> previous generation
+[INF] --- p3: memory pressure (balloon RAM, overfill, verify every byte) ---
+[INF] p3: anon round trip resident->pool->resident->swap->resident bit-exact
+[INF] p3: balloon holds 11458 pages, 2304 free (watermarks 256/512/768)
+[INF] spawn: pid=3 path=bg-app commit=2 pages qos=Background
+[INF] spawn: pid=4 path=utility-app commit=2 pages qos=Utility
+[INF] spawn: pid=5 path=default-app commit=2 pages qos=Default
+[INF] spawn: pid=6 path=initiated-app commit=2 pages qos=UserInitiated
+[INF] p3: phase A: 4096/4096 compressible pages into 2304 free -> resident 31, compressed 3493 (pool 1747 pages), swapped 572 (286/1024 segs)
+[INF] p3: phase A: L1 dropped 18 cache pages, L2 compressed 4067, L3 wrote 287 segments (573 pages), direct reclaims 73, kills 0
+[INF] p3: phase A verify: 4096 pages bit-exact, 0 corrupt, 0 lost (swap-ins 2049, decompressions 2049)
+[INF] p3: alloc under pressure: n=4096 avg=17914 cyc p99=814222 cyc max=1222802 cyc (p99 255 us, max 383 us); max reclaim work in one alloc=64 units, compactions=0
+[INF] spawn: pid=7 path=idle-hog commit=2 pages qos=Idle
+[INF] spawn: pid=8 path=foreground commit=2 pages qos=UserInteractive
+[INF] jetsam: kill pid=7 path=idle-hog band=Idle rss=1002 pages
+[WRN] pressure L4: jetsam killed pid=7, released 1002 anon pages
+[INF] jetsam: kill pid=3 path=bg-app band=Background rss=1024 pages
+[WRN] pressure L4: jetsam killed pid=3, released 1024 anon pages
+[INF] jetsam: kill pid=4 path=utility-app band=Utility rss=1024 pages
+[WRN] pressure L4: jetsam killed pid=4, released 1024 anon pages
+[INF] p3: phase B: idle-hog 1002 random pages, foreground got 1792/1792 random pages, 3 kill(s)
+[INF] p3:   kill #1 pid=7 idle-hog band=Idle
+[INF] p3:   kill #2 pid=3 bg-app band=Background
+[INF] p3:   kill #3 pid=4 utility-app band=Utility
+[INF] spawn: pid=9 path=foreground-2 commit=2 pages qos=UserInteractive
+[INF] oom: kill pid=8 path=foreground band=UserInteractive rss=1792 pages
+[WRN] pressure L4: OOM killer killed pid=8, released 1792 anon pages
+[INF] p3: phase C: foreground-2 got 1302 pages, OOM kills 1, victim pid=8 (foreground pid=8 holds the most)
+[INF] p3: after teardown free=13764 (before 13762) commit=0 (before 0) anon=0 comp=0 pool=0 swapped=0 segs=0
+[INF] p3: pressure ok — L1 drop, L2 compress, L3 swap, swap-in bit-exact, L4 jetsam by band, OOM fallback, nothing leaked
+[INF] p3: vol gen=54 used=69/1016 files=16 commits=55 cow=111 inplace=1 csum_err=2 repairs=1 AG[50 10 5 4]
+[INF] p3: phase 3 selftest PASSED (0 failure(s))
+[INF] mm: total=16384 free=13764 commit=0/16425 cache=0 anon=0 comp=0(pool 0) swapped=0(segs 0/1024) jetsam=3 oom=1 press=idle
+[INF]   buddy node=0 arena=0 pages=16384 free=13764
+[INF] --- selftest: phase2 ELF loader + exec spawn ---
+[INF] elf fixture: tests/hello_elf.S -> build/hello.elf -> COWFS /bin/hello.elf (8960 bytes)
+[INF] elf rejected: only ET_EXEC main supported (no PIE/ET_DYN)
+[INF] elf reject ok: malformed/truncated/overflow/overlap/entry/ET_DYN/PT_INTERP/W+X/missing
+[INF] elf load: path=/bin/hello.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[WRN] mm: commit denied 16425+6 > limit 16425
+[INF] elf rollback ok: rejected image and commit-denied leave no image allocations
+[INF] elf load: path=/bin/hello.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=10 path=/bin/hello.elf ELF entry=400000 full=1726000 shadow=1731000
+[INF] usermode: EFER.SCE LSTAR=0xffffffff80060232 STAR user=0x18 kernel=0x08
+[INF] exec ring3: pid=10 entry=400000 rsp=7fffc0 cpu=0
+[INF] user[10]: hello from elf
+[INF] sys: exit pid=10 code=0
+[INF] exec exit: pid=10 code=0 writes=1 bytes=15 timer_entries=24
+[INF] elf preempt: pid=10 preempts=24 run_ticks=26 cpu=0
+[INF] elf user preempt verified: CPL=3 IF=1 preempts=24 run_ticks=26 competitor_runs=24 registers/stack ok exit=0
+[INF] elf exec ok: hello from elf, CPL=3, BSS/invalid-buffer/fork checks, exit 0
+[INF] exec reap: pid=10 image/pages/commit reclaimed entry-stack inactive
+[INF] elf lifecycle ok: image pages/page tables/commit reclaimed
+[INF] phase2 selftest: PASS (0 failures)
+[INF] elf load: path=/bin/filetest.elf ET_EXEC entry=400000 PT_LOAD=2 pages=10 BSS zeroed
+[INF] elf load: path=/bin/filetest.elf ET_EXEC entry=400000 PT_LOAD=2 pages=10 BSS zeroed
+[INF] exec spawn: pid=11 path=/bin/filetest.elf ELF entry=400000 full=172a000 shadow=1739000
+[INF] exec ring3: pid=11 entry=400000 rsp=7fffb0 cpu=0
+[INF] user[11]: p1a file syscalls verified: copyin/out invalid-pointer rights chunk=4097 fsync unlink exit=0
+[INF] sys: exit pid=11 code=0
+[INF] exec exit: pid=11 code=0 writes=1 bytes=93 timer_entries=2
+[INF] elf preempt: pid=11 preempts=2 run_ticks=3 cpu=0
+[INF] exec reap: pid=11 image/pages/commit reclaimed entry-stack inactive
+[INF] p1a ELF file readback verified: CPL=3 open/read/write/close/mkdir/unlink/fsync
+[INF] p1a selftest: PASS (0 failures)
+[INF] m4 codec verified: ARP/IPv4/ICMP checksum, odd payload, truncated/corrupt/fragment reject
+[INF] m4 virtio-net skipped: no supported NIC (codec failures=0)
+[INF] m8 e1000 skipped: no supported NIC
+[INF] --- selftest: phase5 IPv4 UDP over lo ---
+[INF] net: iface lo id=0 addr=7f000001
+[INF] udp lo echo ok: tx +2 rx +2 bytes=17 payload verified (odd-length checksum)
+[INF] ebpf.audit: accept: verified
+[INF] ebpf: loaded 'udp-lo-drop' id=0 ins=4
+[INF] ebpf: attach 'udp-lo-drop' → lo (XDP)
+[INF] ebpf.audit: kill-switch: eBPF off
+[WRN] ebpf: DISABLED (conflict #5 switch) — packets skip XDP
+[INF] nft: udp-lo-drop proto=17 dport=9002 src=7f000001 → drop
+[INF] ebpf.audit: kill-switch: eBPF on
+[INF] udp filters ok: XDP DROP blocks recv, kill-switch restores delivery, nft still DROP
+[INF] udp queue/rights/close ok: bound capability lifetime, full=AGAIN empty=AGAIN
+[INF] elf load: path=/bin/net.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=12 path=/bin/net.elf ELF entry=400000 full=1739000 shadow=1730000
+[INF] exec ring3: pid=12 entry=400000 rsp=7fffc0 cpu=0
+[INF] user[12]: udp lo rx ok
+[INF] sys: exit pid=12 code=0
+[INF] exec exit: pid=12 code=0 writes=1 bytes=13 timer_entries=1
+[INF] elf preempt: pid=12 preempts=1 run_ticks=2 cpu=0
+[INF] udp user ok: CPL=3 lo tx/rx payload verified bytes=17 exit=0
+[INF] udp lo counters: tx=16 rx=19 user_delta=1/1 payload verified
+[INF] exec reap: pid=12 image/pages/commit reclaimed entry-stack inactive
+[INF] udp exit cleanup ok: endpoint/port released, ELF image reclaimed
+[INF] phase5 selftest: PASS (0 failures)
+[INF] dhcp codec verified: offer/request/ACK/NAK, lease, xid/MAC/cookie/options/mask/server reject
+[INF] dhcp no NIC skipped; p1c selftest: PASS
+[INF] p1b UDP/bg RX skipped: no supported NIC
+[INF] tcp rto exhausted: retries=4/4 or API deadline; pending cleared error=DEAD RST=attempted
+[INF] tcp close: state=9 fin=aborted error=0 TIME_WAIT=0ms handle released
+[INF] tcp rto exhausted cleanup verified: ERROR/RST-attempt pending=0 aliases released live=0
+[INF] tcp rto mechanism verified: SYN/data/FIN retained; 200/400/800/1600ms backoff max-retries=4; partial/duplicate/wrap ACK; deadline/RST cleanup
+[INF] tcp accept: port=8080 peer_port=40000 handle=3
+[INF] tcp listener close: queued connections reclaimed
+[INF] tcp passive verified: SYN/ACK+data accept=AGAIN/granted/denied backlog/full/slots bounded TTL/close/kill reclaim live=0
+[INF] tcp close: state=0 fin=complete error=0 TIME_WAIT=0ms handle released
+[INF] tcp accept: port=8081 peer_port=41000 handle=2
+[INF] tcp accept: port=8081 peer_port=41001 handle=3
+[INF] tcp accept: port=8081 peer_port=41002 handle=4
+[INF] tcp accept: port=8081 peer_port=41003 handle=5
+[INF] tcp accept: port=8081 peer_port=41004 handle=6
+[INF] tcp accept: port=8081 peer_port=41005 handle=7
+[INF] tcp accept: port=8081 peer_port=41006 handle=8
+[INF] tcp accept: port=8081 peer_port=41007 handle=9
+[INF] tcp pool verified: slots=32 full=NOSPC passive-full=NOSPC reuse=ok backlog=8 accepted=8 payload isolated
+[INF] tcp RX verified: capacity=16384 full=AGAIN no-overwrite wrap/payload verified free-window=0->16384
+[INF] tcp pool cleanup verified: live=0 pages/commit unchanged
+[INF] tcp mechanism verified: SYN/ACK data/FIN, checksum/truncated/future-ACK/RST reject, duplicate/reorder
+[INF] p1d tcp skipped: no NIC (mechanism failures=0)
+[INF] tcp ELF wire SKIP: no link-up NIC; exercising no-NIC syscall/exit/reclaim path
+[INF] elf load: path=/bin/tcpwire.elf ET_EXEC entry=400000 PT_LOAD=2 pages=8 BSS zeroed
+[INF] exec spawn: pid=13 path=/bin/tcpwire.elf ELF entry=400000 full=141000 shadow=1736000
+[INF] exec ring3: pid=13 entry=400000 rsp=7fffb0 cpu=0
+[INF] tcp close: state=0 fin=complete error=0 TIME_WAIT=0ms handle released
+[INF] user[13]: tcp user ELF skipped: no NIC connect=NOENT close/reclaim ok exit=0
+[INF] sys: exit pid=13 code=0
+[INF] exec exit: pid=13 code=0 writes=1 bytes=67 timer_entries=3
+[INF] elf preempt: pid=13 preempts=3 run_ticks=4 cpu=0
+[INF] tcp ELF no NIC verified: connect=NOENT skip exit=0 rights denied
+[INF] exec reap: pid=13 image/pages/commit reclaimed entry-stack inactive
+[INF] tcp ELF selftest: PASS (0 failures), bounce/image pages reclaimed
+[INF] elf load: path=/bin/argtest.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] elf load: path=/bin/argtest.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] argv stack verified: argc>=1 default path, 16-byte alignment, cross-page vector, count/string/aggregate limits rollback
+[INF] elf load: path=/bin/argtest.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=14 path=/bin/argtest.elf ELF entry=400000 full=172d000 shadow=148000
+[INF] exec ring3: pid=14 entry=400000 rsp=7fff60 cpu=0
+[INF] user[14]: argv[0]=/bin/argtest.elf
+[INF] user[14]: argv[1]=hello
+[INF] user[14]: argv[2]=
+[INF] user[14]: argv[3]=world
+[INF] user[14]: envp[0]=CAPMIX_TEST=argv
+[INF] user[14]: envp[1]=MODE=debug
+[INF] user[14]: argv/envp crt main verified
+[INF] sys: exit pid=14 code=0
+[INF] exec exit: pid=14 code=0 writes=7 bytes=128 timer_entries=4
+[INF] elf preempt: pid=14 preempts=4 run_ticks=5 cpu=0
+[INF] argv ELF verified: CPL=3 argc=4 argv[0]/hello/empty/world envc=2 crt main exit=0
+[INF] exec reap: pid=14 image/pages/commit reclaimed entry-stack inactive
+[INF] argv selftest: PASS (0 failures)
+[INF] sched early-wake claim verified: RUNNABLE on other CPU cannot enter before context handoff
+[INF] elf load: path=/bin/linux-marker-test.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] elf load: path=/bin/linux-marker-test.elf ET_EXEC entry=4000b0 PT_LOAD=1 pages=5 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] elf rejected: conflicting CapMix/Linux ABI markers
+[INF] elf rejected: malformed PT_INTERP
+[INF] elf rejected: malformed PT_INTERP
+[INF] linux ELF rejected: PHDR must be contained in a readable PT_LOAD
+[INF] elf load: path=/bin/linux-hello.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] elf load: path=/bin/linux-hello.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] exec spawn: pid=15 path=/bin/linux-hello.elf ELF entry=4000b0 full=1732000 shadow=15d000
+[INF] exec ring3: pid=15 entry=4000b0 rsp=7fff40 cpu=0
+hello from Linux ABI L0
+[INF] linux exit: pid=15 write_bytes=24 ENOSYS=0
+[INF] sys: exit pid=15 code=0
+[INF] exec exit: pid=15 code=0 writes=0 bytes=0 timer_entries=1
+[INF] elf preempt: pid=15 preempts=1 run_ticks=2 cpu=0
+[INF] linux golden verified: CPL=3 write_bytes=24 exit=0 ENOSYS=0
+[INF] exec reap: pid=15 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=15 task/entry-stack slot recycled
+[INF] elf load: path=/bin/linux-probe.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] exec spawn: pid=16 path=/bin/linux-probe.elf ELF entry=4000b0 full=1732000 shadow=15d000
+[INF] elf load: path=/bin/linux-probe.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] exec spawn: pid=17 path=/bin/linux-probe.elf ELF entry=4000b0 full=162000 shadow=171000
+[INF] exec ring3: pid=16 entry=4000b0 rsp=7fff40 cpu=0
+[INF] exec ring3: pid=17 entry=4000b0 rsp=7fff40 cpu=0
+[INF] linux ENOSYS: pid=16 nr=9999 count=1
+[INF] linux ENOSYS: pid=17 nr=9999 count=1
+[INF] linux ENOSYS: pid=16 nr=1073741824 count=2
+[INF] linux ENOSYS: pid=17 nr=1073741824 count=2
+linux auxv/fs isolation ok
+[INF] linux exit: pid=16 write_bytes=27 ENOSYS=2
+[INF] sys: exit pid=16 code=0
+[INF] exec exit: pid=16 code=0 writes=0 bytes=0 timer_entries=206
+[INF] elf preempt: pid=16 preempts=103 run_ticks=104 cpu=0
+linux auxv/fs isolation ok
+[INF] linux exit: pid=17 write_bytes=27 ENOSYS=2
+[INF] sys: exit pid=17 code=0
+[INF] exec exit: pid=17 code=0 writes=0 bytes=0 timer_entries=205
+[INF] elf preempt: pid=17 preempts=103 run_ticks=104 cpu=0
+[INF] linux FS/auxv verified: same-cpu overlap preempts=103/103 FS isolated scheduler_FS=0 ENOSYS=2/2
+[INF] exec reap: pid=16 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=16 task/entry-stack slot recycled
+[INF] exec reap: pid=17 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=17 task/entry-stack slot recycled
+[INF] linux L0 reclaim verified: before=13764 after=13764
+[INF] linux L0 selftest: PASS (0 failures) enabled=1 native ABI retained
+[INF] elf load: path=/bin/busybox-l1.elf ET_EXEC entry=4010f9 PT_LOAD=4 pages=51 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=6
+[INF] exec spawn: pid=18 path=/bin/busybox-l1.elf ELF entry=4010f9 full=175000 shadow=176d000
+linux L1 console alias preserved
+[INF] linux ENOSYS: pid=18 nr=1073741825 count=1
+[INF] linux L1 fd verified: copy/errno/stat144/dirent64/openat/seek dup-shared-offset close/console-alias mmap=EOPNOTSUPP unknown=ENOSYS
+[INF] linux exit: pid=18 write_bytes=49 ENOSYS=1
+[INF] exec reap: pid=18 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=18 task/entry-stack slot recycled
+[INF] elf load: path=/bin/busybox-l1.elf ET_EXEC entry=4010f9 PT_LOAD=4 pages=51 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=6
+[INF] exec spawn: pid=19 path=/bin/busybox-l1.elf ELF entry=4010f9 full=1771000 shadow=174f000
+[INF] exec ring3: pid=19 entry=4010f9 rsp=7fff20 cpu=0
+[INF] linux exit: pid=19 write_bytes=22 ENOSYS=0
+[INF] sys: exit pid=19 code=0
+[INF] exec exit: pid=19 code=0 writes=0 bytes=0 timer_entries=1
+[INF] elf preempt: pid=19 preempts=1 run_ticks=2 cpu=0
+[INF] linux L1 applet state echo: exited=1 tid=0 code=0 last=231 calls=4 preempts=1
+[INF] linux L1 busybox echo: CPL=3 output bytes=22 verified exit=0 ENOSYS=0 BSS-heap=65536
+[INF] exec reap: pid=19 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=19 task/entry-stack slot recycled
+[INF] elf load: path=/bin/busybox-l1.elf ET_EXEC entry=4010f9 PT_LOAD=4 pages=51 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=6
+[INF] exec spawn: pid=20 path=/bin/busybox-l1.elf ELF entry=4010f9 full=1770000 shadow=1760000
+[INF] exec ring3: pid=20 entry=4010f9 rsp=7fff20 cpu=0
+[INF] linux exit: pid=20 write_bytes=21 ENOSYS=0
+[INF] sys: exit pid=20 code=0
+[INF] exec exit: pid=20 code=0 writes=0 bytes=0 timer_entries=1
+[INF] elf preempt: pid=20 preempts=1 run_ticks=2 cpu=0
+[INF] linux L1 applet state cat: exited=1 tid=0 code=0 last=231 calls=8 preempts=1
+[INF] linux L1 busybox cat: CPL=3 output bytes=21 verified exit=0 ENOSYS=0 BSS-heap=65536
+[INF] exec reap: pid=20 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=20 task/entry-stack slot recycled
+[INF] elf load: path=/bin/busybox-l1.elf ET_EXEC entry=4010f9 PT_LOAD=4 pages=51 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=6
+[INF] exec spawn: pid=21 path=/bin/busybox-l1.elf ELF entry=4010f9 full=1768000 shadow=1741000
+[INF] exec ring3: pid=21 entry=4010f9 rsp=7fff20 cpu=0
+[INF] linux exit: pid=21 write_bytes=11 ENOSYS=0
+[INF] sys: exit pid=21 code=0
+[INF] exec exit: pid=21 code=0 writes=0 bytes=0 timer_entries=1
+[INF] elf preempt: pid=21 preempts=1 run_ticks=2 cpu=0
+[INF] linux L1 applet state ls: exited=1 tid=0 code=0 last=231 calls=15 preempts=1
+[INF] linux L1 busybox ls: CPL=3 output bytes=11 verified exit=0 ENOSYS=0 BSS-heap=65536
+[INF] exec reap: pid=21 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=21 task/entry-stack slot recycled
+[INF] linux L1 selftest: PASS (0 failures), custom musl BusyBox subset bounded BSS heap=65536
+[INF] elf load: path=/bin/linux-l2.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[WRN] mm: commit denied 16425+5 > limit 16425
+[INF] linux L2 mechanism: RO shared -> copyout COW independent; nested refs/brk zero/shrink/limit/commit denial verified resident-only swap=excluded
+[INF] elf load: path=/bin/linux-l2.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] exec spawn: pid=22 path=/bin/linux-l2.elf ELF entry=4000b0 full=1745000 shadow=1742000
+[INF] linux fork denied: error=-3 parent=22
+[INF] linux L2 fork denied FILE DUPLICATE: rollback=ok reserves/commit/task reclaimed parent writable
+[INF] linux exit: pid=22 write_bytes=0 ENOSYS=0
+[INF] exec reap: pid=22 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=22 task/entry-stack slot recycled
+[INF] elf load: path=/bin/linux-l2.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] exec spawn: pid=24 path=/bin/linux-l2.elf ELF entry=4000b0 full=1745000 shadow=1776000
+[INF] exec ring3: pid=24 entry=4000b0 rsp=7fff40 cpu=0
+[INF] linux L2 fork: parent=24 child=25 pages=8 COW=RO reserves=resident cpu=0
+[INF] exec ring3: pid=25 entry=400186 rsp=7fff40 cpu=0
+[INF] linux L2 COW fault: pid=24 va=7fff38 split_total=3
+[INF] linux L2 COW fault: pid=25 va=7fff38 split_total=3
+[INF] linux L2 COW fault: pid=24 va=402000 split_total=5
+[INF] elf load: path=/bin/hello.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] elf load: path=/bin/linux-l2-next.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] linux L2 execve replace: pid=25 path=/bin/linux-l2-next.elf entry=4000b0 FS=0 old-image reclaimed
+linux L2 exec target argv FS CLOEXEC verified
+[INF] linux exit: pid=25 write_bytes=46 ENOSYS=0
+[INF] sys: exit pid=25 code=42
+[INF] exec exit: pid=25 code=42 writes=0 bytes=0 timer_entries=7
+[INF] elf preempt: pid=25 preempts=5 run_ticks=6 cpu=0
+[INF] exec reap: pid=25 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=25 task/entry-stack slot recycled
+[INF] linux L2 wait4 reap: parent=24 child=25 status=2a00
+linux L2 fork COW brk exec wait verified
+[INF] linux exit: pid=24 write_bytes=41 ENOSYS=0
+[INF] sys: exit pid=24 code=0
+[INF] exec exit: pid=24 code=0 writes=0 bytes=0 timer_entries=11
+[INF] elf preempt: pid=24 preempts=6 run_ticks=10 cpu=0
+[INF] exec reap: pid=24 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=24 task/entry-stack slot recycled
+[INF] linux L2 CPL3 verified: fork parent/child independent, hardware write fault + copyout, exec same-pid argv/FS/CLOEXEC/sigmask/ignored, wait4 status=42 reclaim=ok
+[INF] linux L2 selftest: PASS (0 failures)
+[INF] elf load: path=/bin/linux-probe.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] exec spawn: pid=26 path=/bin/linux-probe.elf ELF entry=4000b0 full=1745000 shadow=1742000
+[INF] elf load: path=/bin/linux-probe.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] exec spawn: pid=27 path=/bin/linux-probe.elf ELF entry=4000b0 full=175f000 shadow=17a000
+[INF] elf load: path=/bin/linux-probe.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] exec spawn: pid=28 path=/bin/linux-probe.elf ELF entry=4000b0 full=17f000 shadow=174e000
+[INF] elf load: path=/bin/linux-probe.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] exec spawn: pid=29 path=/bin/linux-probe.elf ELF entry=4000b0 full=1753000 shadow=18a000
+[INF] exec ring3: pid=26 entry=4000b0 rsp=7fff40 cpu=0
+[INF] usermode: EFER.SCE LSTAR=0xffffffff80060232 STAR user=0x18 kernel=0x08
+[INF] linux ENOSYS: pid=26 nr=9999 count=1
+[INF] usermode: EFER.SCE LSTAR=0xffffffff80060232 STAR user=0x18 kernel=0x08
+[INF] exec ring3: pid=27 entry=4000b0 rsp=7fff40 cpu=2
+[INF] usermode: EFER.SCE LSTAR=0xffffffff80060232 STAR user=0x18 kernel=0x08
+[INF] linux ENOSYS: pid=27 nr=9999 count=1
+[INF] exec ring3: pid=28 entry=4000b0 rsp=7fff40 cpu=3
+[INF] linux ENOSYS: pid=26 nr=1073741824 count=2
+[INF] linux ENOSYS: pid=27 nr=1073741824 count=2
+[INF] exec ring3: pid=29 entry=4000b0 rsp=7fff40 cpu=1
+[INF] linux ENOSYS: pid=28 nr=9999 count=1
+[INF] linux ENOSYS: pid=29 nr=9999 count=1
+[INF] linux ENOSYS: pid=28 nr=1073741824 count=2
+[INF] linux ENOSYS: pid=29 nr=1073741824 count=2
+linux auxv/fs isolation ok
+[INF] linux exit: pid=26 write_bytes=27 ENOSYS=2
+linux auxv/fs isolation ok
+[INF] sys: exit pid=26 code=0
+[INF] linux exit: pid=27 write_bytes=27 ENOSYS=2
+[INF] exec exit: pid=26 code=0 writes=0 bytes=0 timer_entries=1338
+linux auxv/fs isolation ok
+[INF] elf preempt: pid=26 preempts=336 run_ticks=337 cpu=0
+[INF] sys: exit pid=27 code=0
+[INF] linux exit: pid=28 write_bytes=27 ENOSYS=2
+[INF] exec exit: pid=27 code=0 writes=0 bytes=0 timer_entries=1342
+linux auxv/fs isolation ok
+[INF] elf preempt: pid=27 preempts=336 run_ticks=338 cpu=2
+[INF] linux exit: pid=29 write_bytes=27 ENOSYS=2
+[INF] sys: exit pid=28 code=0
+[INF] exec reap: pid=26 image/pages/commit reclaimed entry-stack inactive
+[INF] exec exit: pid=28 code=0 writes=0 bytes=0 timer_entries=1342
+[INF] exec record reap: pid=26 task/entry-stack slot recycled
+[INF] elf preempt: pid=28 preempts=336 run_ticks=338 cpu=3
+[INF] exec reap: pid=27 image/pages/commit reclaimed entry-stack inactive
+[INF] linux SMP AP lifecycle: cpu=0 mode=FS-getcpu-affinity create/run/reap=ok
+[INF] exec record reap: pid=27 task/entry-stack slot recycled
+[INF] sys: exit pid=29 code=0
+[INF] exec reap: pid=28 image/pages/commit reclaimed entry-stack inactive
+[INF] linux SMP AP lifecycle: cpu=2 mode=FS-getcpu-affinity create/run/reap=ok
+[INF] exec record reap: pid=28 task/entry-stack slot recycled
+[INF] exec exit: pid=29 code=0 writes=0 bytes=0 timer_entries=1341
+[INF] linux SMP AP lifecycle: cpu=3 mode=FS-getcpu-affinity create/run/reap=ok
+[INF] elf preempt: pid=29 preempts=336 run_ticks=338 cpu=1
+[INF] exec reap: pid=29 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=29 task/entry-stack slot recycled
+[INF] linux SMP AP lifecycle: cpu=1 mode=FS-getcpu-affinity create/run/reap=ok
+[INF] linux SMP overlap: cpus=4 pair=1/2 overlap=1 getcpu/affinity/FS verified
+[INF] elf load: path=/bin/linux-l2.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] exec spawn: pid=30 path=/bin/linux-l2.elf ELF entry=4000b0 full=1745000 shadow=176e000
+[INF] exec ring3: pid=30 entry=4000b0 rsp=7fff40 cpu=1
+[INF] linux L2 fork: parent=30 child=31 pages=8 COW=RO reserves=resident cpu=1
+[INF] exec ring3: pid=31 entry=400186 rsp=7fff40 cpu=1
+[INF] linux L2 COW fault: pid=30 va=7fff38 split_total=6
+[INF] linux L2 COW fault: pid=31 va=7fff38 split_total=6
+[INF] linux L2 COW fault: pid=30 va=402000 split_total=8
+[INF] elf load: path=/bin/hello.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] elf load: path=/bin/linux-l2-next.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=6 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] linux L2 execve replace: pid=31 path=/bin/linux-l2-next.elf entry=4000b0 FS=0 old-image reclaimed
+linux L2 exec target argv FS CLOEXEC verified
+[INF] linux exit: pid=31 write_bytes=46 ENOSYS=0
+[INF] sys: exit pid=31 code=42
+[INF] exec exit: pid=31 code=42 writes=0 bytes=0 timer_entries=7
+[INF] elf preempt: pid=31 preempts=5 run_ticks=6 cpu=1
+[INF] exec reap: pid=31 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=31 task/entry-stack slot recycled
+[INF] linux L2 wait4 reap: parent=30 child=31 status=2a00
+linux L2 fork COW brk exec wait verified
+[INF] linux exit: pid=30 write_bytes=41 ENOSYS=0
+[INF] sys: exit pid=30 code=0
+[INF] exec exit: pid=30 code=0 writes=0 bytes=0 timer_entries=10
+[INF] elf preempt: pid=30 preempts=5 run_ticks=9 cpu=1
+[INF] exec reap: pid=30 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=30 task/entry-stack slot recycled
+[INF] linux SMP AP lifecycle: cpu=1 mode=fork-COW-exec-wait create/run/reap=ok
+[INF] linux SMP selftest: PASS (0 failures) COW/commit/pages/reap verified
+[INF] elf load: path=/bin/linux-migrate.elf ET_EXEC entry=4000b0 PT_LOAD=2 pages=7 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=2
+[INF] exec spawn: pid=32 path=/bin/linux-migrate.elf ELF entry=4000b0 full=176d000 shadow=1775000
+[INF] exec ring3: pid=32 entry=4000b0 rsp=7fff40 cpu=0
+[INF] linux L2 COW fault: pid=32 va=401010 split_total=9
+[INF] linux L2 COW fault: pid=32 va=7fff38 split_total=10
+
+*** PANIC: linux migration timeout: refusing live-context reclaim ***
+
+*** PANIC: linux migration timeout: refusing live-context reclaim ***
+
+*** PANIC: linux migration timeout: refusing live-context reclaim ***
+
+*** PANIC: linux migration timeout: refusing live-context reclaim ***
+qemu-system-x86_64: terminating on signal 15 from pid 486268 (timeout)

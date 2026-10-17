@@ -1,8 +1,8 @@
 # 有界 Linux clone 线程与 futex（2026-10-17）
 
-> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。旧矩阵保留首版轮次；本轮fd白名单放宽的实际结果见文末新增矩阵。命令中的 `/tmp` 是新运行的输出位置。
 
-双轨不变：默认 `capmix.linux=0`；Linux静态ELF才走persona。不是通用musl
+双轨不变：默认 `capmix.linux=0`；仅判定为Linux的ELF走persona。不是通用musl
 pthread、完整POSIX线程、完整Linux clone/futex兼容。原生ABI及原生fork=NOTSUP保留。
 
 ## 支持的接口
@@ -57,16 +57,41 @@ Linux ENOSYS/write等计数按执行记录记录；组leader退出摘要不自�
 每个成员有独立TID、寄存器、syscall frame、FS、内核栈和既有窗口内独立入口栈。
 `cm_proc_current`按实际调度线程定位执行记录，不再仅依task取第一个记录。
 
-### 首版冻结范围
+### 受控fd白名单与仍冻结范围
 
 一个镜像创建过线程后，直到组退出，暂拒绝以下操作（EOPNOTSUPP）：
 
 - fork/wait4、替换式execve；原有未创建线程的fork/COW/exec不变。
 - brk、mmap、munmap、mprotect；不支持线程运行中变更映射。
-- open/openat/close/dup/dup2/fcntl/pipe及socket操作；线程组内暂冻结fd表和socket状态。
+- open/openat、用户fcntl（包括F_DUPFD）、pipe/pipe2及socket操作仍拒绝；dup3未实现，返回ENOSYS并计数。
+- close/dup/dup2只按下表放宽FILE/console；pipe/socket fd仍禁止关闭、复制或被替换。
   带有已打开Linux socket的进程也暂拒绝clone（EOPNOTSUPP），避免把阻塞socket析构带入线程组退场路径。
   clone真正共享fd表，未偷偷复制；已有console/FILE可read/write/readv/writev/seek，
   共享偏移沿用VFS同步。socket读写也明确拒绝。
+
+本轮新增白名单（Linux persona；仅创建过线程的组，默认Linux开关仍关）：
+
+| 调用/资源 | 允许 | 明确边界/错误 |
+| --- | --- | --- |
+| dup(32) | 从现有FILE或console复制，返回最低空闲fd | 结果须≥3；若最低空位在0–2则EOPNOTSUPP，不跳过它伪造Linux语义；满表EMFILE |
+| dup2(33) | FILE/console之间复制或替换；别名共享原open-description和偏移；同fd≥3可返回原fd | 目标须≥3；源或目标若为pipe/socket则EOPNOTSUPP；无效源/越界目标EBADF |
+| close(3) | 关闭≥3的FILE/console别名，对所有组成员可见 | 有效fd0–2、pipe/socket为EOPNOTSUPP；无效/重复关闭为EBADF |
+| 已有read/write/readv/writev/lseek/fstat/getdents等 | 沿用已有FILE/console权限及copyin/out；FILE包含VFS文件/目录描述符 | 不新增open或fcntl；socket I/O仍拒绝；原有pipe I/O保持，不新增pipe fd |
+| fork/wait4/execve | **仍拒绝EOPNOTSUPP** | 创建过线程后，成员退出也不解除限制 |
+| brk/mmap/munmap/mprotect | **仍拒绝EOPNOTSUPP** | 包括查询式brk；不做运行中映射扩缩或权限修改 |
+
+fd表仍32项，没有扩大线程/映射/commit容量。所有FILE复制仍经现有capability的DUPLICATE权限检查，
+不提升原句柄权限。成功dup/dup2清新fd的CLOEXEC；本轮不允许用fcntl修改它。
+保留fd0–2是明确的首版限制：stdio_mask仍为每执行记录元数据，不声称已支持线程间重绑定标准流。
+没有创建线程的Linux进程继续使用原来完整的有界fd实现；CapMix原生ABI不走新门控。
+
+组leader保存一个非阻塞fd操作门（owner=TID）。所有会借用/修改这些FILE fd的Linux调用都在门内执行，
+竞争者立即返回EAGAIN(-11)，由用户有界yield/重试；不忙等自旋锁，不保证公平或阻塞dup/close语义。
+同owner的writev→write嵌套可重入，深度归零后release。错误返回也释放门。
+门只保留owner标志，不持cap/VFS自旋锁跨I/O、调度或析构，既有kill续体退出纪律不变。
+原有阻塞pipe读写不占门，因为pipe槽本轮禁止修改，避免读者睡眠时阻挡写者或其FILE操作。
+其他成员退出不会清空仍活跃线程的fd；最后成员统一关闭资源、确认门空闲，再按既有规则离CPU回收。
+这不是通用pthread/通用Linux多线程文件接口，也不增加跨CPU迁移。
 
 CLONE_FS对应当前固定cwd等有限FS状态；SIGHAND共享已有默认/忽略元数据，
 不提供信号处理器执行。不能据此声称普通pthread初始化/分配器/网络线程可用。
@@ -103,7 +128,7 @@ CLONE_FS对应当前固定cwd等有限FS状态；SIGHAND共享已有默认/忽�
 固定ELF为 `tests/fixtures/linux-threads.elf`，SHA-256：
 
 ```
-6442d7b9e331bad1a5aaff8338e889df6643e2600f57b64ef9079253babc225c
+0306559518f8fbeb4e5600a2b3adc7b4217e7f5e79ae0d8ca9df9c5d35dcb22e
 ```
 
 配方为GNU GCC13.3.0/Binutils2.42，`tests/linux_hello.ld`及Linux OSABI标记脚本：
@@ -133,10 +158,13 @@ selftest注入 `/bin/linux-threads.elf`；这不是默认产品/root安装包新
 - clear-child-tid后join、leader先退出而子线程继续write；
 - 8线程上限和第9次EAGAIN、等待七个成员进入停泊路径后exit_group=9取消等待者；
 - CPU1运行同一探针；CPU0/1两个组同VA并发，隔离与回收；
+- 子线程dup/close对父可见、别名共享偏移、FILE↔console替换、递归writev、满fd表EMFILE及关闭别名后原fd可用；
+- pipe保持可读写且禁止关闭/替换；fd0–2、非法fd、open/fcntl/socket及fork/exec/映射变更拒绝，成员退出后仍冻结；
 - 每个leader有两次故意ENOSYS（不支持clone组合、futex op），最终各组页数与commit回基线。
 
 hosted验证共享mm/task/fd的机制、TGID/TID、clear-child-tid、拒绝项及回收，
-还验证普通线程exit=137不会被误当整组kill，以及已有socket时clone拒绝。
+还验证普通线程exit=137不会被误当整组kill，以及已有socket时clone拒绝；
+以悬停owner模型确定性检查EAGAIN、不发布半成品fd、无stdio空洞绕过；guest验证真实线程行为。
 明确skip硬件clone/真实阻塞。宿主脚本递归检查原有SMP、L0–L5、hush、ldso/TLS/W^X及TCP池。
 不将hosted模型当成真实线程执行证明。
 
@@ -153,10 +181,11 @@ hosted验证共享mm/task/fd的机制、TGID/TID、clear-child-tid、拒绝项�
 - `tests/linux_threads.S`、固定ELF/哈希、`tests/check_linux_threads.py`、`Makefile`、`.gitignore`：重建、固定ELF收录及验收。
 - 本文及导航/旧限制文档：更新支持边界。
 
-## 最终环境矩阵
+## 首版环境矩阵（历史证据）
 
 日期2026-10-17。QEMU 8.2.2/KVM、512MiB、4 vCPU；双NUMA各256MiB。
-所有开启配置的guest均打印并匹配本文固定SHA-256。
+本节开启配置的guest匹配首版黄金SHA-256：`6442d7b9e331bad1a5aaff8338e889df6643e2600f57b64ef9079253babc225c`。
+它们不是本轮新黄金的运行证据；当前SHA及本轮矩阵分别见上方和文末。
 
 | 环境 | 实际结果 | 日志 |
 |---|---|---|
@@ -175,3 +204,54 @@ VBox本轮无NIC，不把QEMU网络结果写成VBox网络PASS。
 `make kernel`无新增warning/error，`make iso`成功；hosted保留既存arch未使用warning。
 最终ISO为默认产品、Linux关闭。重建验证记录在 [futex-fixture-verify-final.log](../tests/evidence/logs/futex-fixture-verify-final.log)。
 固定ELF通过`.gitignore`例外纳入候选文件，未依赖被忽略的本地build产物。
+
+## fd白名单续作验收（2026-10-17）
+
+新黄金复用join/leader/group/AP/双CPU独立组场景；每组文件路径含TGID，避免并行组互相截断文件。
+父/子分别读到ab/cd/ef，共享偏移逐步推进；子关闭父创建的别名、创建的别名跨子退出保留；
+父再验证FILE/console替换、writev重入、满表与回收。组结束后检查全部fd关闭、FILE/pipe capability句柄为零、
+fd gate空闲，以及原有pages/commit/reap基线恢复。不是只比对输出就忽略退出码。
+
+关键日志：
+
+- `linux thread fd: shared dup/close/offset/full/reject ok`（正常join/AP/双组共4次）
+- `linux thread fd mechanism verified: ... gate-contention=EAGAIN ...`（hosted机制模型）
+- `linux thread fd cleanup verified: ... fd-empty=1 file/pipe-handles=0 gate=idle`
+- `linux threads selftest: PASS (0 failures)`及全量`selftest result: PASS (0 failures)`
+
+本轮新增/调整：`abi/linux.c`、`abi/linux_file.c`、`include/capmix/proc.h`、
+`boot/linux_threads_test.c`、`tests/linux_threads.S`、固定ELF/哈希、`tests/check_linux_threads.py`及本文/相关限制说明。
+未改KPTI策略、buddy锁、定时器、RTO算法、线程组8条累计上限或CPU亲和纪律。
+
+### 本轮环境矩阵
+
+所有开启行均匹配本轮黄金SHA与7288字节长度；静态hush、L0–L5、ldso/TLS/W^X、
+原生phase0–9/NUMA/TRACE随对应全量及递归checker验收；硬件/网络skip仍按日志范围，不能扩大为实网PASS。
+
+| 环境 | 结果 | 证据 |
+| --- | --- | --- |
+| hosted Linux+interp开 | 全量0 failures；共享fd门控/争用EAGAIN/拒绝项/资源回收机制，硬件clone明确skip | [日志](../tests/evidence/logs/threadfd-hosted-on-final.log)、[断言](../tests/evidence/logs/threadfd-hosted-on-assertions.log) |
+| hosted Linux运行关 / 编译关 | 两份全量0 failures，原生保留 | [运行关](../tests/evidence/logs/threadfd-hosted-off-final.log)、[编译关](../tests/evidence/logs/threadfd-hosted-compiled-off.log) |
+| QEMU8.2.2/KVM，512MiB/SMP4，无NIC，Linux+interp开，单节点/双NUMA2×256MiB | 两份全量0 failures；真实线程白名单/拒绝/句柄及页commit回收、hush/静态/动态黄金通过 | [单节点](../tests/evidence/logs/threadfd-on-final.log)、[双节点](../tests/evidence/logs/threadfd-dual-final.log) |
+| QEMU同配置，Linux开/interp关 | 全量0 failures；静态hush/线程通过，动态明确gate skip | [日志](../tests/evidence/logs/threadfd-static-final.log) |
+| QEMU Linux运行关 / 编译关 | 两份全量0 failures，原生保留 | [运行关](../tests/evidence/logs/threadfd-off-final.log)、[编译关](../tests/evidence/logs/threadfd-compiled-off-final.log) |
+| VBox7.2.20r175154，UEFI/PIIX3/512MiB/4CPU，无NIC，Linux+interp开 | 修复后两次全量0 failures；线程/hush/静态/动态黄金及回收checker通过；未测VBox网络 | [首次通过](../tests/evidence/logs/threadfd-vbox-fixed.log)、[复测](../tests/evidence/logs/threadfd-vbox-repeat.log)、[断言](../tests/evidence/logs/threadfd-vbox-repeat-assertions.log) |
+| QEMU标准串口命令，默认e1000/user-net，Linux开/interp关，已启动宿主回显端 | 全量0 failures；线程/hush、Linux-net、UDP、native TCP/multi8/RTO通过 | [日志](../tests/evidence/logs/threadfd-qemu-standard.log)、[断言](../tests/evidence/logs/threadfd-standard-assertions.log) |
+| QEMU默认产品ISO，Linux关 | 用户shell、native hello exit=0、ACPI关机通过；不是全量selftest | [日志](../tests/evidence/logs/threadfd-default-product.log)、[断言](../tests/evidence/logs/threadfd-default-product-assertions.log) |
+
+VBox初轮真实失败与诊断日志保留：[初轮](../tests/evidence/logs/threadfd-vbox-first-failure.log)、
+[阶段诊断](../tests/evidence/logs/threadfd-vbox-diag.log)。诊断返回-11，分发链显示fork先竞争生命周期门，
+再在其内部检查grouped；另组clone可令禁止项先返回EAGAIN，违反探针要求的确定性EOPNOTSUPP。
+已在Linux dispatch前置fork/exec/wait4禁止检查，不修改fork/COW生命周期算法，也未放宽拒绝断言。
+修复后两个独立冷启动通过，旧失败不改写为PASS。新增黄金失败会打印stage及返回值，便于继续定位。
+
+标准QEMU命令使用的网络selftest配置含echo=1。初次未启动宿主TCP/UDP/HTTP测试端，
+网络出现5 failures，日志[单独保留](../tests/evidence/logs/threadfd-standard-missing-peers.log)；
+补齐9998 TCP、9999 UDP与8000 HTTP测试端后，同内核/同ISO重跑通过。没有为该配置错误改网络测试或RTO。
+
+构建记录：[fixture复现](../tests/evidence/logs/threadfd-fixture-final.log)、
+[kernel](../tests/evidence/logs/threadfd-kernel-final.log)、[诊断输出](../tests/evidence/logs/threadfd-kernel-diagnostics.log)、
+[ISO](../tests/evidence/logs/threadfd-iso-on.log)。最终恢复默认产品ISO，Linux默认关。
+
+独立单线程进程新增受控跨CPU迁移，见 [LINUX_MIGRATION.md](LINUX_MIGRATION.md)。
+本文件的线程组仍固定同CPU，即使其他成员退出也不放宽；迁移请求返回EOPNOTSUPP。

@@ -41,7 +41,7 @@ static void wire_client(void *arg)
 }
 int cm_p1b_selftest(void)
 {
-    int failed=0;cm_file_t *file=NULL;cm_id_t pid=0;
+    int failed=0,usable=0;cm_file_t *file=NULL;cm_id_t pid=0;
     cm_thread_t *sender=NULL;handle=-1;
     if(!cm_virtio_net_available() && !cm_e1000_available()) {
         kinfo("p1b UDP/bg RX skipped: no supported NIC");return 0;
@@ -52,6 +52,13 @@ int cm_p1b_selftest(void)
     for(selected=0;selected<2;selected++) {
         int id=selected?cm_e1000_ifid():cm_virtio_net_ifid();
         if(!(selected?cm_e1000_available():cm_virtio_net_available()))continue;
+        cm_iface_t *candidate=cm_if_get(id);
+        CHECK(candidate);
+        if(!candidate->up) {
+            kinfo("p1b UDP/bg RX wire SKIP: if=%d reason=carrier-down; no UDP/IRQ payload claim",id);
+            continue;
+        }
+        usable++;
         for(unsigned step=0;step<128 && !cm_net_bg_is_parked();step++)(void)cm_sched_run_until_idle(1);
         CHECK(cm_net_bg_is_parked());
         uint64_t hw_before=selected?cm_e1000_irq_count():cm_virtio_net_irq_count();
@@ -80,13 +87,14 @@ int cm_p1b_selftest(void)
         CHECK(cm_udp_close(client,handle)==CM_OK);handle=-1;
     }
 #ifndef CAPMIX_HOSTED
-    if(echo_enabled) {
+    if(echo_enabled && usable) {
         CHECK(cm_vfs_open("/bin/udpwire.elf",CM_O_WRONLY|CM_O_CREAT|CM_O_TRUNC,&file)==CM_OK);
         CHECK(cm_vfs_write(file,cm_wire_elf,sizeof(cm_wire_elf))==(int64_t)sizeof(cm_wire_elf));
         CHECK(cm_vfs_fsync(file)==CM_OK);cm_vfs_close(file);file=NULL;
         cm_spawn_attr_t attr={.path="/bin/udpwire.elf",.qos=CM_QOS_USER_INTERACTIVE};
         CHECK(cm_posix_spawn(&attr,&pid)==CM_OK);
         cm_proc_t *p=cm_proc_lookup(pid);cm_iface_t *primary=cm_net_primary_iface();
+        CHECK(p && p->elf && primary);
         *(uint32_t *)cm_elf_pointer(p->elf,0x401000)=(uint32_t)cm_if_find(primary->name);
         *(uint64_t *)cm_elf_pointer(p->elf,0x401008)=cm_tsc_hz()*3;
         uint64_t end=cm_rdtsc()+cm_tsc_hz()*12;
@@ -95,6 +103,7 @@ int cm_p1b_selftest(void)
         CHECK(cm_proc_reap_elf(pid)==CM_OK);pid=0;
     }
 #endif
+    if(!usable)kinfo("p1b UDP user ELF SKIP: no link-up NIC; hardware wire coverage unavailable");
 cleanup:
     if(file)cm_vfs_close(file);
     if(sender && sender->id){sender->state=CM_TH_DEAD;cm_thread_reap(sender);}

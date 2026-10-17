@@ -1,4 +1,5 @@
 #include "capmix/kernel.h"
+#include "capmix/cap_internal.h"
 #include "capmix/elf.h"
 #include "capmix/fs.h"
 #include "capmix/uaccess.h"
@@ -6,6 +7,20 @@
 #include "../build/linux_threads.inc"
 #include <string.h>
 #define CHECK(x) do{if(!(x)){kerr("linux threads line=%d: %s",__LINE__,#x);failed++;goto cleanup;}}while(0)
+static int fd_clean(cm_proc_t *p)
+{
+    if(p->linux_fd_owner || p->linux_fd_depth)return 0;
+    for(unsigned i=0;i<CM_FD_MAX;i++)if(p->fd[i]>=0)return 0;
+    uint64_t flags=cm_cap_lock();unsigned retained=0;
+    for(int h=1;h<CM_HANDLES_PER_TASK;h++) {
+        cm_handle_t *entry=cm_handle_lookup(p->task,h);
+        if(entry && (entry->obj->type==CM_OBJ_FILE || entry->obj->type==CM_OBJ_LINUX_PIPE))retained++;
+    }
+    cm_cap_unlock(flags);
+    if(retained)return 0;
+    kinfo("linux thread fd cleanup verified: tgid=%llu fd-empty=1 file/pipe-handles=0 gate=idle",(unsigned long)p->pid);
+    return 1;
+}
 static int run(const char *mode,int code,int cpu)
 {
     int failed=0;cm_id_t pid=0;cm_proc_t *p=NULL;
@@ -25,11 +40,36 @@ static int run(const char *mode,int code,int cpu)
     int64_t socket=cm_linux_dispatch(41,2,1,0,0);CHECK(socket>=3);
     CHECK(cm_linux_clone(0x10f00,CM_ELF_STACK_TOP,0,0,0)==-95);
     CHECK(cm_linux_dispatch(3,(uint64_t)socket,0,0,0)==0);
+    int64_t filefd=cm_native_open_path("/thread-fd-hosted.txt",CM_O_RDWR|CM_O_CREAT|CM_O_TRUNC);CHECK(filefd>=3);
+    CHECK(cm_linux_dispatch(22,0x7fc100,0,0,0)==0);
+    int pipes[2];CHECK(!cm_copyin(p->elf,pipes,0x7fc100,sizeof(pipes)));
     int64_t tid=cm_linux_clone(0x10f00,CM_ELF_STACK_TOP,0,0,0);CHECK(tid>0);
     cm_proc_t *t=cm_proc_lookup((cm_id_t)tid);CHECK(t && t->elf==p->elf && t->task==p->task && t->fd==p->fd && t->elf_entry_slot!=p->elf_entry_slot);
     t->linux_frame=&frame;cm_sched_set_current(t->main);
     CHECK(cm_linux_dispatch(39,0,0,0,0)==(int64_t)pid && cm_linux_dispatch(186,0,0,0,0)==tid);
     CHECK(cm_linux_dispatch(3,1,0,0,0)==-95);
+    CHECK(cm_linux_dispatch(33,1,0,0,0)==-95);
+    CHECK(cm_linux_dispatch(3,31,0,0,0)==-9);
+    CHECK(cm_linux_dispatch(33,(uint64_t)pipes[0],10,0,0)==-95);
+    CHECK(cm_linux_dispatch(33,(uint64_t)filefd,(uint64_t)pipes[1],0,0)==-95);
+    CHECK(cm_linux_dispatch(3,(uint64_t)pipes[0],0,0,0)==-95);
+    CHECK(cm_linux_dispatch(2,0,0,0,0)==-95 && cm_linux_dispatch(72,1,1,0,0)==-95);
+    /* Deterministic suspended-owner model: no spin and no half mutation. */
+    __atomic_store_n(&p->linux_fd_owner,p->pid,__ATOMIC_RELEASE);p->linux_fd_depth=1;
+    CHECK(cm_linux_dispatch(33,(uint64_t)filefd,10,0,0)==-11 && p->fd[10]<0);
+    CHECK(cm_linux_dispatch(1,1,0x7fc000,0,0)==-11);
+    CHECK(p->linux_fd_owner==p->pid && p->linux_fd_depth==1);
+    p->linux_fd_depth=0;__atomic_store_n(&p->linux_fd_owner,0,__ATOMIC_RELEASE);
+    CHECK(cm_linux_dispatch(33,(uint64_t)filefd,10,0,0)==10 && p->fd[10]>=0);
+    CHECK(cm_linux_dispatch(3,(uint64_t)filefd,0,0,0)==0);
+    CHECK(cm_linux_dispatch(3,(uint64_t)filefd,0,0,0)==-9);
+    CHECK(cm_linux_dispatch(33,1,10,0,0)==10 && p->linux_console[10]==p->linux_console[1]);
+    CHECK(cm_linux_dispatch(3,10,0,0,0)==0 && p->fd[10]<0);
+    int saved=p->fd[0];uint8_t console=p->linux_console[0];p->fd[0]=-1;p->linux_console[0]=0;
+    CHECK(cm_linux_dispatch(32,1,0,0,0)==-95); /* never silently skip the lowest free fd */
+    p->fd[0]=saved;p->linux_console[0]=console;
+    CHECK(p->linux_fd_owner==0 && p->linux_fd_depth==0);
+    kinfo("linux thread fd mechanism verified: shared FILE/console dup/close gate-contention=EAGAIN stdio/pipe/fd-hole rejected; gate released");
     CHECK(cm_linux_dispatch(57,0,0,0,0)==-95 && cm_linux_dispatch(59,0,0,0,0)==-95);
     CHECK(cm_linux_dispatch(9,0,4096,3,0x22)==-95);
     uint32_t marker=123,cleared=1;
@@ -45,6 +85,7 @@ static int run(const char *mode,int code,int cpu)
     kinfo("linux threads state mode=%s exited=%d code=%lld last=%llu ENOSYS=%llu",mode,p->exited,(long long)p->exit_code,(unsigned long)p->linux_last_syscall,(unsigned long)p->linux_enosys);
     CHECK(p->exited && p->exit_code==code && p->linux_enosys==2);
 #endif
+    CHECK(fd_clean(p));
     int release;
     uint64_t reap_end=cm_rdtsc()+cm_tsc_hz()*2;
     do {release=cm_proc_release_elf(pid);if(release==CM_ERR_BUSY)(void)cm_sched_run_until_idle(1);}while(release==CM_ERR_BUSY && cm_rdtsc()<reap_end);
@@ -84,6 +125,7 @@ static int pair(void)
     for(unsigned i=0;i<2;i++) {
         while((!p[i]->exited || (p[i]->main && p[i]->main->id==p[i]->elf_thread_id)) && cm_rdtsc()<end)(void)cm_sched_run_until_idle(1);
         CHECK(p[i]->exited && p[i]->exit_code==0 && p[i]->linux_enosys==2);
+        CHECK(fd_clean(p[i]));
     }
 cleanup:
     for(unsigned i=0;i<2;i++)if(p[i]) {

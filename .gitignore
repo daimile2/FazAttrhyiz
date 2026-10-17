@@ -21,3 +21,6 @@ build/
 
 # Reproducible bounded Linux clone/futex static golden executable.
 !tests/fixtures/linux-threads.elf
+
+# Pinned scalar MicroPython static Linux-user golden fixture.
+!tests/fixtures/micropython.elf

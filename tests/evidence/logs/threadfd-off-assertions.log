@@ -1,0 +1,17 @@
+fixed fixture hashes verified; iso sha256=cf45a1d6c17647f6dfd23db8b3f6de831df3f4c72d8998b880ccb25b176a0642
+hush exact buckets (>=512 grouped, not individually ranked)
+nr	count	name
+total	0
+Linux L0 disabled/native retained: PASS
+Linux L1 disabled/native retained: PASS
+Linux L2 disabled/native retained: PASS
+Linux L3 disabled/native retained: PASS
+Linux L4a gate-off/static retained: PASS
+Linux L5 disabled/native retained: PASS
+Linux fixed musl BusyBox sh disabled/native retained: PASS
+Linux bounded real ldso gate-off/static retained: PASS
+Linux bounded DSO initial-exec TLS: SKIP (gate/hosted)
+Linux dynamic W^X/RELRO: SKIP (gate)
+TCP32 pool/RX 16384 mechanism: PASS
+Linux SMP: SKIP (gate/hosted)
+Linux bounded clone/futex: SKIP persona disabled

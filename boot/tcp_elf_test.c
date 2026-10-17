@@ -11,6 +11,7 @@ int cm_tcp_elf_selftest(void)
     int failed=0,background=0;cm_file_t *file=NULL;cm_id_t pid=0;cm_proc_t *p=NULL;
     unsigned live_before=cm_tcp_live();uint64_t free_before=cm_mm_free_pages();
     cm_iface_t *nic=cm_net_primary_iface();
+    if(!nic)kinfo("tcp ELF wire SKIP: no link-up NIC; exercising no-NIC syscall/exit/reclaim path");
     if(nic && !cm_boot_has_option("capmix.tcp_echo=1")) {
         kinfo("tcp ELF echo skipped: enable capmix.tcp_echo=1 + host echo");return 0;
     }
