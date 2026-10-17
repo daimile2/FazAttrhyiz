@@ -1,3 +1,6 @@
 99a67d763d6349669b02ce3550a3c5dc37c1d8effe1f098c4edc8934c0bc1b50  tests/fixtures/ldso/linux-dynamic.elf
-cf59de2e53d6f24c5676849bf23f475f8696c56208e077f568116a9eeadc0f04  tests/fixtures/ldso/ld-capmix.so.1
+d505f09495c7e6d5ce696a961a713d715acb2969c2afb2077d31fdb260a50b5a  tests/fixtures/ldso/linux-tls.elf
+e3ec302a77cd9f321c603803698c6c253a031523b43069b171f2fd674a0b2c9d  tests/fixtures/ldso/ld-capmix.so.1
+ec44b488c7fb6c66733d8a9d95bc9fd129c375daa2b0cdb9203e0c41c0b3804b  tests/fixtures/ldso/libcm_tls_a.so.1
+591a1fe66d85753d6d29686d71441528f4d6019c313fd8fe9c0c7c7b147fd3ca  tests/fixtures/ldso/libcm_tls_b.so.1
 a725679a780f6f74a131008b178940a28dd8996a1a1f881c65a9d892a3a622a4  tests/fixtures/ldso/libcmgold.so.1

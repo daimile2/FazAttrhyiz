@@ -301,7 +301,7 @@ COW物理起点为10304；ESP只供引导，运行期VFS根为COW。详见 [安�
 | UDP endpoint | 16 | lo/vnet0/enet0共用，原生PORT capability |
 | 每 UDP 队列 | 8 个 datagram | 非阻塞，满/空按错误码返回 |
 | 每 UDP payload | 1472B | lo/vnet0/enet0，非阻塞；NIC地址可用DHCP lease，非完整BSD socket |
-| TCP连接槽 / RX窗口 | 8 / 每连接4096B | 主动/被动连接共享8槽；backlog≤4，无窗口缩放 |
+| TCP连接槽 / RX窗口 | 32 / 默认每连接16KiB（编译可选4–32KiB） | 主动/被动/监听共享32槽；backlog≤8，无窗口缩放 |
 | TCP MSS / 单次用户I/O | 536B / 4096B | MSS可受对端更小值限制；一次仅一段待确认 |
 | TCP重传 | 初始200ms，最大1600ms，最多4次重传 | SYN/数据/FIN；指数退避，API总期限可能先终止，无拥塞控制 |
 | RX预算/等待 | 16帧/接口，idle BLOCKED | 已路由IRQ通知为主；10ms推进RTO/回退，100ms IRQ watchdog |
@@ -1052,7 +1052,7 @@ IPC RTT、计数、压力测试提供的是具体测试证据，不能外推出�
 ### 用户态最小 HTTP 服务端续作
 
 已补 listen/accept syscall40/41与 `/bin/httpd.elf`，支持通过宿主端口转发读取HTTP/1.0 200。
-accept非阻塞，连接池8槽、监听backlog≤4；支持队列满拒绝及close/kill回收。
+accept非阻塞，连接池32槽、监听backlog≤8；支持队列满拒绝及close/kill回收。
 不做本机TCP回环、TLS、线程池或完整HTTP解析，详见 [HTTPD.md](HTTPD.md)。
 
 ### Linux ABI L0 双轨续作
@@ -1110,5 +1110,28 @@ fork/exec/wait及有界capability pipe；补getppid和wait4 WUNTRACED选项。
 
 可选Linux+interp双开路径新增仓库自有ld-capmix.so.1：实际读取DT_NEEDED共享库、
 解析SysV动态符号、执行RELATIVE/GLOB_DAT/JUMP_SLOT/64重定位后进入黄金main。
-原L4a仍只是独立交接探针。无TLS、构造器、完整libc或任意Linux动态生态，库暂缺W^X/RELRO；
+原L4a仍只是独立交接探针。TLS 已续作至有界 DSO initial-exec（见下节）；无构造器、完整libc或任意Linux动态生态，库暂缺W^X/RELRO；
 默认双轨策略不变，详见[LINUX_ABI_LDSO](LINUX_ABI_LDSO.md)。
+
+### Linux 动态路径的最小 TLS 续作
+
+自有 ld.so 已支持启动时 DSO initial-exec TLS（Variant II、TPOFF64），
+最多三个 TLS 库，每库 64KiB；主程序及解释器自身 PT_TLS 仍拒绝。
+FS base 复用 L0 上下文保存/恢复，默认 Linux/解释器关闭。
+不包含 DTV、dlopen/pthread 或通用 glibc TLS，详见 [LINUX_ABI_TLS](LINUX_ABI_TLS.md)。
+
+### 真实动态加载的 W^X 与 RELRO 续作
+
+真实 ld.so 路径默认以 RW+NX 装载 DSO，重定位后按段应用 RX/R/RW，
+保护主程序、库及解释器的约定 GNU_RELRO 页；无 RELRO 旧程序可运行并有日志。
+旧版解释器缺少 CapMixWX v1 协议 note 时在加载阶段拒绝，须显式更新磁盘解释器。
+原生、静态 Linux 与 L4a 保留旧权限行为，不宣称全系统 W^X；
+不注入无法隔离的故意 #PF。详见 [LINUX_ABI_WX_RELRO](LINUX_ABI_WX_RELRO.md)。
+
+### TCP 连接池与 RX 窗口续作
+
+全局 TCP 共享池为 32 槽，单监听器 backlog 最大 8；默认每槽 RX 16KiB，
+编译可选 4–32KiB。静态驻留池约 534KiB，不重复收取匿名 commit；池满明确失败。
+MSS、单待确认段、RTO、原生/Linux I/O 与 fd 上限不变。
+新增池满/复用、8 路被动 payload、RX 环回及 8 路实网卡并发测试。
+详见 [TCP_POOL](TCP_POOL.md)。

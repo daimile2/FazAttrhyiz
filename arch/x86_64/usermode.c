@@ -8,6 +8,16 @@
 
 #include <string.h>
 
+/* NXE is per logical CPU; called by the existing per-CPU usermode init. */
+int cm_arch_nx_supported(void)
+{
+    unsigned a,b,c,d;
+    __asm__ volatile("cpuid":"=a"(a),"=b"(b),"=c"(c),"=d"(d):"a"(0x80000000u),"c"(0));
+    if(a<0x80000001u)return 0;
+    __asm__ volatile("cpuid":"=a"(a),"=b"(b),"=c"(c),"=d"(d):"a"(0x80000001u),"c"(0));
+    return !!(d&(1u<<20));
+}
+
 extern void     cm_syscall_entry(void);
 void cm_land_user(void);
 extern uint64_t cm_kern_rsp;
@@ -162,7 +172,7 @@ static uint64_t rdmsr(uint32_t msr)
 void cm_usermode_init(void)
 {
     uint64_t efer = rdmsr(0xC0000080);
-    wrmsr(0xC0000080, efer | 1ull);
+    wrmsr(0xC0000080, efer | 1ull | (cm_arch_nx_supported()?(1ull<<11):0));
     wrmsr(0xC0000081, (0x18ull << 48) | (0x08ull << 32));
     wrmsr(0xC0000082, (uint64_t)(uintptr_t)cm_syscall_entry);
     wrmsr(0xC0000084, 0x257fdull);

@@ -8,7 +8,8 @@ LIMINE_CONFIG ?= boot/limine.conf
 CC      ?= gcc
 CFLAGS  ?= -std=c11 -Wall -Wextra -Wshadow -O2 -g
 LINUX_ABI ?= 1
-INCLUDES = -Iinclude -DCM_LINUX_ABI=$(LINUX_ABI)
+TCP_RX_BYTES ?= 16384
+INCLUDES = -Iinclude -DCM_LINUX_ABI=$(LINUX_ABI) -DCM_TCP_RX_BYTES=$(TCP_RX_BYTES)
 
 SRC = \
 	console/fb.c console/ps2.c \
@@ -402,3 +403,19 @@ build/ldso_main.inc build/ldso_interp.inc build/ldso_lib.inc &: tests/fixtures/l
 	python3 scripts/embed-elf.py tests/fixtures/ldso/ld-capmix.so.1 build/ldso_interp.inc cm_ldso_interp
 	python3 scripts/embed-elf.py tests/fixtures/ldso/libcmgold.so.1 build/ldso_lib.inc cm_ldso_lib
 $(HOST_BIN) $(FREE_BIN): build/ldso_main.inc build/ldso_interp.inc build/ldso_lib.inc
+
+TLS_FIXTURES = linux-tls.elf libcm_tls_a.so.1 libcm_tls_b.so.1
+build/tls_main.inc build/tls_a.inc build/tls_b.inc &: $(addprefix tests/fixtures/ldso/,$(TLS_FIXTURES)) tests/fixtures/ldso/SHA256SUMS scripts/check-tls-fixtures.py scripts/embed-elf.py
+	sha256sum -c tests/fixtures/ldso/SHA256SUMS
+	python3 scripts/check-tls-fixtures.py tests/fixtures/ldso
+	python3 scripts/embed-elf.py tests/fixtures/ldso/linux-tls.elf build/tls_main.inc cm_tls_main
+	python3 scripts/embed-elf.py tests/fixtures/ldso/libcm_tls_a.so.1 build/tls_a.inc cm_tls_a
+	python3 scripts/embed-elf.py tests/fixtures/ldso/libcm_tls_b.so.1 build/tls_b.inc cm_tls_b
+$(HOST_BIN) $(FREE_BIN): build/tls_main.inc build/tls_a.inc build/tls_b.inc
+
+# RX capacity is part of struct connection; rebuild both kernels on changes.
+build/tcp-rx-$(TCP_RX_BYTES).stamp:
+	@mkdir -p build
+	@rm -f build/tcp-rx-*.stamp
+	@touch $@
+$(HOST_BIN) $(FREE_BIN): build/tcp-rx-$(TCP_RX_BYTES).stamp

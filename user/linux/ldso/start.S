@@ -10,3 +10,11 @@ _start:
     xor %edx,%edx
     jmp *%rax
 .section .note.GNU-stack,"",@progbits
+/* Protocol marker, not a signature: kernel must not enter old rtld code which
+ * predates the required RW+NX -> RX finalization contract. */
+.section .note.capmix.wx,"a",@note
+.balign 4
+.long 9,4,1
+.asciz "CapMixWX"
+.balign 4
+.long 1

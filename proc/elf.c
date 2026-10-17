@@ -9,6 +9,7 @@
 
 #define PT_ADDR 0x000ffffffffff000ull
 #define PT_P 1ull
+#define PT_NX (1ull<<63)
 #define PT_PS (1ull << 7)
 _Static_assert(sizeof(cm_elf64_ehdr_t) == 64, "ELF64 header ABI");
 _Static_assert(sizeof(cm_elf64_phdr_t) == 56, "ELF64 program header ABI");
@@ -118,7 +119,7 @@ cm_error_t cm_elf_cow_write(cm_elf_image_t *im,uint64_t va)
             reserve_count--;backing_count++;
             p->backing=q->page;p->shared=id;__atomic_add_fetch(&split_count,1,__ATOMIC_RELAXED);
         }
-        *pte=physical(p->backing)|7;invalidate(va);e=CM_OK;break;
+        *pte=physical(p->backing)|7|((im->rtld && !(p->flags&1))?PT_NX:0);invalidate(va);e=CM_OK;break;
     }
     refs_unlock(f);return e;
 }
@@ -177,8 +178,9 @@ int cm_elf_user_range(const cm_elf_image_t *im, uint64_t addr, uint64_t bytes, u
     }
     return 1;
 }
-/* Set only PF_W on a leaf of this inactive, private image. No edits to
- * existing KPTI/VMO mappings; executable-data NX enforcement is deferred. */
+/* Set PF_W on this inactive private image. Dynamic-image NX is installed
+ * by add_page; native/static/L4a mappings retain their compatibility policy.
+ * Existing KPTI/VMO mappings are not changed. */
 static void finalize_write(cm_elf_image_t *im, uint64_t virt, int writable)
 {
     uint64_t *t = im->root;
@@ -196,7 +198,9 @@ static cm_error_t add_page(cm_elf_image_t *im, uint64_t virt, uint32_t flags)
     unsigned id=0;
     if(im->abi==CM_ABI_LINUX){uint64_t f=refs_lock();id=ref_new(p,!!(flags&2));if(id)backing_count++;refs_unlock(f);if(!id){cm_page_free(p,0);return CM_ERR_NOSPC;}im->pending--;}
     *cm_elf_page_at(im,im->npages++) = (cm_elf_page_t){.virt=virt,.backing=p,.shared=id,.flags=flags};
-    return cm_space_map(im->root, virt, physical(p), 1) ? CM_ERR_NOMEM : CM_OK;
+    if(cm_space_map(im->root,virt,physical(p),1))return CM_ERR_NOMEM;
+    if(im->rtld && !(flags&1))*leaf(im,virt)|=PT_NX;
+    return CM_OK;
 }
 static cm_error_t build_shadow(cm_elf_image_t *im)
 {
@@ -285,6 +289,28 @@ static cm_error_t dynamic_headers(const cm_elf64_phdr_t *ph,unsigned n,uint64_t 
 /* Fixed-bias ET_DYN: L4a is relocation-free handoff; rtld permits a bounded
  * PT_DYNAMIC, with all actual linking done in userspace. TLS/recursive interp
  * remain rejected. Fixed bias is not ASLR. All kernel-loaded pages belong to im. */
+static int wx_protocol(cm_file_t *file,const cm_elf64_phdr_t *ph,unsigned n)
+{
+    /* persona() has already bounded and validated all PT_NOTE structures. */
+    unsigned found=0;
+    for(unsigned i=0;i<n;i++)if(ph[i].type==4) {
+        uint64_t at=0;
+        while(at<ph[i].filesz) {
+            uint32_t h[3],version;char name[9];
+            if(ph[i].filesz-at<12 || read_exact(file,h,12,ph[i].offset+at))return 0;
+            at+=12;uint64_t names=CM_ALIGN_UP((uint64_t)h[0],4),desc=CM_ALIGN_UP((uint64_t)h[1],4);
+            if(names>ph[i].filesz-at || desc>ph[i].filesz-at-names)return 0;
+            if(h[0]==sizeof(name) && h[1]==4 && h[2]==1) {
+                if(read_exact(file,name,sizeof(name),ph[i].offset+at))return 0;
+                if(!memcmp(name,"CapMixWX",sizeof(name))) {
+                    if(found++ || read_exact(file,&version,4,ph[i].offset+at+names) || version!=1)return 0;
+                }
+            }
+            at+=names+desc;
+        }
+    }
+    return found==1;
+}
 static cm_error_t load_interp(cm_elf_image_t *im)
 {
     cm_file_t *f=NULL;cm_stat_t st;cm_elf64_ehdr_t eh;
@@ -301,6 +327,10 @@ static cm_error_t load_interp(cm_elf_image_t *im)
     if(read_exact(f,ph,eh.phnum*sizeof(ph[0]),eh.phoff)){e=CM_ERR_IO;goto done;}
     cm_abi_t abi;e=persona(f,&eh,ph,st.size,&abi);if(e)goto done;
     if(abi!=CM_ABI_LINUX){e=CM_ERR_NOTSUP;goto done;}
+    if(im->rtld && !wx_protocol(f,ph,eh.phnum)) {
+        kinfo("linux hardening rejected: stale ld.so (CapMixWX v1 required); update interpreter");
+        e=CM_ERR_NOTSUP;goto done;
+    }
     e=dynamic_headers(ph,eh.phnum,st.size,im->rtld);if(e)goto done;
     uint64_t pages=0;int entry=0,loads=0;
     for(unsigned i=0;i<eh.phnum;i++) {
@@ -418,6 +448,7 @@ cm_error_t cm_elf_load(const char *path, cm_elf_image_t **out)
     if(abi==CM_ABI_LINUX && !user_phdr) {
         kinfo("linux ELF rejected: PHDR must be contained in a readable PT_LOAD");err=CM_ERR_NOTSUP;goto done;
     }
+    if(rtld && !cm_arch_nx_supported()){kinfo("linux hardening rejected: NX unavailable");err=CM_ERR_NOTSUP;goto done;}
     im = cm_page_alloc(0);
     if (!im) { err = CM_ERR_NOMEM; goto done; }
     memset(im, 0, CM_PAGE_SIZE);
@@ -490,7 +521,7 @@ cm_error_t cm_elf_clone_cow(cm_elf_image_t *src,cm_elf_image_t **out)
             refs[id].refs=0;refs[id].next=r->reserve;r->reserve=id;dst->pending--;reserve_count++;}
         r->refs++;refs_unlock(f);*cm_elf_page_at(dst,dst->npages++)=p;
         if(cm_space_map(dst->root,p.virt,physical(p.backing),1)){e=CM_ERR_NOMEM;goto fail;}
-        *leaf(dst,p.virt)&=~2ull;
+        *leaf(dst,p.virt)=(*leaf(dst,p.virt)&~2ull)|((dst->rtld && !(p.flags&1))?PT_NX:0);
     }
     e=build_shadow(dst);if(e)goto fail;
     /* Parent PTEs change only once every child resource is owned. */
@@ -565,4 +596,32 @@ int64_t cm_elf_munmap(cm_elf_image_t *im,uint64_t start,uint64_t len)
         }else i++;
     }
     trim_descriptors(im);return 0;
+}
+
+/* Dynamic Linux images only. Preflight the entire range, then change flags and
+ * leaves together. Shared backings are rejected: no COW reserve ownership or
+ * commit transfer is implicit in mprotect. Private backing writability follows
+ * descriptor rights, so a later fork reserves precisely its writable pages. */
+int64_t cm_elf_mprotect(cm_elf_image_t *im,uint64_t start,uint64_t len,uint64_t prot)
+{
+    if(!im || im->abi!=CM_ABI_LINUX || !im->rtld)return -95;
+    if((prot&6)==6){kinfo("linux W^X rejected: PROT_WRITE|PROT_EXEC");return -1;}
+    if(prot!=1 && prot!=3 && prot!=5)return -95;
+    if(!len || (start&CM_PAGE_MASK) || start<CM_ELF_USER_MIN || start>=CM_LINUX_USER_MAX || len>CM_LINUX_USER_MAX-start)return -22;
+    uint64_t end=start+CM_ALIGN_UP(len,CM_PAGE_SIZE),f=refs_lock();
+    for(uint64_t va=start;va<end;va+=CM_PAGE_SIZE) {
+        cm_elf_page_t *p=NULL;
+        for(unsigned i=0;i<im->npages;i++)if(cm_elf_page_at(im,i)->virt==va){p=cm_elf_page_at(im,i);break;}
+        if(!p || !leaf(im,va) || !(*leaf(im,va)&PT_P)){refs_unlock(f);return -12;}
+        if(!p->shared || refs[p->shared].refs!=1){refs_unlock(f);return -95;}
+    }
+    uint32_t flags=4|((prot&2)?2:0)|((prot&4)?1:0);
+    for(unsigned i=0;i<im->npages;i++) {
+        cm_elf_page_t *p=cm_elf_page_at(im,i);if(p->virt<start || p->virt>=end)continue;
+        p->flags=(p->flags&~7u)|flags;refs[p->shared].writable=!!(flags&2);
+        uint64_t *pte=leaf(im,p->virt);
+        *pte=(*pte&~(PT_NX|2ull))|((flags&2)?2:0)|((flags&1)?0:PT_NX);
+        invalidate(p->virt);
+    }
+    refs_unlock(f);return 0;
 }

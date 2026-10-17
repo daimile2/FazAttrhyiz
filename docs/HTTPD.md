@@ -1,5 +1,8 @@
 # 最小用户态 TCP / HTTP 服务端
 
+> 当前容量已续作至全局 32 槽、backlog 8、默认 RX 16KiB（编译可选 4–32KiB）；
+> 本文历史参数不覆盖 [TCP_POOL](TCP_POOL.md)，RTO 语义保持不变。
+
 `/bin/httpd.elf` 是使用 CapMix SDK/crt 构建的静态 ET_EXEC，在 CPL=3 通过
 普通 TCP syscall 监听、accept、读取请求和发送响应。不是内核自测代发响应。
 
@@ -109,9 +112,9 @@ request经image-backed copyin；非法指针/保留参数拒绝，accept没有�
 
 ## 有界行为与关闭
 
-- 全局8个TCP槽：监听器、主动连接、排队半连接/已连接、accepted连接都计入。
-  最多8个监听器，但占满后无法再建立连接；不为任何监听器预留专属槽。
-- backlog为1..4，半连接与已握手未accept连接合计；非法backlog返回INVAL。
+- 全局32个TCP槽：监听器、主动连接、排队半连接/已连接、accepted连接都计入。
+  最多32个监听器，但占满后无法再建立连接；不为任何监听器预留专属槽。
+- backlog为1..8，半连接与已握手未accept连接合计；非法backlog返回INVAL。
   队列或全局槽满，内核记录`tcp listen refused ... error=-6`并尝试RST拒绝，
   不覆盖现有连接。RST发送仍可能遇到ARP/TX失败，客户端必须有超时。
 - 被动握手为LISTEN→SYN_RECEIVED→ESTABLISHED；SYN/ACK用原有RTO保留/重发，

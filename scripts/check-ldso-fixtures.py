@@ -41,7 +41,18 @@ for name,kind in [('linux-dynamic.elf',2),('libcmgold.so.1',3),('ld-capmix.so.1'
         strings=fileoff(tags[5],tags[10]);at=strings+needed[0]
         assert b[at:b.index(0,at)]==b'libcmgold.so.1'
     elif name=='libcmgold.so.1':assert rel==Counter({8:1,6:2}) and not needed,rel
-    else:assert not rel and not needed,'interpreter must be self-relocation-free PIC'
+    else:
+        assert not rel and not needed,'interpreter must be self-relocation-free PIC'
+        notes=[]
+        for p in ph:
+            if p[0]!=4:continue
+            at=p[2];end=at+p[5]
+            while at<end:
+                ns,ds,ty=struct.unpack_from('<III',b,at);at+=12
+                owner=b[at:at+ns];at+=(ns+3)&~3
+                desc=b[at:at+ds];at+=(ds+3)&~3
+                if owner==b'CapMixWX\0':notes.append((ty,desc))
+        assert notes==[(1,struct.pack('<I',1))], 'hardened loader protocol v1 required'
     counts+=rel
     dis=subprocess.check_output(['objdump','-d',str(path)],text=True)
     assert not any(reg in dis for reg in ('%xmm','%ymm','%zmm')),'no SIMD user context claim'

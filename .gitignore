@@ -15,3 +15,6 @@ build/
 
 # Fixed dynamic-linking golden ET_EXEC (DSO suffixes are not ignored).
 !tests/fixtures/ldso/linux-dynamic.elf
+
+# Pinned minimal initial-exec TLS golden executable.
+!tests/fixtures/ldso/linux-tls.elf

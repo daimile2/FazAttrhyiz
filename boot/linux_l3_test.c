@@ -59,8 +59,14 @@ static int unit(void)
     CHECK(cm_syscall(1,(uint64_t)fd,SCRATCH+512,sizeof(payload),0)==sizeof(payload));
     CHECK(cm_syscall(0,(uint64_t)fd,SCRATCH+768,1024,0)==sizeof(payload));
     CHECK(cm_syscall(54,(uint64_t)fd,1,2,0)==-38 && cm_syscall(55,(uint64_t)fd,1,2,0)==-38 && p->linux_enosys==2);
-    int64_t handles[CM_TCP_CONNECTIONS];unsigned count=0;
-    for(;count<CM_TCP_CONNECTIONS-tcp;count++){handles[count]=cm_syscall(41,2,1|0x800,0,0);CHECK(handles[count]>=0);}
+    int64_t handles[CM_TCP_CONNECTIONS];int native_fill[CM_TCP_CONNECTIONS];unsigned count=0,native_count=0,fd_room=0;
+    /* Global capacity now exceeds one Linux process's fd budget. Keep one fd
+     * free to distinguish backend ENOBUFS from per-process EMFILE. */
+    for(unsigned i=0;i<CM_FD_MAX;i++)fd_room+=p->fd[i]<0;
+    CHECK(fd_room>2);
+    unsigned linux_count=CM_MIN(CM_TCP_CONNECTIONS-tcp,fd_room-1);
+    for(;count<linux_count;count++){handles[count]=cm_syscall(41,2,1|0x800,0,0);CHECK(handles[count]>=0);}
+    while(tcp+count+native_count<CM_TCP_CONNECTIONS){CHECK(!cm_tcp_open(p->task,&native_fill[native_count]));native_count++;}
     CHECK(cm_syscall(41,2,1,0,0)==-105);
     cm_iface_t *nic=NULL;
     for(unsigned i=0;i<2;i++){cm_iface_t *n=cm_if_get(cm_if_find(i?"enet0":"vnet0"));if(n && n->up){nic=n;break;}}
@@ -73,6 +79,8 @@ static int unit(void)
         CHECK(cm_syscall(43,(uint64_t)handles[0],0,0,0)==-11);
     }
     for(unsigned i=0;i<count;i++)CHECK(cm_syscall(3,(uint64_t)handles[i],0,0,0)==0);
+    for(unsigned i=0;i<native_count;i++)CHECK(!cm_handle_drop(p->task,native_fill[i]));
+    kinfo("linux TCP capacity verified: backend=%u linux_fds=%u native_fill=%u ENOBUFS distinct from EMFILE",CM_TCP_CONNECTIONS,count,native_count);
     /* A full fd table must reject before consuming a network slot. */
     for(unsigned i=3;i<CM_FD_MAX;i++)if(p->fd[i]<0)CHECK(cm_syscall(33,(uint64_t)fd,i,0,0)==i);
     CHECK(cm_syscall(41,2,1,0,0)==-24);

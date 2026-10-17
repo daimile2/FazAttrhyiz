@@ -38,6 +38,9 @@
 #include "../build/ldso_main.inc"
 #include "../build/ldso_interp.inc"
 #include "../build/ldso_lib.inc"
+#include "../build/tls_main.inc"
+#include "../build/tls_a.inc"
+#include "../build/tls_b.inc"
 static cm_error_t root_status;
 void cm_product_record_root(cm_error_t status) {root_status=status;}
 #ifndef CAPMIX_HOSTED
@@ -87,6 +90,9 @@ static cm_error_t provision(void)
         if(!e)e=install_missing(CM_ELF_LDSO_PATH,cm_ldso_interp,sizeof(cm_ldso_interp));
         if(!e)e=install_missing("/lib/libcmgold.so.1",cm_ldso_lib,sizeof(cm_ldso_lib));
         if(!e)e=install_missing("/bin/linux-dynamic.elf",cm_ldso_main,sizeof(cm_ldso_main));
+        if(!e)e=install_missing("/lib/libcm_tls_a.so.1",cm_tls_a,sizeof(cm_tls_a));
+        if(!e)e=install_missing("/lib/libcm_tls_b.so.1",cm_tls_b,sizeof(cm_tls_b));
+        if(!e)e=install_missing("/bin/linux-tls.elf",cm_tls_main,sizeof(cm_tls_main));
         if(!e)e=install_missing("/bin/linux-l4a.elf",cm_linux_l4_main,sizeof(cm_linux_l4_main));
     }
     if(!e && cm_linux_enabled()) {

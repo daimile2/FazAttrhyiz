@@ -148,6 +148,7 @@ void      cm_fault_isr(uint64_t vec, uint64_t err, uint64_t rip, uint64_t frame)
 void      cm_fault_install(void);
 void      cm_fault_dump_gate(uint32_t vec);
 
+int      cm_arch_nx_supported(void);
 void     cm_usermode_init(void);
 int      cm_usermode_selftest(void);
 uint64_t cm_usermode_syscalls(void);

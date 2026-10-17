@@ -1,5 +1,8 @@
 # P1d：最小主动 TCP
 
+> 当前容量已续作至全局 32 槽、backlog 8、默认 RX 16KiB（编译可选 4–32KiB）；
+> 本文历史参数不覆盖 [TCP_POOL](TCP_POOL.md)，RTO 语义保持不变。
+
 > 本文记录当时的主动连接/RTO交付。后续已新增用户态listen/accept与HTTP服务端，
 > 当前服务端ABI、边界及验证见 [HTTPD.md](HTTPD.md)。
 
@@ -20,7 +23,7 @@
 | cm_tcp_recv(task, handle, buffer, capacity) | 非阻塞字节流读取；无数据 AGAIN，peer FIN 后缓冲读尽为 0 |
 | cm_tcp_close(task, handle, timeout_ms) | 主动 FIN/有限等待后消费该 handle；失败也清理 |
 
-- 8 个连接槽；每连接 RX 4096B；本地临时端口从 49152 起分配。
+- 当前全局 32 个连接槽；每连接 RX 默认 16KiB（编译可选4–32KiB）；本地临时端口从 49152 起分配。
 - 发送每段最大 **536B**，SYN 携带 MSS=536；对端更小 MSS 也遵守。
 - send 单次最大 65536B，始终只允许一个未确认段。
 - connect/send/close 超时参数为 1–10000ms；等待时 yield，测试使用 3000ms。

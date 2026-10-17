@@ -1,5 +1,8 @@
 # 最小 TCP：连接级 RTO 重传
 
+> 当前容量已续作至全局 32 槽、backlog 8、默认 RX 16KiB（编译可选 4–32KiB）；
+> 本文历史参数不覆盖 [TCP_POOL](TCP_POOL.md)，RTO 语义保持不变。
+
 > 本文记录当时的主动连接/RTO交付。后续已新增用户态listen/accept与HTTP服务端，
 > 当前服务端ABI、边界及验证见 [HTTPD.md](HTTPD.md)。
 
@@ -105,7 +108,7 @@ selftest result: PASS (0 failures)
 
 - 无拥塞控制、cwnd/ssthresh/慢启动、CUBIC、fast retransmit、SACK。
 - MSS=536B，遵守对端更小 SYN MSS；一次仅一段在途，吞吐量受往返时延限制。
-- 8 个连接槽；每连接接收缓冲/未缩放窗口 4096B。首次分段受 peer window 限制；
+- 当前全局 32 个连接槽；每连接接收缓冲/未缩放窗口默认 16KiB（4–32KiB 编译配置）。首次分段受 peer window 限制；
   重传保留已在途尾段，没有完整零窗口 persist/probe、窗口缩放或 WL1/WL2 规则。
   窗口持续为零时可能在期限内失败，不能宣称通用流量控制完备。
 - 无乱序接收队列；乱序段丢弃并 ACK，依赖对端重传；无 IP 分片、IPv6、PMTU、

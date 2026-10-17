@@ -1,11 +1,15 @@
 #ifndef CAPMIX_TCP_H
 #define CAPMIX_TCP_H
 #include "net.h"
-#define CM_TCP_CONNECTIONS 8u
-#define CM_TCP_BACKLOG_MAX 4u
+#define CM_TCP_CONNECTIONS 32u /* shared by listeners, queued and accepted sockets */
+#define CM_TCP_BACKLOG_MAX 8u
 #define CM_TCP_ACCEPT_TTL_MS 10000u
 #define CM_TCP_MSS 536u
-#define CM_TCP_RX_BYTES 4096u
+#ifndef CM_TCP_RX_BYTES
+#define CM_TCP_RX_BYTES 16384u
+#endif
+_Static_assert(CM_TCP_RX_BYTES>=4096u && CM_TCP_RX_BYTES<=32768u,"TCP RX: 4..32KiB, no window scale");
+_Static_assert(CM_TCP_BACKLOG_MAX<CM_TCP_CONNECTIONS,"listener shares connection pool");
 #define CM_TCP_RTO_MS 200u
 #define CM_TCP_RTO_MAX_MS 1600u
 #define CM_TCP_RETRIES 4u /* initial transmission + four retransmissions */

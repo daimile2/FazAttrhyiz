@@ -19,9 +19,9 @@ else:
     assert 'linux ldso kernel validation: malformed PT_DYNAMIC/TLS/missing interpreter rollback=ok' in s
     assert 'linux ldso interp mapped: path=/lib/ld-capmix.so.1 base=600000' in s
     if not a.hosted:
-        for name,code in [('golden',0),('missing-library',126),('unsupported-reloc',126),('text-reloc',126),('unresolved',126),('TLS-library',126),('restored',0)]:
+        for name,code in [('golden',0),('missing-library',126),('unsupported-reloc',126),('text-reloc',126),('unresolved',126),('TLS-library',126),('restored',0),('wx-load',126),('bad-relro',126),('no-relro',0)]:
             assert f'linux ldso {name}: CPL3 exit={code} output verified ENOSYS=0 rollback/reclaim=ok' in s
-        assert s.count('ldso: reloc RELATIVE=1 GLOB_DAT=4 JUMP_SLOT=1 R64=1')==2
+        assert s.count('ldso: reloc RELATIVE=1 GLOB_DAT=4 JUMP_SLOT=1 R64=1')==4
         for marker in ('ldso: unsupported relocation=37','ldso: unresolved symbol gold_value','ldso: reject TLS unsupported'):
             assert marker in s
 print('Linux bounded real ldso '+('gate-off/static retained' if a.disabled or a.interp_off else 'RELA/symbol/DSO/negative/reclaim')+': PASS')

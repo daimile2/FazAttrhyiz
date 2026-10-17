@@ -1,6 +1,7 @@
-/* Original CapMix bounded rtld, ELF64/x86-64 SysV ABI. No libc or TLS.
+/* Original CapMix bounded rtld, ELF64/x86-64 SysV ABI. No libc; bounded DSO initial-exec TLS (Variant II).
  * User-space relocation only; mmap remains eager anonymous PRIVATE RW.
- * Current kernel lacks full NX: DSO code is executable, without W^X/RELRO.
+ * Anonymous staging is RW+NX; final PT_LOAD permissions and GNU_RELRO
+ * are applied with the bounded dynamic-image mprotect syscall before entry.
  */
 #include <elf.h>
 #include "runtime.h"
@@ -16,15 +17,20 @@ typedef struct {
     Elf64_Sym *symbols;const char *strings;uint64_t strsz,nsyms;
     Elf64_Rela *rela,*plt;uint64_t nrela,nplt;
     uint64_t needed[3];unsigned nneeded;
+    const Elf64_Phdr *tls;uint64_t tls_offset;
 } object;
 static object objects[OBJECTS];static unsigned count;
 static void *buffer;static uint64_t buffer_size;static long opened=-1;
+static void *tls_map;static uint64_t tls_size;
+static unsigned tls_active,tls_relocations;
 static unsigned relative_count,glob_count,jump_count,absolute_count;
 static void fail(const char *why) __attribute__((noreturn));
 static void fail(const char *why)
 {
     text("ldso: reject ");text(why);text("\n");
     if(opened>=0)(void)call6(3,opened,0,0,0,0,0);
+    if(tls_active)(void)call6(158,0x1002,0,0,0,0,0);
+    release(tls_map,tls_size);
     release(buffer,buffer_size);
     for(unsigned i=1;i<count;i++)release(objects[i].map,objects[i].span);
     (void)call6(231,126,0,0,0,0,0);for(;;)__asm__ volatile("ud2");
@@ -52,7 +58,14 @@ static void dynamic(object *o,int self)
 {
     const Elf64_Phdr *dp=NULL;
     for(unsigned i=0;i<o->nph;i++) {
-        if(o->ph[i].p_type==PT_TLS)fail("TLS unsupported");
+        if(o->ph[i].p_type==PT_TLS) {
+            const Elf64_Phdr *t=&o->ph[i];
+            if(self || o==objects || !t->p_memsz)fail("TLS unsupported");
+            if(o->tls || t->p_filesz>t->p_memsz || t->p_memsz>65536 ||
+               t->p_align>PAGE || (t->p_align>1 && ((t->p_align&(t->p_align-1)) || (t->p_vaddr&(t->p_align-1)))))fail("TLS template bounds/alignment");
+            if(t->p_filesz && !range(o,pointer(o,t->p_vaddr),t->p_filesz,PF_R))fail("TLS template range");
+            o->tls=t;
+        }
         if(o->ph[i].p_type==PT_DYNAMIC){if(dp)fail("duplicate PT_DYNAMIC");dp=&o->ph[i];}
     }
     if(!dp || !dp->p_filesz || dp->p_filesz%sizeof(Elf64_Dyn) || dp->p_filesz>4096)fail("PT_DYNAMIC size");
@@ -74,7 +87,7 @@ static void dynamic(object *o,int self)
         case DT_NEEDED:
             if(self || o->nneeded==3)fail("dependency limit/self dependency");
             o->needed[o->nneeded++]=val;break;
-        case DT_FLAGS:if(val&~(uint64_t)(DF_BIND_NOW|(self?DF_SYMBOLIC:0)))fail("DT_FLAGS unsupported");break;
+        case DT_FLAGS:if(val&~(uint64_t)(DF_BIND_NOW|(self?DF_SYMBOLIC:DF_STATIC_TLS)))fail("DT_FLAGS unsupported");break;
         case DT_FLAGS_1:if(val&~(uint64_t)DF_1_NOW)fail("DT_FLAGS_1 unsupported");break;
         case DT_SYMBOLIC:if(!self)fail("DT_SYMBOLIC unsupported");break;
         case DT_RELACOUNT:if(val>rsz/sizeof(Elf64_Rela) && rsz)fail("RELACOUNT");break;
@@ -89,7 +102,7 @@ static void dynamic(object *o,int self)
     o->nsyms=hp[1];o->symbols=(void *)pointer(o,sym);o->strings=(void *)pointer(o,str);
     if(!range(o,(uint64_t)o->symbols,o->nsyms*sizeof(Elf64_Sym),PF_R) || !range(o,(uint64_t)o->strings,o->strsz,PF_R))fail("symbol/string table range");
     if((rsz && (!rela || rent!=sizeof(Elf64_Rela))) || rsz%sizeof(Elf64_Rela) || rsz/sizeof(Elf64_Rela)>2048 ||
-       (psz && (!plt || ptype!=DT_RELA || rent!=sizeof(Elf64_Rela))) || psz%sizeof(Elf64_Rela) || psz/sizeof(Elf64_Rela)>2048)fail("RELA table size/type");
+       (psz && (!plt || ptype!=DT_RELA || (rent && rent!=sizeof(Elf64_Rela)))) || psz%sizeof(Elf64_Rela) || psz/sizeof(Elf64_Rela)>2048)fail("RELA table size/type");
     o->nrela=rsz/sizeof(Elf64_Rela);o->nplt=psz/sizeof(Elf64_Rela);
     o->rela=(void *)pointer(o,rela);o->plt=(void *)pointer(o,plt);
     if((rsz && !range(o,(uint64_t)o->rela,rsz,PF_R)) || (psz && !range(o,(uint64_t)o->plt,psz,PF_R)))fail("RELA range");
@@ -120,8 +133,19 @@ static void load(const char *name)
     o->nph=eh->e_phnum;bytes(o->ph,(char *)buffer+eh->e_phoff,o->nph*sizeof(Elf64_Phdr));
     int origin=0;
     for(unsigned i=0;i<o->nph;i++) {
-        Elf64_Phdr *p=&o->ph[i];if(p->p_type==PT_TLS)fail("TLS unsupported");if(p->p_type==PT_INTERP)fail("recursive interpreter");
+        Elf64_Phdr *p=&o->ph[i];if(p->p_type==PT_TLS) {
+            if(!p->p_memsz)fail("TLS unsupported");
+            if(p->p_filesz>p->p_memsz || p->p_offset>(uint64_t)size || p->p_filesz>(uint64_t)size-p->p_offset)fail("TLS template file bounds");
+            if(p->p_filesz) {
+                int backed=0;
+                for(unsigned j=0;j<o->nph;j++){Elf64_Phdr *q=&o->ph[j];
+                    if(q->p_type==PT_LOAD && p->p_vaddr>=q->p_vaddr && p->p_vaddr-q->p_vaddr<=q->p_filesz &&
+                       p->p_filesz<=q->p_filesz-(p->p_vaddr-q->p_vaddr) && p->p_offset>=q->p_offset && p->p_offset-q->p_offset==p->p_vaddr-q->p_vaddr)backed=1;}
+                if(!backed)fail("TLS template file backing");
+            }
+        }if(p->p_type==PT_INTERP)fail("recursive interpreter");
         if(p->p_type!=PT_LOAD)continue;
+        if((p->p_flags&(PF_W|PF_X))==(PF_W|PF_X))fail("W+X PT_LOAD");
         if(p->p_filesz>p->p_memsz || p->p_offset>(uint64_t)size || p->p_filesz>(uint64_t)size-p->p_offset ||
            p->p_vaddr>=SPAN || p->p_memsz>SPAN-p->p_vaddr || !(p->p_flags&PF_R) || (p->p_flags&~7u) || (p->p_flags&3)==3 ||
            (p->p_align>1 && ((p->p_align&(p->p_align-1)) || p->p_align>PAGE || ((p->p_vaddr-p->p_offset)&(p->p_align-1)))))fail("library PT_LOAD bounds/flags");
@@ -139,42 +163,113 @@ static void load(const char *name)
     release(buffer,buffer_size);buffer=NULL;buffer_size=0;
     dynamic(o,0);text("ldso: loaded ");text(path);text("\n");
 }
-static uint64_t symbol(object *from,uint64_t index)
+static uint64_t symbol(object *from,uint64_t index,int tls)
 {
     if(!index || index>=from->nsyms)fail("relocation symbol index");
     Elf64_Sym *s=&from->symbols[index];const char *name=string(from,s->st_name);
     if((ELF64_ST_BIND(s->st_info)!=STB_GLOBAL && ELF64_ST_BIND(s->st_info)!=STB_WEAK) ||
-       (ELF64_ST_TYPE(s->st_info)!=STT_FUNC && ELF64_ST_TYPE(s->st_info)!=STT_OBJECT && ELF64_ST_TYPE(s->st_info)!=STT_NOTYPE) || s->st_other!=STV_DEFAULT)fail("symbol type/visibility unsupported");
+       (tls ? ELF64_ST_TYPE(s->st_info)!=STT_TLS : (ELF64_ST_TYPE(s->st_info)!=STT_FUNC && ELF64_ST_TYPE(s->st_info)!=STT_OBJECT && ELF64_ST_TYPE(s->st_info)!=STT_NOTYPE)) || s->st_other!=STV_DEFAULT)fail("symbol type/visibility unsupported");
     for(unsigned i=0;i<count;i++)for(uint64_t j=1;j<objects[i].nsyms;j++) {
         object *o=&objects[i];Elf64_Sym *candidate=&o->symbols[j];
         if(candidate->st_shndx==SHN_UNDEF || (ELF64_ST_BIND(candidate->st_info)!=STB_GLOBAL && ELF64_ST_BIND(candidate->st_info)!=STB_WEAK))continue;
         if(!equal(name,string(o,candidate->st_name)))continue;
         unsigned type=ELF64_ST_TYPE(candidate->st_info);
+        if(tls) {
+            if(type!=STT_TLS || candidate->st_other!=STV_DEFAULT || candidate->st_shndx>=SHN_LORESERVE || !o->tls ||
+               candidate->st_value>=o->tls->p_memsz || candidate->st_size>o->tls->p_memsz-candidate->st_value)fail("TLS symbol definition");
+            return o->tls_offset+candidate->st_value;
+        }
         if(candidate->st_other!=STV_DEFAULT || (type!=STT_FUNC && type!=STT_OBJECT && type!=STT_NOTYPE) || candidate->st_shndx>=SHN_LORESERVE)fail("symbol definition unsupported");
         uint64_t value=pointer(o,candidate->st_value);
         if(!range(o,value,candidate->st_size?candidate->st_size:1,type==STT_FUNC?PF_X:PF_R))fail("symbol definition range");
         return value;
     }
-    if(ELF64_ST_BIND(s->st_info)==STB_WEAK)return 0;
+    if(!tls && ELF64_ST_BIND(s->st_info)==STB_WEAK)return 0;
     text("ldso: unresolved symbol ");text(name);text("\n");fail("unresolved symbol");
 }
 static void relocate(object *o,Elf64_Rela *r,uint64_t n)
 {
     for(uint64_t i=0;i<n;i++) {
         unsigned type=ELF64_R_TYPE(r[i].r_info);uint64_t index=ELF64_R_SYM(r[i].r_info),value;
-        if(type!=R_X86_64_RELATIVE && type!=R_X86_64_GLOB_DAT && type!=R_X86_64_JUMP_SLOT && type!=R_X86_64_64) {
+        if(type!=R_X86_64_RELATIVE && type!=R_X86_64_GLOB_DAT && type!=R_X86_64_JUMP_SLOT && type!=R_X86_64_64 && type!=R_X86_64_TPOFF64) {
             text("ldso: unsupported relocation=");number(type);text("\n");fail("relocation unsupported");
         }
         uint64_t target=pointer(o,r[i].r_offset);
         if(!range(o,target,8,PF_W) || (target&7))fail("relocation target (no text relocations)");
         if(type==R_X86_64_RELATIVE){if(index)fail("RELATIVE symbol");value=o->base+(uint64_t)r[i].r_addend;relative_count++;}
         else {
-            uint64_t s=symbol(o,index);
-            if(type==R_X86_64_64){value=s+(uint64_t)r[i].r_addend;absolute_count++;}
+            uint64_t s=symbol(o,index,type==R_X86_64_TPOFF64);
+            if(type==R_X86_64_TPOFF64){
+                if(r[i].r_addend)fail("TLS addend unsupported");
+                value=s;tls_relocations++;
+            }
+            else if(type==R_X86_64_64){value=s+(uint64_t)r[i].r_addend;absolute_count++;}
             else {if(r[i].r_addend)fail("GLOB_DAT/JUMP_SLOT addend unsupported");value=s;if(type==R_X86_64_GLOB_DAT)glob_count++;else jump_count++;}
         }
         *(uint64_t *)target=value;
     }
+}
+/* Static Variant II: aligned modules below TP; FS:0 = TP. No DTV ABI. */
+static unsigned tls_prepare(void)
+{
+    uint64_t used=0;unsigned modules=0;
+    for(unsigned k=1;k<count;k++)if(objects[k].tls) {
+        object *o=&objects[k];uint64_t align=o->tls->p_align?o->tls->p_align:1;
+        used=(used+o->tls->p_memsz+align-1)&~(align-1);
+        o->tls_offset=0-used;modules++;
+    }
+    if(!modules)return 0;
+    uint64_t prefix=ROUND(used);tls_size=prefix+PAGE;
+    tls_map=allocate(tls_size);if(!tls_map)fail("TLS ENOMEM");
+    uint64_t tp=(uint64_t)tls_map+prefix;
+    *(uint64_t *)tp=tp;
+    return modules;
+}
+/* One write per summary keeps concurrent golden runs observable without
+ * interleaving the fields at separate syscall boundaries. */
+static void report(const char *a,uint64_t av,const char *b,uint64_t bv,const char *c,uint64_t cv)
+{
+    char line[192];unsigned used=0;const char *labels[]={a,b,c};uint64_t values[]={av,bv,cv};
+    for(unsigned i=0;i<3 && labels[i];i++) {
+        size_t n=length(labels[i]);bytes(line+used,labels[i],n);used+=n;
+        char digits[24];unsigned j=sizeof(digits);uint64_t v=values[i];
+        do{digits[--j]='0'+v%10;v/=10;}while(v);
+        bytes(line+used,digits+j,sizeof(digits)-j);used+=sizeof(digits)-j;
+    }
+    line[used++]='\n';line[used]=0;text(line);
+}
+static unsigned relro_count,no_relro_count;
+static void protect(uint64_t start,uint64_t len,unsigned prot)
+{
+    if(call6(10,start,len,prot,0,0,0))fail("mprotect permissions");
+}
+static void harden(object *o)
+{
+    const Elf64_Phdr *relro=NULL;
+    /* Validate before changing this object's permissions. GNU convention rounds
+     * the leading page down; this subset requires an aligned ending boundary. */
+    for(unsigned i=0;i<o->nph;i++) {
+        const Elf64_Phdr *p=&o->ph[i];
+        if(p->p_type==PT_GNU_STACK && (p->p_flags&PF_X))fail("executable stack unsupported");
+        if(p->p_type==PT_LOAD && (p->p_flags&(PF_W|PF_X))==(PF_W|PF_X))fail("W+X PT_LOAD");
+        if(p->p_type!=PT_GNU_RELRO)continue;
+        if(relro || !p->p_memsz || p->p_filesz>p->p_memsz || p->p_vaddr+p->p_memsz<p->p_vaddr ||
+           ((p->p_vaddr+p->p_memsz)&(PAGE-1)) || !range(o,pointer(o,p->p_vaddr),p->p_memsz,PF_R|PF_W))fail("RELRO bounds/alignment");
+        relro=p;
+    }
+    /* Make DSO padding read-only/NX as well. Main/interpreter have mapped LOADs
+     * only, so do not apply this to their unmapped gaps. */
+    if(o->map)protect(o->base,o->span,1);
+    for(unsigned i=0;i<o->nph;i++) {
+        const Elf64_Phdr *p=&o->ph[i];if(p->p_type!=PT_LOAD || !p->p_memsz)continue;
+        uint64_t start=pointer(o,p->p_vaddr)&~(uint64_t)(PAGE-1),end=ROUND(pointer(o,p->p_vaddr)+p->p_memsz);
+        unsigned prot=1|((p->p_flags&PF_W)?2:0)|((p->p_flags&PF_X)?4:0);
+        protect(start,end-start,prot);
+    }
+    if(relro) {
+        uint64_t start=pointer(o,relro->p_vaddr)&~(uint64_t)(PAGE-1);
+        protect(start,pointer(o,relro->p_vaddr)+relro->p_memsz-start,1);relro_count++;
+    }else no_relro_count++;
 }
 __attribute__((visibility("hidden"))) uint64_t rtld_main(uint64_t *stack)
 {
@@ -194,7 +289,23 @@ __attribute__((visibility("hidden"))) uint64_t rtld_main(uint64_t *stack)
     self.nph=eh->e_phnum;bytes(self.ph,(void *)(base+eh->e_phoff),self.nph*sizeof(Elf64_Phdr));dynamic(&self,1);
     /* Breadth-first dependency closure, at most main + three DSOs, cycles deduped. */
     for(unsigned k=0;k<count;k++)for(unsigned j=0;j<objects[k].nneeded;j++)load(string(&objects[k],objects[k].needed[j]));
+    unsigned tls_modules=tls_prepare();
     for(unsigned k=0;k<count;k++){relocate(&objects[k],objects[k].rela,objects[k].nrela);relocate(&objects[k],objects[k].plt,objects[k].nplt);}
     text("ldso: reloc RELATIVE=");number(relative_count);text(" GLOB_DAT=");number(glob_count);text(" JUMP_SLOT=");number(jump_count);text(" R64=");number(absolute_count);text("\n");
+    if(tls_modules) {
+        uint64_t tp=(uint64_t)tls_map+tls_size-PAGE;
+        /* Copy only after relocation: initialized template pointers are now final. */
+        for(unsigned k=1;k<count;k++)if(objects[k].tls) {
+            object *o=&objects[k];
+            bytes((void *)(tp+o->tls_offset),(void *)(o->base+o->tls->p_vaddr),o->tls->p_filesz);
+            /* mmap zero initialization supplies .tbss and TCB reserved words. */
+        }
+        if(call6(158,0x1002,tp,0,0,0,0))fail("TLS SET_FS");
+        tls_active=1;
+        report("ldso: tls init modules=",tls_modules," TPOFF64=",tls_relocations,NULL,0);
+    }
+    for(unsigned k=0;k<count;k++)harden(&objects[k]);
+    harden(&self);
+    report("ldso: W^X active objects=",count+1," RELRO=",relro_count," no-relro=",no_relro_count);
     return entry;
 }

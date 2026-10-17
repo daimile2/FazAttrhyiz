@@ -60,3 +60,9 @@
 - [固定静态BusyBox sh：hush脚本、fork/exec/pipe与复现](LINUX_BUSYBOX_SH.md)
 
 - [最小真实用户态ld.so：共享库、RELA、黄金用例与边界](LINUX_ABI_LDSO.md)
+
+- [Linux ABI 最小 DSO initial-exec TLS](LINUX_ABI_TLS.md)
+
+- [Linux 动态 W^X 与最小 GNU_RELRO](LINUX_ABI_WX_RELRO.md)
+
+- [TCP 32 槽连接池、RX 窗口与内存预算](TCP_POOL.md)

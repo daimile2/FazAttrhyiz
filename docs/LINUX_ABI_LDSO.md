@@ -1,5 +1,9 @@
 # Linux ABI：最小真实用户态 ld.so
 
+> 后续已增加有界 DSO initial-exec TLS，当前支持范围见 [LINUX_ABI_TLS](LINUX_ABI_TLS.md)。
+> 本文环境矩阵保留首次真实 ld.so 交付快照；新增 TLS 及默认动态 W^X/RELRO 的当前范围见
+> [TLS](LINUX_ABI_TLS.md) 与 [W^X/RELRO](LINUX_ABI_WX_RELRO.md)。
+
 本轮实现的是**仓库自有、无 libc 依赖、有界的 x86-64 用户态动态链接器**。
 它读取真实 PT_DYNAMIC/DT_NEEDED、从 VFS 加载 DSO、解析动态符号并执行 RELA，
 随后跳到主程序入口并进入 C main。不是 musl/glibc ld.so，也不承诺任意Linux动态程序。
@@ -18,7 +22,7 @@ L5匿名mmap/COW reserve commit核心语义、磁盘安装布局。
 | 共享库 | 无 | 通过Linux open/read/close从VFS `/lib/`加载DT_NEEDED |
 | 符号/重定位 | 无 | 实际符号查找、立即绑定、4类RELA |
 | 验证 | PIC探针检查auxv再跳主程序 | 跨DSO函数调用、GOT/PLT、相对指针、绝对指针及全局数据校验 |
-| TLS/生态 | 无 | 仍无TLS，不是完整glibc/musl动态生态 |
+| TLS/生态 | 无 | 有界 DSO initial-exec TLS 见续作；不是完整glibc/musl动态生态 |
 
 内核只校验和映射ET_EXEC主镜像、固定bias的ET_DYN解释器，构建既有auxv。
 **内核不替代用户ld.so完成符号解析，也没有新增私有“动态链接syscall”。**
@@ -53,7 +57,7 @@ python3 scripts/check-ldso-fixtures.py tests/fixtures/ldso
 
 ```text
 99a67d763d6349669b02ce3550a3c5dc37c1d8effe1f098c4edc8934c0bc1b50  linux-dynamic.elf
-cf59de2e53d6f24c5676849bf23f475f8696c56208e077f568116a9eeadc0f04  ld-capmix.so.1
+e3ec302a77cd9f321c603803698c6c253a031523b43069b171f2fd674a0b2c9d  ld-capmix.so.1
 a725679a780f6f74a131008b178940a28dd8996a1a1f881c65a9d892a3a622a4  libcmgold.so.1
 ```
 
@@ -93,7 +97,8 @@ GLOB_DAT×2。解释器本身无DT_NEEDED及RELA，审计失败即停止构建�
 
 B=当前对象bias，S=解析后的符号地址；64位结果按ELF64字段写入。每个target必须8字节对齐，
 完整落在该对象声明的可写PT_LOAD中，禁止向代码/只读段写入。
-不支持NONE、COPY、PC32、IRELATIVE/IFUNC、TLS relocation、REL/RELR及其他架构类型。
+不支持NONE、COPY、PC32、IRELATIVE/IFUNC、REL/RELR及其他架构类型。
+TLS 续作额外支持有界 `R_X86_64_TPOFF64`，其余 TLS 重定位仍拒绝。
 未知类型打印数值并拒绝，不通过跳过修复来假装链接成功。
 
 动态表支持DT_HASH（SysV）、STRTAB/STRSZ、SYMTAB/SYMENT、RELA/RELASZ/RELAENT、
@@ -120,10 +125,12 @@ GLOBAL/WEAK、FUNC/OBJECT/NOTYPE。未定义weak可为0；未定义strong打印�
   这不是文件mmap、MAP_SHARED、按需pager或共享物理库缓存；每进程各有私有副本。
 - mmap语义/commit收费不变：Linux16MiB VA窗口、8MiB总映射额度；库span中的空洞、临时buffer也消耗
   真实映射额度与commit。COW页/reserve仍驻留，不接压缩/swap。物理、commit、对象额度不足明确失败。
-- **当前内核没有完整NX，库的匿名RW页实际可执行；没有实现库页面W^X、mprotect或GNU_RELRO保护。**
-  loader拒绝文本relocation只是一项格式检查，不能把它宣传成硬件不可写代码保护或完整Linux权限模型。
-- **TLS范围为零**：黄金主程序、ld.so、DSO均无PT_TLS；主/解释器由内核拒绝PT_TLS，DSO由用户loader拒绝。
-  不分配TCB/DTV、不支持动态TLS、TLSDESC或TLS relocation；既有arch_prctl/FS_BASE不等于这些能力。
+- **当前真实动态路径默认 W^X/最小 GNU_RELRO**：库以 RW+NX 装载，重定位后按段切换，
+  保护主程序/库/解释器约定 RELRO 页。仅动态镜像开放有界 mprotect；无 RELRO 文件可兼容。
+  需要新版解释器协议 note，旧加载器在内核中拒绝，详见 [W^X/RELRO](LINUX_ABI_WX_RELRO.md)。
+- **TLS续作**：旧黄金三份文件仍无PT_TLS；主/解释器继续拒绝PT_TLS。
+  新增两个 DSO initial-exec TLS 黄金库，loader 分配最小 TCB 并支持 TPOFF64；
+  无 DTV、TLSDESC、dlopen/pthread 或完整 glibc TCB，精确范围见 [LINUX_ABI_TLS](LINUX_ABI_TLS.md)。
 - 仍固定BSP、单线程；无dlopen/dlsym/dlclose、审计、完整signals/futex、C++运行时、完整libc启动或32位。
 
 ## 错误、回收与自测
@@ -137,7 +144,7 @@ loader不把unsupported格式转换成虚假的syscall成功；未新增syscall�
 `boot/linux_ldso_test.c`检查：
 
 1. 正确黄金执行及恢复后的再执行，逐字节比较输出，exit=0。
-2. 缺库、IRELATIVE=37、向R-only段写relocation、缺符号、TLS库均exit=126，比较准确诊断。
+2. 缺库、IRELATIVE=37、向R-only段写relocation、缺符号、伪造空PT_TLS库均exit=126，比较准确诊断。
 3. 内核坏PT_DYNAMIC、主PT_TLS、缺解释器拒绝，回收对称。
 4. 每次执行后页数+cache、commit、打开FILE计数回到基线。负例不会遗留库映射。
 5. gate-off拒绝新动态主程序；旧L0–L5/hush及原生链由host checker递归断言。

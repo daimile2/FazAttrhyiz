@@ -120,9 +120,9 @@ poweroff
 
 原 UDP 编号 17–21、25 保留，1472B datagram、非阻塞 recv；详细布局见
 [P1b](P1B_UDP_NIC.md)。DHCP 的 lease/static fallback 不变，见
-[P1c](P1C_DHCP.md)。TCP 仍为 8 连接、RX 4KiB、MSS≤536、单个未确认段，
-无 TCP 重传/拥塞控制，TIME_WAIT=100ms，无 listen/accept、select/poll、
-HTTP/TLS；详见 [P1d](P1D_TCP.md)。
+[P1c](P1C_DHCP.md)。TCP 当前为全局 32 槽、默认 RX 16KiB（4–32KiB 编译配置，见 [TCP_POOL](TCP_POOL.md)）、MSS≤536、单个未确认段，
+具有连接级 RTO、listen/accept 和最小 HTTP 工具；TIME_WAIT=100ms，
+仍无完整拥塞控制、select/poll 或 TLS。详见 [TCP_RTO](TCP_RTO.md)、[HTTPD](HTTPD.md)。
 
 ## Debug 与证据
 

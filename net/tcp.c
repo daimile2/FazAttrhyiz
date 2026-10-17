@@ -4,6 +4,7 @@
 #include "capmix/sched.h"
 #include "capmix/cap_internal.h"
 #include "capmix/klog.h"
+#include "capmix/mm.h"
 #include <string.h>
 #define FIN 1u
 #define SYN 2u
@@ -180,7 +181,7 @@ static cm_error_t advance(struct connection *c,const struct segment *s)
 }
 static cm_error_t emit(struct connection *c,uint8_t flags,uint32_t seq,const void *data,unsigned length)
 {
-    /* Snapshot only metadata, never copy a 4KiB RX buffer onto the kernel stack. */
+    /* Snapshot only metadata, never copy the RX buffer onto the kernel stack. */
     struct wire meta={0};uint64_t f=lock();
     if((c->state==ERROR || c->state==CLOSED) && !(flags&RST)){unlock(f);return CM_ERR_DEAD;}
     meta.ifid=c->ifid;meta.local=c->local;meta.remote=c->remote;meta.sport=c->sport;
@@ -264,7 +265,11 @@ static cm_error_t acquire(cm_task_t *task,int hid,cm_rights_t rights,cm_object_t
     if((*out)->destroy!=destroy){cm_obj_release(*out);return CM_ERR_INVAL;}return CM_OK;
 }
 cm_error_t cm_tcp_init(void)
-{memset(connections,0,sizeof(connections));next_port=49152;retransmits=0;return CM_OK;}
+{
+    memset(connections,0,sizeof(connections));next_port=49152;retransmits=0;
+    kinfo("tcp pool: slots=%u backlog=%u rx_bytes=%u slot_bytes=%llu pool_bytes=%llu static-resident commit=0",CM_TCP_CONNECTIONS,CM_TCP_BACKLOG_MAX,CM_TCP_RX_BYTES,(unsigned long long)sizeof(struct connection),(unsigned long long)sizeof(connections));
+    return CM_OK;
+}
 unsigned cm_tcp_live(void)
 {uint64_t f=lock();unsigned n=0;for(unsigned i=0;i<CM_TCP_CONNECTIONS;i++)n+=connections[i].used!=0;unlock(f);return n;}
 cm_error_t cm_tcp_open(cm_task_t *task,int *out)
@@ -628,6 +633,88 @@ finish:
 #undef PASSIVE_CHECK
     return failed;
 }
+/* Bounded static-pool and RX tests use real caps/queue/recv without NIC TX. */
+static int capacity_selftest(void)
+{
+    unsigned baseline=cm_tcp_live(),count=0;int failed=0,handles[CM_TCP_CONNECTIONS];
+    struct connection *slots[CM_TCP_CONNECTIONS]={0};cm_object_t *obj=NULL;
+    uint64_t before,limit,after,pages=cm_mm_free_pages()+cm_file_cache_pages();cm_commit_stats(&before,&limit);
+    cm_task_t *task=cm_task_create("tcp-pool32",CM_QOS_USER_INTERACTIVE);if(!task)return 1;
+#define POOL_CHECK(x) do{if(!(x)){kerr("tcp pool test line=%d",__LINE__);failed=1;goto finish;}}while(0)
+    for(unsigned i=0;i<CM_TCP_CONNECTIONS;i++)handles[i]=-1;
+    POOL_CHECK(baseline==0);
+    for(;count<CM_TCP_CONNECTIONS;count++) {
+        POOL_CHECK(!cm_tcp_open(task,&handles[count]));
+        POOL_CHECK(!acquire(task,handles[count],CM_RIGHT_WRITE,&obj));slots[count]=obj->payload;
+        for(unsigned j=0;j<count;j++)POOL_CHECK(slots[j]!=slots[count]);
+        cm_obj_release(obj);obj=NULL;
+    }
+    int extra=777;POOL_CHECK(cm_tcp_live()==CM_TCP_CONNECTIONS && cm_tcp_open(task,&extra)==CM_ERR_NOSPC && extra==777);
+    uint64_t f=lock();slots[0]->state=LISTEN;slots[0]->ifid=-1;slots[0]->backlog=CM_TCP_BACKLOG_MAX;
+    struct segment syn={.src=0x0a000202,.sport=41000,.seq=50,.flags=SYN,.window=4096,.mss=CM_TCP_MSS};
+    struct connection *child=NULL;cm_error_t e=queue_syn(slots[0],&syn,&child);unlock(f);
+    POOL_CHECK(e==CM_ERR_NOSPC && !child);
+    f=lock();slots[count-1]->head=17;slots[count-1]->count=12;slots[count-1]->rx[0]=0xab;unlock(f);
+    POOL_CHECK(!cm_tcp_close(task,handles[count-1],100));handles[count-1]=-1;
+    POOL_CHECK(!cm_tcp_open(task,&handles[count-1]) && !acquire(task,handles[count-1],CM_RIGHT_WRITE,&obj));
+    POOL_CHECK(obj->payload==slots[count-1] && !slots[count-1]->count && !slots[count-1]->head && !slots[count-1]->rx[0] && !slots[count-1]->pending.active);
+    cm_obj_release(obj);obj=NULL;
+    POOL_CHECK(cm_tcp_live()==CM_TCP_CONNECTIONS);
+    cm_tcp_process_exit(task);POOL_CHECK(cm_tcp_live()==baseline);
+    POOL_CHECK(!cm_tcp_open(task,&handles[0]));
+    POOL_CHECK(!acquire(task,handles[0],CM_RIGHT_WRITE,&obj));
+    struct connection *listener=obj->payload,*children[CM_TCP_BACKLOG_MAX]={0};
+    f=lock();listener->state=LISTEN;listener->ifid=-1;listener->sport=8081;listener->backlog=CM_TCP_BACKLOG_MAX;unlock(f);
+    for(unsigned i=0;i<CM_TCP_BACKLOG_MAX;i++) {
+        syn.sport=(uint16_t)(41000+i);uint8_t data[16];for(unsigned j=0;j<sizeof(data);j++)data[j]=(uint8_t)(i*17+j);
+        f=lock();e=queue_syn(listener,&syn,&children[i]);
+        if(!e){children[i]->accept_end=UINT64_MAX;
+            struct segment ack={.seq=children[i]->rcv_nxt,.ack=children[i]->snd_nxt,.flags=ACK,.window=4096,.data=data,.length=sizeof(data)};
+            e=advance(children[i],&ack);}
+        unlock(f);POOL_CHECK(!e);
+    }
+    f=lock();e=queue_syn(listener,&syn,&child);unlock(f);POOL_CHECK(e==CM_ERR_NOSPC);
+    int accepted[CM_TCP_BACKLOG_MAX];
+    for(unsigned i=0;i<CM_TCP_BACKLOG_MAX;i++) {
+        accepted[i]=(int)cm_tcp_accept(task,handles[0]);POOL_CHECK(accepted[i]>0);
+        uint8_t data[16];POOL_CHECK(cm_tcp_recv(task,accepted[i],data,sizeof(data))==sizeof(data));
+        for(unsigned j=0;j<sizeof(data);j++)POOL_CHECK(data[j]==(uint8_t)(i*17+j));
+    }
+    POOL_CHECK(cm_tcp_accept(task,handles[0])==CM_ERR_AGAIN);
+    /* First accepted stream starts with head=16, so a full fill/read wraps. */
+    struct connection *c=children[0];uint8_t data[CM_TCP_MSS],got[333];unsigned offset=0;
+    while(offset<CM_TCP_RX_BYTES) {
+        unsigned n=CM_MIN(CM_TCP_MSS,CM_TCP_RX_BYTES-offset);
+        for(unsigned j=0;j<n;j++)data[j]=(uint8_t)((offset+j)*13u+9u);
+        struct segment packet={.seq=c->rcv_nxt,.ack=c->snd_nxt,.flags=ACK,.window=4096,.data=data,.length=(uint16_t)n};
+        f=lock();e=advance(c,&packet);unlock(f);POOL_CHECK(!e);offset+=n;
+    }
+    POOL_CHECK(c->count==CM_TCP_RX_BYTES);
+    uint32_t seq=c->rcv_nxt;struct segment one={.seq=seq,.ack=c->snd_nxt,.flags=ACK,.window=4096,.data=data,.length=1};
+    f=lock();e=advance(c,&one);unlock(f);POOL_CHECK(e==CM_ERR_AGAIN && c->count==CM_TCP_RX_BYTES && c->rcv_nxt==seq);
+    offset=0;
+    while(offset<CM_TCP_RX_BYTES) {
+        unsigned n=CM_MIN((unsigned)sizeof(got),CM_TCP_RX_BYTES-offset);
+        POOL_CHECK(cm_tcp_recv(task,accepted[0],got,n)==(int64_t)n);
+        for(unsigned j=0;j<n;j++)POOL_CHECK(got[j]==(uint8_t)((offset+j)*13u+9u));
+        offset+=n;
+    }
+    POOL_CHECK(!c->count && c->ack_pending);
+    data[0]=0xa7;one.seq=c->rcv_nxt;f=lock();e=advance(c,&one);unlock(f);
+    POOL_CHECK(!e && cm_tcp_recv(task,accepted[0],got,1)==1 && got[0]==0xa7);
+    syn.sport++;f=lock();e=queue_syn(listener,&syn,&child);unlock(f);POOL_CHECK(!e); /* queued ownership on exit */
+    kinfo("tcp pool verified: slots=%u full=NOSPC passive-full=NOSPC reuse=ok backlog=%u accepted=%u payload isolated",CM_TCP_CONNECTIONS,CM_TCP_BACKLOG_MAX,CM_TCP_BACKLOG_MAX);
+    kinfo("tcp RX verified: capacity=%u full=AGAIN no-overwrite wrap/payload verified free-window=0->%u",CM_TCP_RX_BYTES,CM_TCP_RX_BYTES);
+finish:
+    cm_tcp_process_exit(task);if(obj)cm_obj_release(obj);
+    if(cm_tcp_live()!=baseline)failed=1;
+    cm_obj_release(task->self_obj);memset(task,0,sizeof(*task));
+    cm_commit_stats(&after,&limit);
+    if(before!=after || pages!=cm_mm_free_pages()+cm_file_cache_pages()){kerr("tcp pool memory/commit reclaim mismatch");failed=1;}
+    if(!failed)kinfo("tcp pool cleanup verified: live=%u pages/commit unchanged",baseline);
+#undef POOL_CHECK
+    return failed;
+}
 static int retransmission_selftest(void)
 {
     static struct connection c;
@@ -672,7 +759,7 @@ static int retransmission_selftest(void)
 }
 int cm_tcp_mechanism_selftest(void)
 {
-    if(retransmission_selftest() || passive_selftest())return 1;
+    if(retransmission_selftest() || passive_selftest() || capacity_selftest())return 1;
     uint8_t frame[58+CM_TCP_MSS];struct segment s;
     struct wire wire={.local=0x0a000202,.remote=0x0a00020f,.sport=9998,.dport=49152,.window=4096,.rcv_nxt=101};
     unsigned n=encode(frame,&wire,SYN|ACK,700,NULL,0);

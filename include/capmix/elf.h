@@ -72,6 +72,7 @@ cm_error_t cm_elf_clone_cow(cm_elf_image_t *,cm_elf_image_t **);
 cm_error_t cm_elf_cow_write(cm_elf_image_t *,uint64_t);
 uint64_t cm_elf_brk(cm_elf_image_t *,uint64_t);
 int64_t cm_elf_mmap(cm_elf_image_t *,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t);
+int64_t cm_elf_mprotect(cm_elf_image_t *,uint64_t,uint64_t,uint64_t);
 int64_t cm_elf_munmap(cm_elf_image_t *,uint64_t,uint64_t);
 uint64_t cm_elf_cow_splits(void);
 #endif
