@@ -140,7 +140,12 @@ static int64_t wait_child(cm_proc_t *p,uint64_t hid,uint64_t address,uint64_t fl
         cm_sched_yield();
     }
     cm_user_wait_t result={.pid=child->pid,.exit_code=child->exit_code,.preempts=child->elf_preempts,.cpu=child->elf_cpu};
-    e=cm_proc_release_child(p->pid,r->pid);
+    do {
+        e=cm_proc_release_child(p->pid,r->pid);
+        if(e!=CM_ERR_BUSY)break;
+        if(flags&CM_WAIT_NONBLOCK){e=CM_ERR_AGAIN;break;}
+        cm_sched_yield();cm_usermode_resume_entry();
+    }while(e==CM_ERR_BUSY);
     if(!e){e=cm_copyout(p->elf,address,&result,sizeof(result));cm_handle_drop(p->task,(int)hid);}
 finish:cm_usermode_resume_entry();cm_obj_release(o);return e;
 }

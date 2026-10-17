@@ -1,0 +1,3 @@
+httpd client request=1 status=200 payload=25 verified EOF=ok
+httpd client request=2 status=200 payload=25 verified EOF=ok
+httpd client: PASS

@@ -1,5 +1,7 @@
 # Linux 动态加载：W^X 与 GNU_RELRO 子集
 
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+
 本轮在仓库自有 ld.so 和最小 initial-exec TLS 之上，为真实动态加载路径默认应用
 硬件用户页权限。不是完整 PaX、完整 Linux mprotect，也不扩大 glibc/动态链接兼容范围。
 Linux persona 和解释器开关仍默认关闭；一旦启用真实 ld.so，没有关闭此加固的绕过开关。
@@ -137,18 +139,18 @@ hosted 仅运行权限/COW/记账模型测试，不能证明 CPL3 或硬件 NX �
 
 | 环境 | 结果 | 日志 |
 | --- | --- | --- |
-| 两个干净构建目录，GCC13.3/binutils2.42 | 六份黄金逐字节一致、SHA256/ELF 审计通过 | `/tmp/wx-fixture-build.log`、`/tmp/wx-reproduce.log` |
-| hosted：Linux关、Linux开/interp关、双开 | 三份全量 `PASS (0 failures)`；双开执行权限/COW/旧加载器拒绝模型测试，CPL3 跳过 | `/tmp/wx-hosted-{off,static,on}.log` |
-| KVM SMP4，双开，e1000 | 全量 `PASS (0 failures)`，PTE/权限/RELRO/TLS 正负例及实际网络链通过 | `/tmp/wx-on-e1000-matrix.log` |
-| KVM SMP4，双 NUMA，virtio-net+e1000 | 全量 `PASS (0 failures)`，相同安全/静态/原生回归通过 | `/tmp/wx-on-dual-vnet-matrix.log` |
-| KVM SMP4，双开，无网卡 | 全量 `PASS (0 failures)`，网络按既有策略 skip | `/tmp/wx-on-no-nic-matrix.log` |
-| KVM SMP4，Linux开/interp关 | 全量 `PASS (0 failures)`，动态拒绝，静态/原生及网络回归通过 | `/tmp/wx-interp-off-matrix.log` |
-| KVM SMP4，Linux运行时关 | 全量 `PASS (0 failures)` | `/tmp/wx-linux-off-matrix.log` |
-| KVM SMP4，编译 Linux关，双节点/两网卡 | 全量 `PASS (0 failures)` | `/tmp/wx-compiled-off-matrix.log` |
-| 无 ISO 产品盘，virtio-blk/e1000 | 动态/TLS 前台后台 exit=0，hush、L0/L5、原生文件重定向、nc/http-get/httpd、关机通过 | `/tmp/wx-final-product-first.log`、`/tmp/wx-final-httpd-client.log` |
-| 同产品盘无 ISO 冷启动 | 动态/TLS exit=0、持久文件 cat、hush、关机通过 | `/tmp/wx-final-product-second.log` |
-| 默认产品 ISO，Linux关闭 | 用户 shell、原生 hello exit=0、ACPI 关机通过 | `/tmp/wx-default-product.log` |
-| VBox EFI64/PIIX3/AHCI/SMP4，无 ISO 首次与第二次启动 | 两次动态/TLS 明确打印 W^X/RELRO 且 exit=0；前后台、L0、hush、原生文件持久读回、关机通过 | `/tmp/wx-vbox-first.log`、`/tmp/wx-vbox-second.log` |
+| 两个干净构建目录，GCC13.3/binutils2.42 | 六份黄金逐字节一致、SHA256/ELF 审计通过 | [wx-fixture-build.log](../tests/evidence/logs/wx-fixture-build.log)、[wx-reproduce.log](../tests/evidence/logs/wx-reproduce.log) |
+| hosted：Linux关、Linux开/interp关、双开 | 三份全量 `PASS (0 failures)`；双开执行权限/COW/旧加载器拒绝模型测试，CPL3 跳过 | [wx-hosted-off.log](../tests/evidence/logs/wx-hosted-off.log)、[wx-hosted-static.log](../tests/evidence/logs/wx-hosted-static.log)、[wx-hosted-on.log](../tests/evidence/logs/wx-hosted-on.log) |
+| KVM SMP4，双开，e1000 | 全量 `PASS (0 failures)`，PTE/权限/RELRO/TLS 正负例及实际网络链通过 | [wx-on-e1000-matrix.log](../tests/evidence/logs/wx-on-e1000-matrix.log) |
+| KVM SMP4，双 NUMA，virtio-net+e1000 | 全量 `PASS (0 failures)`，相同安全/静态/原生回归通过 | [wx-on-dual-vnet-matrix.log](../tests/evidence/logs/wx-on-dual-vnet-matrix.log) |
+| KVM SMP4，双开，无网卡 | 全量 `PASS (0 failures)`，网络按既有策略 skip | [wx-on-no-nic-matrix.log](../tests/evidence/logs/wx-on-no-nic-matrix.log) |
+| KVM SMP4，Linux开/interp关 | 全量 `PASS (0 failures)`，动态拒绝，静态/原生及网络回归通过 | [wx-interp-off-matrix.log](../tests/evidence/logs/wx-interp-off-matrix.log) |
+| KVM SMP4，Linux运行时关 | 全量 `PASS (0 failures)` | [wx-linux-off-matrix.log](../tests/evidence/logs/wx-linux-off-matrix.log) |
+| KVM SMP4，编译 Linux关，双节点/两网卡 | 全量 `PASS (0 failures)` | [wx-compiled-off-matrix.log](../tests/evidence/logs/wx-compiled-off-matrix.log) |
+| 无 ISO 产品盘，virtio-blk/e1000 | 动态/TLS 前台后台 exit=0，hush、L0/L5、原生文件重定向、nc/http-get/httpd、关机通过 | [wx-final-product-first.log](../tests/evidence/logs/wx-final-product-first.log)、[wx-final-httpd-client.log](../tests/evidence/logs/wx-final-httpd-client.log) |
+| 同产品盘无 ISO 冷启动 | 动态/TLS exit=0、持久文件 cat、hush、关机通过 | [wx-final-product-second.log](../tests/evidence/logs/wx-final-product-second.log) |
+| 默认产品 ISO，Linux关闭 | 用户 shell、原生 hello exit=0、ACPI 关机通过 | [wx-default-product.log](../tests/evidence/logs/wx-default-product.log) |
+| VBox EFI64/PIIX3/AHCI/SMP4，无 ISO 首次与第二次启动 | 两次动态/TLS 明确打印 W^X/RELRO 且 exit=0；前后台、L0、hush、原生文件持久读回、关机通过 | [wx-vbox-first.log](../tests/evidence/logs/wx-vbox-first.log)、[wx-vbox-second.log](../tests/evidence/logs/wx-vbox-second.log) |
 
 QEMU 六份全量日志均由 `tests/check_linux_wx.py` 检查，启用网络的 Linux 配置额外使用
 `--wire` 强制实际 UDP/TCP 回归。phase0–9、NUMA、TRACE 等随全量通过。

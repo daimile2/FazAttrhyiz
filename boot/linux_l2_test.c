@@ -104,7 +104,7 @@ int cm_linux_l2_selftest(void)
     CHECK(cm_proc_release_elf(pid)==0);pid=0;p=NULL;
     uint64_t after;cm_commit_stats(&after,&limit);
     CHECK(after==before && cm_mm_free_pages()+cm_file_cache_pages()==free_before);
-    kinfo("linux L2 CPL3 verified: fork parent/child independent, hardware write fault + copyout, exec same-pid argv/FS/CLOEXEC, wait4 status=42 reclaim=ok");
+    kinfo("linux L2 CPL3 verified: fork parent/child independent, hardware write fault + copyout, exec same-pid argv/FS/CLOEXEC/sigmask/ignored, wait4 status=42 reclaim=ok");
 #else
     kinfo("linux L2 hosted: memory mechanism verified; CPL3 fork/exec execution skipped");
 #endif

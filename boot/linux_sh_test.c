@@ -62,7 +62,7 @@ static int command(const char *name,const char *script,const char *expected,int 
     while((!p->exited || p->main->id) && cm_rdtsc()<end)(void)cm_sched_run_until_idle(1);
     kinfo("linux sh state %s: exited=%d tid=%llu code=%lld last=%llu calls=%llu ENOSYS=%llu",name,p->exited,(unsigned long)p->main->id,(long long)p->exit_code,(unsigned long)p->linux_last_syscall,(unsigned long)p->linux_calls,(unsigned long)p->linux_enosys);
     if(!p->exited)kinfo("linux sh pending: rip=%llx preempts=%llu",(unsigned long)p->linux_regs.rcx,(unsigned long)p->elf_preempts);
-    CHECK(p->exited && !p->main->id && p->exit_code==code && p->linux_enosys<=32);
+    CHECK(p->exited && !p->main->id && p->exit_code==code && p->linux_enosys==0);
     static char bytes[8192];memset(bytes,0,sizeof(bytes));int64_t n=cm_vfs_pread(object->payload,bytes,sizeof(bytes)-1,0);
     if(n>=0)kinfo("linux sh captured %s: bytes=%lld",name,(long long)n);
     CHECK(n==(int64_t)strlen(expected) && !memcmp(bytes,expected,(size_t)n));
@@ -95,6 +95,8 @@ int cm_linux_sh_selftest(void)
     CHECK(cm_vfs_fsync(f)==0);cm_vfs_close(f);f=NULL;
     CHECK(cm_vfs_open("/sh-large.txt",CM_O_CREAT|CM_O_TRUNC|CM_O_WRONLY,&f)==0);
     CHECK(cm_vfs_write(f,large,6000)==6000 && cm_vfs_fsync(f)==0);cm_vfs_close(f);f=NULL;
+    static uint64_t enosys_before[CM_LINUX_ENOSYS_BUCKETS];
+    cm_linux_enosys_snapshot(enosys_before);
     failed+=pipes();
 #ifndef CAPMIX_HOSTED
     failed+=command("basic","x=sh-basic-ok; echo $x; if true; then echo condition-ok; fi","sh-basic-ok\ncondition-ok\n",0);
@@ -104,6 +106,7 @@ int cm_linux_sh_selftest(void)
     failed+=command("stream","/bin/busybox-sh.elf cat /sh-large.txt | /bin/busybox-sh.elf cat",large,0);
     failed+=command("missing","/missing-command","",127);
     failed+=command("exit","exit 7","",7);
+    cm_linux_enosys_dump("hush",enosys_before);
 #endif
 cleanup:
     if(f)cm_vfs_close(f);

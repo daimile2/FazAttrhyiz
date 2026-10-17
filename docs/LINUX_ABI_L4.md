@@ -1,5 +1,7 @@
 # Linux ABI L4a：PT_INTERP 的最小用户态交接
 
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+
 后续：[最小真实ld.so](LINUX_ABI_LDSO.md)使用独立路径实现真实共享库/符号/RELA；本篇L4a探针仍保留，不能将两者混为完整glibc动态生态。
 
 后续更新：[L5](LINUX_ABI_L5.md)已新增Linux匿名PRIVATE mmap/munmap、16MiB VA窗口及8MiB映射额度，并细化COW物理页commit归属；下文首版容量/全部mmap拒绝为阶段快照，原生限制不变。
@@ -128,18 +130,18 @@ hosted 加 `--hosted`，Linux关闭加 `--disabled`，仅L4a关闭加 `--interp-
 
 | 环境/配置 | 结果 | 日志 |
 | --- | --- | --- |
-| hosted L4a开启 | 全量 PASS (0 failures)，映射/auxv/COW/负例回滚；硬件执行明确跳过 | `/tmp/l4-hosted-on-final.log` |
-| hosted 仅L4a关 | 全量 PASS，PT_INTERP拒绝、L0–L3保留 | `/tmp/l4-hosted-interp-off.log` |
-| hosted Linux运行时关 | 全量 PASS，原生保留 | `/tmp/l4-hosted-linux-off.log` |
-| hosted LINUX_ABI=0 | 全量 PASS | `/tmp/l4-hosted-off.log` |
-| QEMU KVM host SMP4 无网卡，L4a开 | 全量 PASS，spawn/exec真实交接、exec失败旧镜像存活 | `/tmp/l4-on-no-nic-final.log` |
-| QEMU KVM SMP4 e1000，L4a开 | 全量 PASS，L0–L3含TCP wire回归 | `/tmp/l4-on-e1000-final.log` |
-| QEMU KVM SMP4 双NUMA节点+virtio-net/e1000 | 全量 PASS，真实交接及NUMA、EPT、TRACE等原有测试 | `/tmp/l4-on-dual-vnet-final.log` |
-| QEMU 仅L4a关+e1000 | 全量 PASS，静态Linux TCP路径保留 | `/tmp/l4-interp-off-final.log` |
-| QEMU Linux运行时关，无网卡 | 全量 PASS | `/tmp/l4-linux-off-final.log` |
-| QEMU LINUX_ABI=0，双节点双网卡 | 全量 PASS | `/tmp/l4-compiled-off-final.log` |
-| QEMU 无ISO AHCI安装盘产品shell | run L4a及L0 exit=0；原生重定向/cat、nc、http-get、httpd两次响应、ACPI关机正常 | `/tmp/l4-product.log`、`/tmp/l4-native-httpd-client.log` |
-| VirtualBox 7.2.20 UEFI/AHCI/e1000、4CPU、无ISO冷启动 | 产品L4a交接exit=0/reap；L0静态程序、持久文件读回和ACPI关机正常；未跑全量debug | `/tmp/l4-vbox-product.log` |
+| hosted L4a开启 | 全量 PASS (0 failures)，映射/auxv/COW/负例回滚；硬件执行明确跳过 | [l4-hosted-on-final.log](../tests/evidence/logs/l4-hosted-on-final.log) |
+| hosted 仅L4a关 | 全量 PASS，PT_INTERP拒绝、L0–L3保留 | [l4-hosted-interp-off.log](../tests/evidence/logs/l4-hosted-interp-off.log) |
+| hosted Linux运行时关 | 全量 PASS，原生保留 | [l4-hosted-linux-off.log](../tests/evidence/logs/l4-hosted-linux-off.log) |
+| hosted LINUX_ABI=0 | 全量 PASS | [l4-hosted-off.log](../tests/evidence/logs/l4-hosted-off.log) |
+| QEMU KVM host SMP4 无网卡，L4a开 | 全量 PASS，spawn/exec真实交接、exec失败旧镜像存活 | [l4-on-no-nic-final.log](../tests/evidence/logs/l4-on-no-nic-final.log) |
+| QEMU KVM SMP4 e1000，L4a开 | 全量 PASS，L0–L3含TCP wire回归 | [l4-on-e1000-final.log](../tests/evidence/logs/l4-on-e1000-final.log) |
+| QEMU KVM SMP4 双NUMA节点+virtio-net/e1000 | 全量 PASS，真实交接及NUMA、EPT、TRACE等原有测试 | [l4-on-dual-vnet-final.log](../tests/evidence/logs/l4-on-dual-vnet-final.log) |
+| QEMU 仅L4a关+e1000 | 全量 PASS，静态Linux TCP路径保留 | [l4-interp-off-final.log](../tests/evidence/logs/l4-interp-off-final.log) |
+| QEMU Linux运行时关，无网卡 | 全量 PASS | [l4-linux-off-final.log](../tests/evidence/logs/l4-linux-off-final.log) |
+| QEMU LINUX_ABI=0，双节点双网卡 | 全量 PASS | [l4-compiled-off-final.log](../tests/evidence/logs/l4-compiled-off-final.log) |
+| QEMU 无ISO AHCI安装盘产品shell | run L4a及L0 exit=0；原生重定向/cat、nc、http-get、httpd两次响应、ACPI关机正常 | [l4-product.log](../tests/evidence/logs/l4-product.log)、[l4-native-httpd-client.log](../tests/evidence/logs/l4-native-httpd-client.log) |
+| VirtualBox 7.2.20 UEFI/AHCI/e1000、4CPU、无ISO冷启动 | 产品L4a交接exit=0/reap；L0静态程序、持久文件读回和ACPI关机正常；未跑全量debug | [l4-vbox-product.log](../tests/evidence/logs/l4-vbox-product.log) |
 
 开启解释器时的旧L0畸形PT_INTERP负例按解析结果断言EINVAL；关闭时仍断言NOTSUP。
 没有把任意错误都视为通过。L0严格页回收检查仍保留，矩阵中每份全量日志都核对before=after。

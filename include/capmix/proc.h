@@ -37,9 +37,14 @@ typedef struct cm_proc {
     uint64_t linux_enosys,linux_write_bytes,linux_last_syscall,linux_calls;
     cm_linux_regs_t linux_regs;
     cm_linux_regs_t *linux_frame; /* valid only while in the hardware syscall */
+    struct cm_proc *linux_group; /* NULL on leader; shared mm/task/files */
+    uint64_t linux_clear_tid;
+    int linux_grouped,linux_thread_dead,linux_cleanup,linux_group_exit;
     uint64_t linux_fs;
+    uint64_t linux_sigmask,linux_sigignored; /* single-thread metadata; no delivery */
     int linux_resume,linux_fork_child;
-    uint8_t linux_console[CM_FD_MAX],linux_cloexec[CM_FD_MAX];
+    uint8_t linux_console_store[CM_FD_MAX],linux_cloexec_store[CM_FD_MAX];
+    uint8_t *linux_console,*linux_cloexec;
     cm_id_t       pid;
     cm_task_t    *task;
     cm_thread_t  *main;
@@ -48,7 +53,8 @@ typedef struct cm_proc {
     int           exited;
     int64_t       exit_code;
     uint64_t      aspace_pages;
-    int           fd[CM_FD_MAX]; /* posix fd → capability handle, -1 empty */
+    int fd_store[CM_FD_MAX];
+    int *fd; /* posix fd → capability handle, -1 empty */
     unsigned stdio_mask; /* bound fd0/1; a closed binding never falls back to console */
     cm_object_t  *vmar;
     cm_object_t  *vmo;
@@ -64,6 +70,15 @@ typedef struct cm_proc {
     cm_id_t parent_pid;
 } cm_proc_t;
 
+cm_proc_t *cm_linux_group(cm_proc_t *);
+int cm_linux_thread_finish(cm_proc_t *,int64_t);
+void cm_linux_group_kill(cm_proc_t *,int64_t);
+int64_t cm_linux_clone(uint64_t,uint64_t,uint64_t,uint64_t,uint64_t);
+void cm_linux_futex_poll(void);
+void cm_linux_futex_cancel(cm_proc_t *);
+int64_t cm_linux_futex(uint64_t,uint64_t,uint64_t,uint64_t);
+int64_t cm_linux_futex_wake(cm_proc_t *,uint64_t,unsigned);
+int cm_linux_threads_selftest(void);
 void       cm_proc_init(void);
 cm_proc_t *cm_proc_current(void);
 cm_proc_t *cm_proc_lookup(cm_id_t pid);

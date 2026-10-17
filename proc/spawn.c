@@ -7,6 +7,7 @@
 #include "capmix/obs.h"
 #include "capmix/elf.h"
 #include "capmix/uaccess.h"
+#include "capmix/linux_socket.h"
 
 #include <string.h>
 #include <stdint.h>
@@ -21,6 +22,9 @@ static cm_proc_t *alloc_proc(void)
     for (int i = 0; i < CM_MAX_PROCS; i++)
         if (!g_procs[i].used) {
             memset(&g_procs[i], 0, sizeof(g_procs[i]));
+            g_procs[i].fd=g_procs[i].fd_store;
+            g_procs[i].linux_console=g_procs[i].linux_console_store;
+            g_procs[i].linux_cloexec=g_procs[i].linux_cloexec_store;
             g_procs[i].used = 1;
             g_procs[i].elf_entry_slot=i;
             for (int f = 0; f < CM_FD_MAX; f++) g_procs[i].fd[f] = -1;
@@ -40,8 +44,10 @@ cm_proc_t *cm_proc_current(void)
 {
     cm_thread_t *th = cm_sched_current();
     if (!th || !th->task) return NULL;
+    for(int i=0;i<CM_MAX_PROCS;i++)
+        if(g_procs[i].used && g_procs[i].main==th && g_procs[i].elf_thread_id==th->id)return &g_procs[i];
     for (int i = 0; i < CM_MAX_PROCS; i++)
-        if (g_procs[i].used && g_procs[i].task == th->task)
+        if (g_procs[i].used && !g_procs[i].linux_group && g_procs[i].task == th->task)
             return &g_procs[i];
     return NULL;
 }
@@ -89,23 +95,24 @@ static void elf_entry_wrap(void *arg)
     cm_usermode_run_elf(p);
 }
 
-/* Creation is owned by BSP; publication gates AP picks until metadata is complete. */
+/* Lifecycle mutation is serialized below; publication gates incomplete tasks. */
 static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
 {
-    if (!attr->path || cm_cpu_id() != 0) return CM_ERR_INVAL;
+    if (!attr->path) return CM_ERR_INVAL;
     uint64_t irq = cm_irq_save();
     int cpu=attr->cpu_set?attr->cpu:0;
     if(cpu<0 || cpu>=cm_cpu_count()) {cm_irq_restore(irq);return CM_ERR_INVAL;}
     cm_elf_image_t *im = NULL;
     cm_error_t err = cm_elf_load(attr->path, &im);
     if (err) { cm_irq_restore(irq); return err; }
-    if(im->abi==CM_ABI_LINUX && cpu!=0){kinfo("linux L2 affinity: requested cpu=%d -> BSP0 (bounded fork/reap ownership)",cpu);cpu=0;}
+    if(im->abi!=CM_ABI_LINUX && cm_cpu_id()!=0){cm_elf_destroy(im);cm_irq_restore(irq);return CM_ERR_INVAL;}
     err=cm_elf_set_args(im,attr->argv,attr->envp);
     if(err){cm_elf_destroy(im);cm_irq_restore(irq);return err;}
     cm_proc_t *p = alloc_proc();
     if (!p) { cm_elf_destroy(im); cm_irq_restore(irq); return CM_ERR_NOSPC; }
     p->pid = g_pid_next++; p->path = im->path; p->user_mode = 1;
     p->abi=im->abi;
+    if(p->abi==CM_ABI_LINUX){cm_proc_t *creator=cm_proc_current();p->parent_pid=creator?creator->pid:0;}
     p->elf = im; p->aspace_pages = im->charged; p->elf_cpu = cpu;
     p->task = cm_task_create(p->path, attr->qos);
     if (!p->task || !p->task->self_obj) {
@@ -137,7 +144,7 @@ static cm_error_t spawn_elf(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
         cm_irq_restore(irq); return CM_ERR_NOSPC;
     }
     p->elf_thread_id = p->main->id;
-    __atomic_store_n(&p->published,1,__ATOMIC_RELEASE);
+    if(p->abi!=CM_ABI_LINUX)__atomic_store_n(&p->published,1,__ATOMIC_RELEASE);
     kinfo("exec spawn: pid=%llu path=%s ELF entry=%llx full=%llx shadow=%llx",
           (unsigned long)p->pid, p->path, (unsigned long)im->entry,
           (unsigned long)im->cr3, (unsigned long)im->shadow_cr3);
@@ -164,11 +171,16 @@ int cm_proc_task_cpu_allowed(const cm_task_t *task,int cpu)
     return 1;
 }
 
-cm_error_t cm_proc_reap_elf(cm_id_t pid)
+static cm_error_t reap_elf(cm_id_t pid)
 {
     cm_proc_t *p = cm_proc_lookup(pid);
-    if (!p || !p->elf) return CM_ERR_INVAL;
+    if (!p || !p->elf || p->linux_group) return CM_ERR_INVAL;
     if (!p->exited || (p->main && p->main->id == p->elf_thread_id)) return CM_ERR_BUSY;
+    for(unsigned i=0;i<CM_MAX_PROCS;i++)if(g_procs[i].used && g_procs[i].linux_group==p) {
+        cm_proc_t *t=&g_procs[i];
+        if(!t->linux_thread_dead || (t->main && __atomic_load_n(&t->main->id,__ATOMIC_ACQUIRE)==t->elf_thread_id))return CM_ERR_BUSY;
+    }
+    for(unsigned i=0;i<CM_MAX_PROCS;i++)if(g_procs[i].used && g_procs[i].linux_group==p)memset(&g_procs[i],0,sizeof(g_procs[i]));
     cm_elf_image_t *im = p->elf;
     p->task->name = "elf-exited"; /* do not retain a name in freed image metadata */
     p->elf = NULL; p->path = "elf-exited"; p->aspace_pages = 0; p->main = NULL;
@@ -181,7 +193,7 @@ static cm_error_t release_elf_record(cm_id_t pid)
 {
     cm_proc_t *p=cm_proc_lookup(pid);
     if(!p || !p->exited || !p->elf_thread_id)return CM_ERR_INVAL;
-    if(p->elf) {cm_error_t e=cm_proc_reap_elf(pid);if(e)return e;}
+    if(p->elf) {cm_error_t e=reap_elf(pid);if(e)return e;}
     if(p->main)return CM_ERR_BUSY;
     cm_task_t *task=p->task;
     for(int h=1;h<CM_HANDLES_PER_TASK;h++)if(cm_handle_lookup(task,h))cm_handle_drop(task,h);
@@ -194,24 +206,26 @@ static cm_error_t release_elf_record(cm_id_t pid)
     kinfo("exec record reap: pid=%llu task/entry-stack slot recycled",(unsigned long)pid);
     return CM_OK;
 }
-cm_error_t cm_proc_release_elf(cm_id_t pid)
+static cm_error_t release_elf(cm_id_t pid)
 {
     cm_proc_t *parent=cm_proc_current();
-    if(cm_cpu_id()!=0 || (!cm_boot_is_selftest() && (!parent || parent->pid!=1)) || (parent && parent->pid==pid))return CM_ERR_DENIED;
+    if((!cm_boot_is_selftest() && (!parent || parent->pid!=1)) || (parent && parent->pid==pid))return CM_ERR_DENIED;
     return release_elf_record(pid);
 }
-cm_error_t cm_proc_release_child(cm_id_t parent,cm_id_t child)
+static cm_error_t release_child(cm_id_t parent,cm_id_t child)
 {
     cm_proc_t *p=cm_proc_lookup(child);
-    if(cm_cpu_id()!=0 || !p || p->parent_pid!=parent || parent==child)return CM_ERR_DENIED;
+    if(!p || p->parent_pid!=parent || parent==child)return CM_ERR_DENIED;
     return release_elf_record(child);
 }
 cm_error_t cm_proc_request_kill(cm_id_t parent,cm_id_t child)
 {
     cm_proc_t *p=cm_proc_lookup(child);
     if(!p || !p->elf || p->parent_pid!=parent || child==parent || child==1)return CM_ERR_DENIED;
-    if(!__atomic_load_n(&p->exited,__ATOMIC_ACQUIRE))
-        __atomic_store_n(&p->kill_pending,1,__ATOMIC_RELEASE);
+    if(!__atomic_load_n(&p->exited,__ATOMIC_ACQUIRE)) {
+        if(p->linux_grouped)cm_linux_group_kill(p,137);
+        else __atomic_store_n(&p->kill_pending,1,__ATOMIC_RELEASE);
+    }
     kinfo("user kill requested: parent=%llu pid=%llu exit=137",(unsigned long)parent,(unsigned long)child);
     return CM_OK;
 }
@@ -241,10 +255,11 @@ cm_error_t cm_proc_release_product_elf(cm_id_t pid)
     return cm_proc_release_elf(pid);
 }
 
-cm_error_t cm_posix_spawn(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
+static cm_error_t spawn(const cm_spawn_attr_t *attr, cm_id_t *out_pid)
 {
-    if (!attr || cm_cpu_id()!=0) return CM_ERR_INVAL;
+    if (!attr) return CM_ERR_INVAL;
     if (!attr->entry) return spawn_elf(attr, out_pid);
+    if(cm_cpu_id()!=0)return CM_ERR_INVAL;
 
     uint64_t img = attr->image_pages ? attr->image_pages : CM_USER_IMAGE_PAGES;
     uint64_t stk = attr->stack_pages ? attr->stack_pages : CM_USER_STACK_PAGES;
@@ -410,19 +425,20 @@ void cm_user_hello(void)
     cm_syscall(CM_SYS_EXIT, 0, 0, 0, 0);
 }
 
-/* Linux-only fork. Creation/reap follow the existing BSP ownership rule.
+/* Linux-only fork. Children inherit fixed affinity; lifecycle mutation is serialized.
  * FILE inheritance never bypasses DUPLICATE or amplifies a right. */
-int64_t cm_linux_fork(void)
+static int64_t linux_fork(void)
 {
     cm_proc_t *parent=cm_proc_current();
     if(!parent || parent->abi!=CM_ABI_LINUX || !parent->linux_frame)return -38;
-    if(cm_cpu_id()!=0)return -11;
+    if(cm_linux_group(parent)->linux_grouped)return -95;
     uint64_t irq=cm_irq_save();cm_error_t e=CM_ERR_NOSPC;
     cm_proc_t *p=alloc_proc();if(!p){cm_irq_restore(irq);return -11;}
     p->abi=CM_ABI_LINUX;p->pid=g_pid_next++;p->parent_pid=parent->pid;p->linux_fork_child=1;
     e=cm_elf_clone_cow(parent->elf,&p->elf);if(e)goto fail;
     p->path=p->elf->path;p->aspace_pages=p->elf->charged;p->user_mode=1;p->elf_cpu=parent->elf_cpu;
     p->task=cm_task_create(p->path,parent->task->qos);if(!p->task || !p->task->self_obj){e=CM_ERR_NOSPC;goto fail;}
+    p->linux_sigmask=parent->linux_sigmask;p->linux_sigignored=parent->linux_sigignored;
     p->stdio_mask=parent->stdio_mask;
     for(int fd=0;fd<CM_FD_MAX;fd++)if(parent->fd[fd]>=0) {
         p->linux_console[fd]=parent->linux_console[fd];p->linux_cloexec[fd]=parent->linux_cloexec[fd];
@@ -443,7 +459,8 @@ fail:
 }
 int64_t cm_linux_wait4(int64_t pid,uint64_t status,uint64_t options,uint64_t usage)
 {
-    cm_proc_t *p=cm_proc_current();if(!p || cm_cpu_id()!=0)return -11;
+    cm_proc_t *p=cm_proc_current();if(!p)return -11;
+    if(cm_linux_group(p)->linux_grouped)return -95;
     if((pid<=0 && pid!=-1) || (options&~3ull))return -22;
     if(usage)return -95;
     if(status && !cm_user_access(p->elf,status,4,1))return -14;
@@ -455,7 +472,7 @@ int64_t cm_linux_wait4(int64_t pid,uint64_t status,uint64_t options,uint64_t usa
             if(!__atomic_load_n(&c->exited,__ATOMIC_ACQUIRE) || (c->main && __atomic_load_n(&c->main->id,__ATOMIC_ACQUIRE)==c->elf_thread_id))continue;
             uint32_t st=((uint32_t)c->exit_code&255u)<<8;cm_id_t result=c->pid;
             if(status && cm_copyout(p->elf,status,&st,4))return -14;
-            int e=cm_proc_release_child(p->pid,result);if(e)return -11;
+            int e=cm_proc_release_child(p->pid,result);if(e==CM_ERR_BUSY){if(options&1)return 0;cm_sched_yield();cm_usermode_resume_entry();break;}if(e)return -11;
             kinfo("linux L2 wait4 reap: parent=%llu child=%llu status=%x",(unsigned long)p->pid,(unsigned long)result,st);
             return (int64_t)result;
         }
@@ -464,4 +481,109 @@ int64_t cm_linux_wait4(int64_t pid,uint64_t status,uint64_t options,uint64_t usa
         cm_sched_yield();cm_usermode_resume_entry();
         if(__atomic_load_n(&p->kill_pending,__ATOMIC_ACQUIRE))return -4;
     }
+}
+
+/* A nonblocking lifecycle gate: never spin or sleep while another CPU owns
+ * create/fork/reap. No runqueue lock is held here. Callers can retry AGAIN/BUSY;
+ * blocking wait4 rechecks after yielding. Includes native mutation so PID/slot
+ * allocation cannot race a Linux AP. Publication still uses release/acquire. */
+static unsigned lifecycle_busy;
+static int lifecycle_enter(uint64_t *flags)
+{
+    *flags=cm_irq_save();
+    if(!__atomic_exchange_n(&lifecycle_busy,1,__ATOMIC_ACQUIRE))return 1;
+    cm_irq_restore(*flags);return 0;
+}
+static void lifecycle_leave(uint64_t flags)
+{__atomic_store_n(&lifecycle_busy,0,__ATOMIC_RELEASE);cm_irq_restore(flags);}
+cm_error_t cm_posix_spawn(const cm_spawn_attr_t *a,cm_id_t *pid)
+{
+    uint64_t f;if(!lifecycle_enter(&f))return CM_ERR_AGAIN;
+    cm_id_t created=0;cm_error_t e=spawn(a,&created);
+    cm_proc_t *p=e?NULL:cm_proc_lookup(created);
+    if(!e && pid)*pid=created;
+    /* Parent metadata is ready before AP publication. Drop the gate first so
+     * a newly launched AP does not fail its first fork on its own creator. */
+    __atomic_store_n(&lifecycle_busy,0,__ATOMIC_RELEASE);
+    if(p && p->abi==CM_ABI_LINUX)__atomic_store_n(&p->published,1,__ATOMIC_RELEASE);
+    cm_irq_restore(f);return e;
+}
+int64_t cm_linux_fork(void)
+{uint64_t f;if(!lifecycle_enter(&f))return -11;int64_t e=linux_fork();lifecycle_leave(f);return e;}
+cm_error_t cm_proc_release_elf(cm_id_t pid)
+{uint64_t f;if(!lifecycle_enter(&f))return CM_ERR_BUSY;cm_error_t e=release_elf(pid);lifecycle_leave(f);return e;}
+cm_error_t cm_proc_release_child(cm_id_t parent,cm_id_t child)
+{uint64_t f;if(!lifecycle_enter(&f))return CM_ERR_BUSY;cm_error_t e=release_child(parent,child);lifecycle_leave(f);return e;}
+
+cm_error_t cm_proc_reap_elf(cm_id_t pid)
+{uint64_t f;if(!lifecycle_enter(&f))return CM_ERR_BUSY;cm_error_t e=reap_elf(pid);lifecycle_leave(f);return e;}
+
+cm_proc_t *cm_linux_group(cm_proc_t *p){return p && p->linux_group?p->linux_group:p;}
+void cm_linux_group_kill(cm_proc_t *p,int64_t code)
+{
+    cm_proc_t *g=cm_linux_group(p);if(!g)return;
+    g->linux_group_exit=1;g->exit_code=code;
+    for(unsigned i=0;i<CM_MAX_PROCS;i++)if(g_procs[i].used && cm_linux_group(&g_procs[i])==g && !g_procs[i].linux_thread_dead)
+        __atomic_store_n(&g_procs[i].kill_pending,1,__ATOMIC_RELEASE);
+    cm_linux_futex_poll();
+}
+/* Same-mm threads stay on their leader CPU: no new TLB-shootdown policy. */
+int64_t cm_linux_clone(uint64_t flags,uint64_t stack,uint64_t ptid,uint64_t ctid,uint64_t tls)
+{
+    const uint64_t required=0x10f00,allowed=0x10f00|0x80000|0x100000|0x200000|0x1000000;
+    if((flags&required)!=required || (flags&~allowed))return -38;
+    cm_proc_t *parent=cm_proc_current(),*g=cm_linux_group(parent);
+    if(!parent || !parent->linux_frame)return -38;
+    /* Socket destructors may wait. Keep first thread-group teardown limited
+     * to FILE/console/pipe objects, including timer-driven off-CPU exits. */
+    for(unsigned fd=0;fd<CM_FD_MAX;fd++)if(cm_linux_socket_is(parent,fd))return -95;
+    if(stack<16 || (stack&15) || !cm_user_access(g->elf,stack-16,16,1))return -14;
+    if((flags&0x80000) && tls>=0x0000800000000000ull)return -1;
+    if(((flags&0x100000) && !cm_user_access(g->elf,ptid,4,1)) ||
+       ((flags&(0x200000|0x1000000)) && !cm_user_access(g->elf,ctid,4,1)))return -14;
+    uint64_t f;if(!lifecycle_enter(&f))return -11;
+    unsigned n=0;for(unsigned i=0;i<CM_MAX_PROCS;i++)if(g_procs[i].used && cm_linux_group(&g_procs[i])==g)n++;
+    if(n>=8 || g->linux_group_exit || parent->linux_thread_dead){lifecycle_leave(f);return -11;}
+    cm_proc_t *t=alloc_proc();if(!t){lifecycle_leave(f);return -11;}
+    t->pid=g_pid_next++;t->abi=CM_ABI_LINUX;t->linux_group=g;t->elf=g->elf;t->task=g->task;
+    t->path=g->path;t->user_mode=1;t->elf_cpu=g->elf_cpu;t->parent_pid=g->parent_pid;
+    t->fd=g->fd;t->linux_console=g->linux_console;t->linux_cloexec=g->linux_cloexec;t->stdio_mask=g->stdio_mask;
+    t->linux_regs=parent->linux_regs;t->linux_regs.rax=0;t->linux_regs.rsp=stack;t->linux_resume=1;
+    t->linux_fs=flags&0x80000?tls:cm_arch_user_fs_get();t->linux_sigmask=parent->linux_sigmask;
+    t->linux_clear_tid=flags&0x200000?ctid:0;
+    t->main=cm_thread_create(g->task,elf_entry_wrap,t,g->task->qos);
+    if(!t->main){memset(t,0,sizeof(*t));lifecycle_leave(f);return -11;}
+    t->elf_thread_id=t->main->id;uint32_t tid=(uint32_t)t->pid;
+    if(((flags&0x100000) && cm_copyout(g->elf,ptid,&tid,4)) || ((flags&0x1000000) && cm_copyout(g->elf,ctid,&tid,4))) {
+        cm_thread_reap(t->main);memset(t,0,sizeof(*t));lifecycle_leave(f);return -14;
+    }
+    g->linux_grouped=1;__atomic_store_n(&t->published,1,__ATOMIC_RELEASE);
+    kinfo("linux clone: tgid=%llu tid=%llu cpu=%d shared-mm/files entry-slot=%d",(unsigned long)g->pid,(unsigned long)t->pid,t->elf_cpu,t->elf_entry_slot);
+    lifecycle_leave(f);return tid;
+}
+int cm_linux_thread_finish(cm_proc_t *p,int64_t code)
+{
+    cm_proc_t *g=cm_linux_group(p);
+    if(!g)return 0;
+    if(!g->linux_grouped) {
+        if(p->abi==CM_ABI_LINUX && p->linux_clear_tid && !p->exited) {
+            uint32_t zero=0;
+            if(!cm_copyout(p->elf,p->linux_clear_tid,&zero,4))cm_linux_futex_wake(p,p->linux_clear_tid,1);
+            p->linux_clear_tid=0;
+        }
+        return 0;
+    }
+    if(g->linux_cleanup)return 0;
+    if(p->linux_thread_dead)return 1;
+    if(__atomic_load_n(&p->kill_pending,__ATOMIC_ACQUIRE) && !g->linux_group_exit)cm_linux_group_kill(g,137);
+    cm_linux_futex_cancel(p);
+    if(p->linux_clear_tid){uint32_t zero=0;if(!cm_copyout(g->elf,p->linux_clear_tid,&zero,4))cm_linux_futex_wake(p,p->linux_clear_tid,1);}
+    p->linux_thread_dead=1;if(p!=g){p->exit_code=code;__atomic_store_n(&p->exited,1,__ATOMIC_RELEASE);}
+    else if(!g->linux_group_exit)g->exit_code=code;
+    if(p->main && p->main->id==p->elf_thread_id)p->main->state=CM_TH_DEAD;
+    for(unsigned i=0;i<CM_MAX_PROCS;i++)if(g_procs[i].used && cm_linux_group(&g_procs[i])==g && !g_procs[i].linux_thread_dead)return 1;
+    g->linux_cleanup=1;
+    if(g->main && g->main->id!=g->elf_thread_id)g->main=NULL;
+    cm_proc_finish_exit(g,g->exit_code);
+    return 1;
 }

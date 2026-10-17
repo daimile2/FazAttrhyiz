@@ -352,8 +352,8 @@ void cm_usermode_run_elf(struct cm_proc *p)
     p->elf_start_tsc=cm_rdtsc();
     p->elf_started = 1;
     kinfo("exec ring3: pid=%llu entry=%llx rsp=%llx cpu=%d",
-          (unsigned long)p->pid, (unsigned long)p->elf->entry,
-          (unsigned long)p->elf->stack, cpu);
+          (unsigned long)p->pid, (unsigned long)(p->linux_resume?p->linux_regs.rcx:p->elf->entry),
+          (unsigned long)(p->linux_resume?p->linux_regs.rsp:p->elf->stack), cpu);
     cm_arch_ctx_set_cr3(th->ctx_slot, p->elf->cr3);
     cm_space_load(p->elf->cr3);
     if(p->linux_resume) {
@@ -372,7 +372,7 @@ void cm_land_user(void)
         int cpu = cm_cpu_id();
         uint64_t actual;
         __asm__ volatile("movq %%cr3, %0" : "=r"(actual));
-        if (!elf_proc->exited || actual != elf_proc->elf->cr3)
+        if ((!elf_proc->exited && !elf_proc->linux_thread_dead) || actual != elf_proc->elf->cr3)
             cm_panic("exec: exit did not retain full image CR3");
 #if CM_KPTI
         if (g_pcpu[cpu].bad_entries || g_pcpu[cpu].incoming_cr3 != elf_proc->elf->shadow_cr3)

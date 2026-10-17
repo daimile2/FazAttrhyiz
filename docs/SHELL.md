@@ -1,5 +1,7 @@
 # 用户 shell：标准输入/输出重定向
 
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+
 更新：2026-10-15。本轮交付前台 `>`、`>>`、`<` 与输入输出组合，适用于内建
 `echo/ls/cat` 和 `run /absolute/program.elf ...`。仍是用户态shell，使用现有VFS/FILE
 capability；未改KPTI、buddy锁、时钟、TCP RTO或IRQ核心。
@@ -144,18 +146,17 @@ listing包含实际目录内容。不要保存VM运行状态替代冷启动。�
 
 | 环境 | 配置 | 结果 | 证据 |
 | --- | --- | --- | --- |
-| hosted | Linux/C11 | PASS，全量0 failures | `/tmp/redir-hosted-final.log` |
-| QEMU debug | KVM、512MiB、4 CPU | PASS，全量0 failures | `/tmp/redir-qemu-debug-final.log` |
-| QEMU产品/冷启动 | AHCI安装盘，无ISO、e1000、4 CPU | PASS，冷启动内容断言通过；nc20B/HTTP/kill回归通过 | `/tmp/redir-qemu-final1.log`、`/tmp/redir-qemu-final2.log` |
-| VBox产品/冷启动 | 7.2.20、EFI64、PIIX3、512MiB、4 CPU、AHCI、82540EM | PASS，重定向写盘+冷启动内容断言通过 | `/tmp/redir-vbox-final1.log`、`/tmp/redir-vbox-final2.log` |
+| hosted | Linux/C11 | PASS，全量0 failures | [redir-hosted-final.log](../tests/evidence/logs/redir-hosted-final.log) |
+| QEMU debug | KVM、512MiB、4 CPU | PASS，全量0 failures | [redir-qemu-debug-final.log](../tests/evidence/logs/redir-qemu-debug-final.log) |
+| QEMU产品/冷启动 | AHCI安装盘，无ISO、e1000、4 CPU | PASS，冷启动内容断言通过；nc20B/HTTP/kill回归通过 | [redir-qemu-final1.log](../tests/evidence/logs/redir-qemu-final1.log)、[redir-qemu-final2.log](../tests/evidence/logs/redir-qemu-final2.log) |
+| VBox产品/冷启动 | 7.2.20、EFI64、PIIX3、512MiB、4 CPU、AHCI、82540EM | PASS，重定向写盘+冷启动内容断言通过 | [redir-vbox-final1.log](../tests/evidence/logs/redir-vbox-final1.log)、[redir-vbox-final2.log](../tests/evidence/logs/redir-vbox-final2.log) |
 
 宿主为Linux 7.0.0-38-generic、Intel i5-13500H；QEMU 8.2.2/KVM，VBox 7.2.20r175154。
 VBox启动时e1000报告link down，网络未作专项验收、不记PASS；本轮不修改其驱动核心。
 QEMU已验证nc20B echo、HTTP重定向、kill137/reap/ACPI关机。VBox未跑全量debug，
 其PASS仅指表内产品重定向/持久化测试，不代替hosted/QEMU的全量PASS。
 VBox和KVM/QEMU测试应串行运行；本机重叠启动曾报KVM entry failed，不能记为内核回归PASS。
-`/tmp`文件是当前工作区证据，不是长期归档。新建VBox测试VM为
-`CapMix-redirect-20261015`，未修改用户原有`capmix` VM；测试盘/配置保留供检查。
+原轮次日志现已脱敏归档；测试使用独立临时VM，未修改用户原有VM。归档不包含虚拟磁盘或VM配置。
 
 冷启动日志的逐字节断言脚本已保留，可复查当前证据：
 
@@ -167,4 +168,4 @@ python3 tests/check_shell_redirection.py vbox /tmp/redir-vbox-final2.log
 对应输出 `shell redirection coldboot: PASS`；检查覆盖/追加最终字节、ELF复制、
 目录无诊断污染、拒绝操作后guard内容、已有盘挂载与ACPI关机。QEMU另查HTTP正文，
 不因仅出现键盘命令回显就判定成功。串口中init偶尔在提示符后插入日志，脚本匹配
-完整命令而不要求prompt和命令相邻。断言结果保存在`/tmp/redir-{qemu,vbox}-assertions.log`。
+完整命令而不要求prompt和命令相邻。断言结果保存在[redir-qemu-assertions.log](../tests/evidence/logs/redir-qemu-assertions.log)、[redir-vbox-assertions.log](../tests/evidence/logs/redir-vbox-assertions.log)。

@@ -134,6 +134,20 @@ spin:
     jne fail
     cmpq %r12,scratch(%rip)
     jne fail
+    movl $309,%eax
+    leaq cpu_report(%rip),%rdi
+    xorl %esi,%esi
+    xorl %edx,%edx
+    syscall
+    testq %rax,%rax
+    jnz fail
+    movl $204,%eax
+    xorl %edi,%edi
+    movl $8,%esi
+    leaq affinity(%rip),%rdx
+    syscall
+    cmpq $8,%rax
+    jne fail
     movq $1,report(%rip)
     movl $1,%eax
     movl $1,%edi
@@ -158,6 +172,8 @@ message_end:
 report: .quad 0
 budget: .quad 100000000
 scratch: .quad 0
+cpu_report: .quad 0
+affinity: .quad 0
 .org 0x100
 tls_a: .quad 0x1122334455667788
 .org 0x200

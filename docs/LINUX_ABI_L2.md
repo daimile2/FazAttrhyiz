@@ -1,5 +1,7 @@
 # Linux ABI L2：有界驻留内存、COW fork 与替换式 execve
 
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+
 后续更新：[L5](LINUX_ABI_L5.md)已新增Linux匿名PRIVATE mmap/munmap、16MiB VA窗口及8MiB映射额度，并细化COW物理页commit归属；下文首版容量/全部mmap拒绝为阶段快照，原生限制不变。
 
 L2 在可选 Linux persona 中加入可运行的 COW fork、brk、wait4 和 execve。
@@ -29,11 +31,10 @@ L1 的 **定制 musl 静态 BusyBox 子集 + 有界 BSS 分配**（echo/cat/ls�
 不是产品化的事件等待队列；kill_pending 时可结束等待，不实现完整信号语义。
 CPL3 自测有 5 秒上限；普通 wait4 不额外制造超时。
 
-所有 Linux persona 进程首版固定 **BSP CPU0**，覆盖 shell 对普通命令的 CPU轮转选择，
-启动日志为 `linux L2 affinity: requested cpu=N -> BSP0`。理由是沿用现有 BSP
-创建/最终回收纪律，避免把 task/proc 发布与回收改造成新的 SMP 生命周期。
-子与父固定同 CPU、允许 tick 抢占与阻塞现场切换；原生 ELF 的多 CPU 固定亲和和
-run& 保持原策略。底层 fork/wait4 若在 AP 被直接调用则 EAGAIN。
+Linux persona现已支持AP创建、运行、fork/wait与回收，详见
+[Linux SMP](LINUX_SMP.md)。使用固定执行位置，子进程继承父CPU，不做运行中迁移。
+生命周期门冲突返回EAGAIN/BUSY；阻塞wait4会让出后重查。
+原生进程调度策略及COW/commit纪律不变。
 
 ## 页所有权与 COW
 
@@ -171,8 +172,8 @@ run /bin/linux-l2.elf
 
 - `proc/elf.c`、`include/capmix/elf.h`：引用、驻留副本预留、克隆、brk、销毁；
   `proc/uaccess.c`：copyout COW；`mm/commit.c`、`include/capmix/mm.h`：计数同步/溢出与声明。
-- `proc/spawn.c`、`include/capmix/proc.h`：Linux fork/wait4、BSP亲和、子现场与生命周期；
-  `proc/control.c`：spawn返回实际CPU（原生值不变，Linux BSP覆盖后如实报告）。
+- `proc/spawn.c`、`include/capmix/proc.h`：Linux fork/wait4、AP固定执行位置、子现场与生命周期；
+  `proc/control.c`：spawn返回实际CPU（原生值不变，Linux按实际执行位置如实报告）。
 - `abi/linux.c`、`abi/linux_process.c`、`include/capmix/linux_process.h`：Linux分流、exec事务及现场布局断言。
 - `arch/x86_64/syscall.S`、`usermode.c`：完整用户寄存器捕获/子返回/exec现场与CR3更新；
   `switch.S`、`fault.c`：可恢复用户COW #PF。它们属于 AGENTS.md 的人审关键路径；
@@ -185,18 +186,21 @@ run /bin/linux-l2.elf
 
 | 环境 | 结果与证据 |
 | --- | --- |
-| hosted，编译开/关 | 全量 `selftest result: PASS (0 failures)`；`/tmp/linux-l2-hosted-final.log`、`/tmp/linux-l2-hosted-off-final.log` |
-| QEMU KVM SMP4 单节点 e1000，Linux开 | 全量PASS，包含真实CPL3 COW/fork/exec/wait和L0/L1；`/tmp/linux-l2-qemu-single-on-final.log` |
-| QEMU KVM SMP4 双NUMA、e1000+virtio-net，Linux开 | 全量PASS，含buddy soak、phase0–9、TRACE/EPT/NUMA、文件、UDP/DHCP/TCP/RTO；`/tmp/linux-l2-qemu-on-final.log` |
-| QEMU KVM SMP4 编译关/运行时关 | Linux拒绝、原生全量PASS；`/tmp/linux-l2-qemu-compiled-off-final.log`、`/tmp/linux-l2-qemu-runtime-off-final.log` |
-| QEMU SMP4 AHCI安装盘，无ISO，Linux开 | 冷启动运行导入的L2探针，真实fork/COW/exec同PID/exit42/wait→父exit0；BusyBox、原生重定向/cat/nc/http-get/httpd、关机PASS；`/tmp/linux-l2-product-on.log`、`/tmp/linux-l2-product-cold.log` |
-| 同盘关闭Linux后冷启动 | Linux探针拒绝，原生cat仍读到 `/l2-file.txt` 与 `/native-l2` 的持久内容，原生hello/httpd及ACPI关机PASS；`/tmp/linux-l2-product-off.log` |
-| 独立宿主HTTP客户端 | 产品Linux开/关各两次HTTP200、25B正文、EOF验证PASS；`/tmp/linux-l2-httpd-client.log`、`/tmp/linux-l2-httpd-client-off.log` |
-| VirtualBox7.2.20 UEFI/AHCI/e1000 NAT SMP4，无ISO | 产品COW写故障、fork→同PID exec→wait42→父exit0/reap、BusyBox cat、原生hello与ACPI关机PASS；`/tmp/linux-l2-vbox-product.log`。未运行VBox全量debug，未将VBox网络记为通过 |
+| hosted，编译开/关 | 全量 `selftest result: PASS (0 failures)`；[linux-l2-hosted-final.log](../tests/evidence/logs/linux-l2-hosted-final.log)、[linux-l2-hosted-off-final.log](../tests/evidence/logs/linux-l2-hosted-off-final.log) |
+| QEMU KVM SMP4 单节点 e1000，Linux开 | 全量PASS，包含真实CPL3 COW/fork/exec/wait和L0/L1；[linux-l2-qemu-single-on-final.log](../tests/evidence/logs/linux-l2-qemu-single-on-final.log) |
+| QEMU KVM SMP4 双NUMA、e1000+virtio-net，Linux开 | 全量PASS，含buddy soak、phase0–9、TRACE/EPT/NUMA、文件、UDP/DHCP/TCP/RTO；[linux-l2-qemu-on-final.log](../tests/evidence/logs/linux-l2-qemu-on-final.log) |
+| QEMU KVM SMP4 编译关/运行时关 | Linux拒绝、原生全量PASS；[linux-l2-qemu-compiled-off-final.log](../tests/evidence/logs/linux-l2-qemu-compiled-off-final.log)、[linux-l2-qemu-runtime-off-final.log](../tests/evidence/logs/linux-l2-qemu-runtime-off-final.log) |
+| QEMU SMP4 AHCI安装盘，无ISO，Linux开 | 冷启动运行导入的L2探针，真实fork/COW/exec同PID/exit42/wait→父exit0；BusyBox、原生重定向/cat/nc/http-get/httpd、关机PASS；[linux-l2-product-on.log](../tests/evidence/logs/linux-l2-product-on.log)、[linux-l2-product-cold.log](../tests/evidence/logs/linux-l2-product-cold.log) |
+| 同盘关闭Linux后冷启动 | Linux探针拒绝，原生cat仍读到 `/l2-file.txt` 与 `/native-l2` 的持久内容，原生hello/httpd及ACPI关机PASS；[linux-l2-product-off.log](../tests/evidence/logs/linux-l2-product-off.log) |
+| 独立宿主HTTP客户端 | 产品Linux开/关各两次HTTP200、25B正文、EOF验证PASS；[linux-l2-httpd-client.log](../tests/evidence/logs/linux-l2-httpd-client.log)、[linux-l2-httpd-client-off.log](../tests/evidence/logs/linux-l2-httpd-client-off.log) |
+| VirtualBox7.2.20 UEFI/AHCI/e1000 NAT SMP4，无ISO | 产品COW写故障、fork→同PID exec→wait42→父exit0/reap、BusyBox cat、原生hello与ACPI关机PASS；[linux-l2-vbox-product.log](../tests/evidence/logs/linux-l2-vbox-product.log)。未运行VBox全量debug，未将VBox网络记为通过 |
 
 本轮 kernel 编译开/关无新增 warning/error；L0/L1固定ELF哈希校验与L1 allocator测试通过，
-`/tmp/linux-l2-fixture-verify.log`。默认最终ISO仍为产品/Linux关闭配置。
+[linux-l2-fixture-verify.log](../tests/evidence/logs/linux-l2-fixture-verify.log)。默认最终ISO仍为产品/Linux关闭配置。
 以上 `/tmp` 是本次宿主的证据路径，不随源码分发；重新测试应保存自己的日志并运行检查脚本。
 
 审查重点是 syscall完整现场/对齐、#PF错误码与CR3恢复、exec提交后不再访问旧用户指针，
 以及预留链 `writable refs - 1` 的释放不变量。通过上述有界测试不代表无限负载或通用Linux兼容。
+
+线程续作：已有 [有界clone/futex](LINUX_THREADS.md)。本文单线程/不支持线程的说明为此前范围；
+新子集仍不等于通用pthread，线程组内fork/exec/映射与fd表变更暂拒绝，未创建线程的原路径保留。

@@ -1,0 +1,218 @@
+[INF] boot mode: product (Limine cmdline snapshot)
+[INF] req: mmap=<KERNEL_ADDR> hhdm=<KERNEL_ADDR> kaddr=<KERNEL_ADDR>
+[INF] kaddr: phys=18801000 virt=<KERNEL_ADDR> size=8253440 (excluded from buddy)
+[INF] limine: usable phys=100000 pages=100097 hhdm=<KERNEL_ADDR> → buddy virt=<KERNEL_ADDR> n=16384
+[INF] gdt: lgdt + ltr 0x30 cpu=0 ist1=<KERNEL_ADDR> ist2=<KERNEL_ADDR>
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] gdt: lgdt + ltr 0x30 cpu=0 ist1=<KERNEL_ADDR> ist2=<KERNEL_ADDR>
+[INF] gdt: seg reload was cs=8 ds=10 ss=10 -> now cs=8 ss=10
+[INF] idt: lidt base=<KERNEL_ADDR> #PF/#GP/#DF/#SS IST=1 timer=0x40 IST=0
+[INF] ====================================================
+[INF] CapMix 0.8.0-phase8 — capability hybrid kernel
+[INF] skeleton: capability hybrid (Zircon + L4 IPC + XNU split)
+[INF] mm: no-overcommit + buddy/SLUB + 4-level pressure
+[INF] sched: EEVDF + QoS bands + turnstile
+[INF] obs: trace_id on every IPC (day-0, not bolted on)
+[INF] proc: posix_spawn first-class, fork is compat-only
+[INF] fs: COW volume (APFS + Btrfs csum + XFS AG + ReFS scrub)
+[INF] io: irq split + uring + blk-mq + user-mode drivers
+[INF] net: in-kernel + XDP/eBPF (kill-switch) + nft
+[INF] sec: cap + Seatbelt + SIP + one-shot authz + signing
+[INF] virt: Type-1 KVM + job/cgroup v2
+[INF] obs: ETW session + hist + cap-gated consume
+[INF] ====================================================
+[INF] mm: commit limit 15401 pages (no-overcommit, reserve 983)
+[INF] mm: watermarks min=256 low=512 high=768 pages
+[INF] mm: commit limit 16425 pages (+1024 backed by swap)
+[INF] anon: 52428 page slots, compressor pool <= 8192 segs, swap 1024 x 4 KiB segs
+[INF] mm: buddy ready, 16384 pages (65536 KiB), max order 11
+[INF] paging: active levels=4 max=5 folded=1
+[INF] paging: mapped kernel virt=<KERNEL_ADDR> phys=18801000 pages=2015
+[INF] paging: mapped heap virt=<KERNEL_ADDR> phys=110000 pages=16384
+[INF] lapic: mapped phys=fee00000 -> <KERNEL_ADDR> (PCD)
+[INF] probe rsp=<KERNEL_ADDR> (boot_stack=<KERNEL_ADDR>) land
+[INF] paging: CR3=4100000 tables=43 mapped=18400 stack=bss (own walker live)
+[INF] paging: KPTI enabled, PGE disabled
+[INF] fb console ready: 1024x768 pitch=4096 bpp=32 text=85x40 serial retained
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] numa: single node0 fallback (SRAT absent/invalid or one domain), existing arena unchanged
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 2 response page(s) on demand at <KERNEL_ADDR>
+[INF] acpi poweroff ready: S5=5/5 PM1=b004/0
+[INF] irq: top/bottom half ready, 32 lines
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] ioapic: MADT addr=fec00000 IRQ1 gsi=1
+[INF] ioapic: version=170020
+[INF] ioapic: IRQ1 gsi=1 -> vec 0x41 dest=0
+[INF] ps2: ready set1 IRQ1 echo (bounded i8042 initialization)
+[INF] io: uring SQ/CQ 256 entries, IOCP inflight counter on
+[INF] virtio-blk skipped: no supported PCI device
+[INF] ahci PCI: 0:13.0 ABAR=81624000
+[INF] ahci SATA disk: port=0
+[INF] ahci ready: sectors=262144 logical=512 DMA=4096 slot=0 polling FLUSH_EXT=1
+[INF] disk install: layout verified backend=2 root_base_lba=2048 ESP separate, root window=8MiB
+[INF] blk root backend: ahci
+[INF] blk: mq 4 queues x qd 32, ramdisk 16384 sectors (raw 64 / swap 8192 / fs 8128)
+[INF] drv: user-mode framework, capability IRQ broker ready
+[INF] cowfs: blank disk volume — formatting
+[INF] cowfs: mkfs 1016 blocks x 4096 B, 256 inodes, 4 AGs, gen=1
+[INF] vfs: '/' = cowfs (in-kernel, no IPC hop); snapshots under /.snap
+[INF] ebpf: verifier on, kill-switch available, JIT later
+[INF] udp: lo/NIC datagrams, 16 capability endpoints x 8 queued, max payload=1472
+[INF] virtio-net skipped: no supported PCI device
+[INF] e1000 PCI: 0:3.0 device=100e BAR0=81600000 model=8254x
+[INF] net: iface enet0 id=0 addr=a00020f
+[INF] irq rx route: PCI INTx GSI=11 pin=11 vector=0x42 dest=0 level/low
+[INF] e1000 irq rx enabled: INTx line=11 RXDMT0/RXO/RXT0; top=ack+notify
+[INF] e1000 ready: link=down RX/TX=16 legacy DMA=2048 MAC=8:0:27:a9:8e:8b irq=1
+[INF] e1000 ip: enet0=10.0.2.15/24 gateway=10.0.2.2
+[INF] net primary: enet0 (priority virtio-net > e1000)
+[INF] net: in-kernel stack (XNU lesson), XDP + nft
+[INF] sip: mask=f cr4=20
+[INF] mitigations=0 SMEP=0 SMAP=0 KPTI=0 kpti_configured=1 kaslr=unimplemented kaslr_slide=0
+[INF] mitigations: KPTI awaiting actual ring3 shadow/full CR3 verification (hosted has no hardware entry)
+[INF] sec: cap deny-by-default + Seatbelt + SIP + one-shot authz + sign
+[INF] virt: Type-1 KVM + VFIO/SR-IOV stubs, job/cgroup v2 ready
+[INF] lapic: cpuid1 edx.apic=1 ecx.tsc_deadline=0
+[INF] lapic: tsc_freq=3187213622 Hz (3187 MHz, src=pit-median)
+[INF] lapic calib: mode=periodic calib_hz=62491040 divisor=16 samples=5 initial_count=62491 tsc_src=pit-median
+[INF] lapic: BSP tsc-deadline=0 calib_hz=62491040 target_ns=1000000 initial_count=62491
+[INF] lapic: readback lvt(0x320)=20040 dcr(0x3E0)=3
+[INF] probe rsp=<KERNEL_ADDR> (boot_stack=<KERNEL_ADDR>) after_paging
+[INF] fault: installed error-code stubs for 8,10,11,12,13,14,17 (IST=1)
+[INF] smp: probe enter cpu_id=0
+[INF] mp: response=<KERNEL_ADDR> max_ids=8
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: revision=0 flags=0 bsp=0 cpu_count=4 cpus=<KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp:   [0] info=<KERNEL_ADDR> lapic_id=0
+[INF] mp:   [1] info=<KERNEL_ADDR> lapic_id=1
+[INF] mp:   [2] info=<KERNEL_ADDR> lapic_id=2
+[INF] mp:   [3] info=<KERNEL_ADDR> lapic_id=3
+[INF] smp: cm_limine_mp rc=0 n=4 bsp=0
+[INF] smp: cpu_count=4 bsp_lapic_id=0 (this cpu=0, index=0)
+[INF] smp:   cpu[0] lapic_id=0 (BSP)
+[INF] smp:   cpu[1] lapic_id=1
+[INF] smp:   cpu[2] lapic_id=2
+[INF] smp:   cpu[3] lapic_id=3
+[INF] numa: node=0 domain=0 cpu_mask=f total=16384 free=13754
+[INF] numa: distance node0->node0=10
+[INF] gdt: lgdt + ltr 0x30 cpu=1 ist1=<KERNEL_ADDR> ist2=<KERNEL_ADDR>
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=1 timer armed tsc-deadline=0 calib_hz=62491040 initial_count=62491
+[INF] ap: cpu=1 lapic_id=1 up on stack <KERNEL_ADDR>
+[INF] gdt: lgdt + ltr 0x30 cpu=2 ist1=<KERNEL_ADDR> ist2=<KERNEL_ADDR>
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=2 timer armed tsc-deadline=0 calib_hz=62491040 initial_count=62491
+[INF] ap: cpu=2 lapic_id=2 up on stack <KERNEL_ADDR>
+[INF] gdt: lgdt + ltr 0x30 cpu=3 ist1=<KERNEL_ADDR> ist2=<KERNEL_ADDR>
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=3 timer armed tsc-deadline=0 calib_hz=62491040 initial_count=62491
+[INF] smp: started 3 AP(s), online=4/4
+[INF] ap: cpu=3 lapic_id=3 up on stack <KERNEL_ADDR>
+[INF] fault: installed error-code stubs for 8,10,11,12,13,14,17 (IST=1)
+[INF] idt[64]: off=<KERNEL_ADDR> sel=8 ist=0 type=8e present=1
+[INF] idt[64]: timer stub is MATCHED (cm_timer_stub=<KERNEL_ADDR>)
+[INF] probe rsp=<KERNEL_ADDR> (boot_stack=<KERNEL_ADDR>) pre-sti
+[INF] lapic: pre-sti lvt=20040 id=0 svr=1ff
+[INF] lapic: armed dl=0 tsc=c506cbf4 (dl>tsc=0)
+[INF] irq: after bare-spin IF=1 firings=78 ticks=8 ccr=b2b2
+[INF] timer: tick=1 tsc=c5525ceb (baseline, no delta yet)
+[INF] timer: tick=2 tsc=c581345e delta_tsc=3069811 (~963 us, target 1000 us)
+[INF] timer: tick=3 tsc=c5b19ef5 delta_tsc=3173015 (~995 us, target 1000 us)
+[INF] timer: tick=4 tsc=c5e23f8a delta_tsc=3186837 (~999 us, target 1000 us)
+[INF] timer: tick=5 tsc=c612df47 delta_tsc=3186621 (~999 us, target 1000 us)
+[INF] init: provisioned /bin/shell.elf via VFS (14648 bytes)
+[INF] init: provisioned /bin/spin.elf via VFS (8816 bytes)
+[INF] init: provisioned /bin/hello.elf via VFS (8960 bytes)
+[INF] init: provisioned /bin/filetest.elf via VFS (9488 bytes)
+[INF] init: provisioned /bin/udpwire.elf via VFS (10792 bytes)
+[INF] init: provisioned /bin/tcpwire.elf via VFS (9800 bytes)
+[INF] init: provisioned /bin/argtest.elf via VFS (8992 bytes)
+[INF] init: provisioned /bin/concurrent.elf via VFS (9024 bytes)
+[INF] init: provisioned /bin/hello-sdk.elf via VFS (8832 bytes)
+[INF] init: provisioned /bin/nc.elf via VFS (9200 bytes)
+[INF] init: provisioned /bin/cat.elf via VFS (8952 bytes)
+[INF] init: provisioned /bin/ls.elf via VFS (8912 bytes)
+[INF] init: provisioned /bin/http-get.elf via VFS (9344 bytes)
+[INF] init: provisioned /example.txt via VFS (39 bytes)
+[INF] init: provisioned /sbin/init.elf via VFS (9568 bytes)
+[INF] elf load: path=/sbin/init.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=1 path=/sbin/init.elf ELF entry=400000 full=184000 shadow=18f000
+[INF] disk install: system ELF provisioning synced; root=disk base_lba=2048 ready
+[INF] init: kernel bootstrap -> /sbin/init.elf PID1 (user ELF)
+[INF] net bg RX started: scheduler thread tid=2 budget=16/interface IRQ=e1000/virtio-net-if-routed; idle=BLOCKED timer=10ms watchdog=100ms
+[INF] usermode: EFER.SCE LSTAR=<KERNEL_ADDR> STAR user=0x18 kernel=0x08
+[INF] exec ring3: pid=1 entry=400000 rsp=7fff90 cpu=0
+init ELF: pid=1 CPL=3
+[INF] cowfs: mounted gen=33 (slot B, other slot valid/older) snaps=0
+[INF] user init: root mount finalized backend=ahci
+[INF] dhcp skipped: no up supported NIC (static fallback retained)
+init: CapMix product root=disk backend=ahci nic=enet0/down
+[INF] elf load: path=/bin/shell.elf ET_EXEC entry=400000 PT_LOAD=2 pages=7 BSS zeroed
+[INF] exec spawn: pid=2 path=/bin/shell.elf ELF entry=400000 full=147000 shadow=15a000
+[INF] user spawn: parent=1 child=2 cpu=0 child-cap=4
+[INF] exec ring3: pid=2 entry=400000 rsp=7fff90 cpu=0
+init: shell pid=2 user ELF launched
+shell ELF ready: CPL=3 PS/2 -> user shell -> FB+serial
+capmix> echo overwritten > /vbox.txt
+shell redirect committed: status=0
+capmix> echo redir-first > /vbox.txt
+shell redirect committed: status=0
+capmix> echo redir-append >> /vbox.txt
+shell redirect committed: status=0
+capmix> cat</vbox.txt>/vbox-copy.txt
+shell redirect committed: status=0
+capmix> run /bin/cat.elf < /vbox-copy.txt > /vbox-elf.txt
+[INF] elf load: path=/bin/cat.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=3 path=/bin/cat.elf ELF entry=400000 full=14f000 shadow=17c000
+[INF] user spawn: parent=2 child=3 cpu=0 child-cap=6
+[INF] exec ring3: pid=3 entry=400000 rsp=7fff90 cpu=0
+[INF] user[3]: cat bytes read=25
+[INF] sys: exit pid=3 code=0
+[INF] exec exit: pid=3 code=0 writes=1 bytes=18 timer_entries=3
+[INF] elf preempt: pid=3 preempts=3 run_ticks=4 cpu=0
+shell run: pid=3 cpu=0
+[INF] exec reap: pid=3 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=3 task/entry-stack slot recycled
+shell child done: pid=3 exit=0 reap=ok
+shell redirect committed: status=0
+capmix> run /bin/ls.elf /bin > /vbox-list.txt
+[INF] elf load: path=/bin/ls.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=4 path=/bin/ls.elf ELF entry=400000 full=14e000 shadow=169000
+[INF] usermode: EFER.SCE LSTAR=<KERNEL_ADDR> STAR user=0x18 kernel=0x08
+[INF] user spawn: parent=2 child=4 cpu=1 child-cap=5
+[INF] exec ring3: pid=4 entry=400000 rsp=7fff80 cpu=1
+shell run: pid=4 cpu=1
+[INF] user[4]: ls entries=13
+[INF] sys: exit pid=4 code=0
+[INF] exec exit: pid=4 code=0 writes=1 bytes=14 timer_entries=19
+[INF] elf preempt: pid=4 preempts=17 run_ticks=19 cpu=1
+[INF] exec reap: pid=4 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=4 task/entry-stack slot recycled
+shell child done: pid=4 exit=0 reap=ok
+shell redirect committed: status=0
+capmix> echo guarded > /guard.txt
+shell redirect committed: status=0
+capmix> run bad > /guard.txt
+shell error=-2
+capmix> cat < /missing > /guard.txt
+shell error=-12
+capmix> cat < /guard.txt > /guard.txt
+shell error=-2
+capmix> cat /guard.txt
+guarded
+
+capmix> poweroff
+[INF] user poweroff: capability authorized root sync=0
+[INF] poweroff: ACPI S5 request

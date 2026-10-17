@@ -8,6 +8,7 @@
 #include "capmix/uaccess.h"
 #include "capmix/arch.h"
 #include "capmix/sha256.h"
+#include "capmix/numa.h"
 #include "capmix/klog.h"
 #include <string.h>
 /* Offline package tools inspect this exact marker, never infer support from filenames. */
@@ -99,14 +100,38 @@ static int64_t l_arch_prctl(uint64_t code,uint64_t address,uint64_t c,uint64_t d
     return -22;
 }
 #endif
-int64_t cm_linux_dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
+static int64_t dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
 {
 #if CM_LINUX_ABI
     cm_proc_t *active=cm_proc_current();if(active){active->linux_last_syscall=nr;active->linux_calls++;}
+    if(nr==24){cm_sched_yield();cm_usermode_resume_entry();return 0;}
+    if(nr==56)return cm_linux_clone(a,b,c,d,active->linux_regs.r8);
+    if(nr==202)return cm_linux_futex(a,b,c,d);
+    /* First thread ABI freezes fd-table mutation and socket operations for a
+     * threaded group; existing FILE/console read/write/seek remain usable. */
+    if(cm_linux_group(active)->linux_grouped) {
+        if(nr==2 || nr==3 || nr==257 || nr==22 || nr==293 || nr==32 || nr==33 || nr==72 ||
+           (nr>=41 && nr<=55) || nr==288 || nr==10 || nr==11 || nr==9 || nr==12)return -95;
+        if((nr==0 || nr==1 || nr==19 || nr==20) && cm_linux_socket_is(active,a))return -95;
+    }
     static const struct {uint32_t nr;int64_t (*fn)(uint64_t,uint64_t,uint64_t,uint64_t);} calls[]={
         {1,l_write},{60,l_exit},{158,l_arch_prctl}
     };
     for(unsigned i=0;i<sizeof(calls)/sizeof(calls[0]);i++)if(calls[i].nr==nr)return calls[i].fn(a,b,c,d);
+    if(nr==309) { /* getcpu(cpu*, node*, unused cache): validate before writing */
+        uint32_t cpu=cm_cpu_id(),node=(uint32_t)cm_numa_cpu_node((int)cpu);
+        if((a && !cm_user_access(active->elf,a,4,1)) || (b && !cm_user_access(active->elf,b,4,1)))return -14;
+        if(a && cm_copyout(active->elf,a,&cpu,4))return -14;
+        if(b && cm_copyout(active->elf,b,&node,4))return -14;
+        return 0;
+    }
+    if(nr==204) { /* eligible CPU set; placement stays fixed, migration API unsupported */
+        if(a && a!=active->pid && a!=cm_linux_group(active)->pid)return -3;
+        if(b<8)return -22;
+        uint64_t mask=cm_cpu_count()>=64?UINT64_MAX:(1ull<<cm_cpu_count())-1;
+        return cm_copyout(active->elf,c,&mask,8)?-14:8;
+    }
+    if(nr==13 || nr==14)return cm_linux_signal_call(nr,a,b,c,d);
     if(nr==22 || nr==293)return cm_linux_pipe_create(active,a,nr==293?b:0);
     if(nr==57)return cm_linux_fork();
     if(nr==61)return cm_linux_wait4((int64_t)a,b,c,d);
@@ -120,6 +145,32 @@ int64_t cm_linux_dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t 
 #else
     (void)nr;(void)a;(void)b;(void)c;(void)d;
 #endif
-    cm_proc_t *p=cm_proc_current();if(p){p->linux_enosys++;if(p->linux_enosys<=8)kinfo("linux ENOSYS: pid=%llu nr=%u count=%llu",(unsigned long)p->pid,nr,(unsigned long)p->linux_enosys);}
     return -38;
+}
+
+/* Count final syscall results once, including errors returned by socket/file
+ * helpers. Fixed storage: 512 numbers and an explicit out-of-range bucket.
+ * Atomics keep snapshots safe across CPUs; snapshots are not a global barrier. */
+static uint64_t enosys[CM_LINUX_ENOSYS_BUCKETS];
+int64_t cm_linux_dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
+{
+    int64_t result=dispatch(nr,a,b,c,d);
+    cm_proc_t *p=cm_proc_current();
+    if(result==-38 && p && p->abi==CM_ABI_LINUX) {
+        __atomic_fetch_add(&enosys[nr<512?nr:512],1,__ATOMIC_RELAXED);
+        p->linux_enosys++;
+        if(p->linux_enosys<=8)kinfo("linux ENOSYS: pid=%llu nr=%u count=%llu",(unsigned long)p->pid,nr,(unsigned long)p->linux_enosys);
+    }
+    return result;
+}
+void cm_linux_enosys_snapshot(uint64_t out[CM_LINUX_ENOSYS_BUCKETS])
+{for(unsigned i=0;i<CM_LINUX_ENOSYS_BUCKETS;i++)out[i]=__atomic_load_n(&enosys[i],__ATOMIC_RELAXED);}
+void cm_linux_enosys_dump(const char *scope,const uint64_t *before)
+{
+    uint64_t total=0;
+    for(unsigned i=0;i<CM_LINUX_ENOSYS_BUCKETS;i++) {
+        uint64_t n=__atomic_load_n(&enosys[i],__ATOMIC_RELAXED)-(before?before[i]:0);total+=n;
+        if(n)kinfo("linux ENOSYS histogram: scope=%s nr=%u count=%llu%s",scope,i,(unsigned long)n,i==512?" overflow=1":"");
+    }
+    kinfo("linux ENOSYS histogram end: scope=%s total=%llu buckets=512 overflow=explicit",scope,(unsigned long)total);
 }

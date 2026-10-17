@@ -1,5 +1,7 @@
 # Linux ABI：最小真实用户态 ld.so
 
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+
 > 后续已增加有界 DSO initial-exec TLS，当前支持范围见 [LINUX_ABI_TLS](LINUX_ABI_TLS.md)。
 > 本文环境矩阵保留首次真实 ld.so 交付快照；新增 TLS 及默认动态 W^X/RELRO 的当前范围见
 > [TLS](LINUX_ABI_TLS.md) 与 [W^X/RELRO](LINUX_ABI_WX_RELRO.md)。
@@ -131,7 +133,7 @@ GLOBAL/WEAK、FUNC/OBJECT/NOTYPE。未定义weak可为0；未定义strong打印�
 - **TLS续作**：旧黄金三份文件仍无PT_TLS；主/解释器继续拒绝PT_TLS。
   新增两个 DSO initial-exec TLS 黄金库，loader 分配最小 TCB 并支持 TPOFF64；
   无 DTV、TLSDESC、dlopen/pthread 或完整 glibc TCB，精确范围见 [LINUX_ABI_TLS](LINUX_ABI_TLS.md)。
-- 仍固定BSP、单线程；无dlopen/dlsym/dlclose、审计、完整signals/futex、C++运行时、完整libc启动或32位。
+- 已支持AP固定执行位置；本篇动态黄金仍按单线程验收（见 [Linux SMP](LINUX_SMP.md) 和 [线程子集](LINUX_THREADS.md)）；无dlopen/dlsym/dlclose、审计、完整signals/futex、C++运行时、完整libc启动或32位。
 
 ## 错误、回收与自测
 
@@ -199,25 +201,25 @@ make iso LINUX_ABI=0 LIMINE_CONFIG=boot/limine-linux-off-selftest.conf
 2026-10-16，QEMU8.2.2/KVM、CPU host、512MiB、SMP4；VBox7.2.20。
 下列是实际运行范围；hosted不执行CPL3，VBox本轮不声称全量debug/网络通过。
 
-| 环境/配置 | 实测结果 | 日志（开发机/tmp） |
+| 环境/配置 | 实测结果 | 归档日志 |
 | --- | --- | --- |
-| 两个干净构建目录 | 三份产物逐字节一致，SHA256SUMS及重定位审计通过 | `/tmp/ldso-build1.log`、`/tmp/ldso-build2.log` |
-| hosted Linux开/interp关、双开、编译Linux关 | 全量PASS (0 failures)，分别验证gate与内核格式/回滚 | `/tmp/ldso-hosted.log`、`/tmp/ldso-hosted-on.log`、`/tmp/ldso-hosted-off.log` |
-| QEMU双开、e1000单节点 | 全量PASS (0 failures)，黄金及所有负例、L0–L5/hush回归链通过 | `/tmp/ldso-on-e1000-matrix.log` |
-| QEMU双开、双NUMA、virtio-net优先+e1000 | 全量PASS (0 failures) | `/tmp/ldso-on-dual-vnet-matrix.log` |
-| QEMU双开、无网卡 | 全量PASS (0 failures)，网络按既有skip策略 | `/tmp/ldso-on-no-nic-matrix.log` |
-| QEMU Linux开/interp关、e1000 | 全量PASS (0 failures)，新动态拒绝，静态及网络链通过 | `/tmp/ldso-interp-off-matrix.log` |
-| QEMU Linux运行时关、e1000 | 全量PASS (0 failures) | `/tmp/ldso-linux-off-matrix.log` |
-| QEMU编译LINUX_ABI=0、双节点两网卡 | 全量PASS (0 failures) | `/tmp/ldso-compiled-off-matrix.log` |
-| 无ISO产品盘，virtio-blk+e1000 | 动态黄金exit=0、hush脚本、原生重定向/nc/http-get/httpd两次200、关机通过 | `/tmp/ldso-product-installboot.log`、`/tmp/ldso-httpd-client.log` |
-| 同盘冷启动，磁盘专用配置 | 动态黄金再exit=0，原生cat读回持久数据、hush及关机通过 | `/tmp/ldso-product-second.log` |
-| 离线稳定包enable将interp置0的盘副本 | 动态拒绝shell error=-7；L0、hush、原生hello/cat、数据保留和关机通过 | `/tmp/ldso-product-interp-off.log` |
-| 默认QEMU产品ISO | Linux enabled=0，原生用户shell/hello/ACPI关机通过 | `/tmp/ldso-default-product.log` |
-| VBox EFI64/PIIX3/AHCI/SMP4，无ISO | 动态输出四类实际重定位计数、校验成功exit=0；hush、L0、原生cat、ACPI关机通过 | `/tmp/ldso-vbox-first.log` |
+| 两个干净构建目录 | 三份产物逐字节一致，SHA256SUMS及重定位审计通过 | [ldso-build1.log](../tests/evidence/logs/ldso-build1.log)、[ldso-build2.log](../tests/evidence/logs/ldso-build2.log) |
+| hosted Linux开/interp关、双开、编译Linux关 | 全量PASS (0 failures)，分别验证gate与内核格式/回滚 | [ldso-hosted.log](../tests/evidence/logs/ldso-hosted.log)、[ldso-hosted-on.log](../tests/evidence/logs/ldso-hosted-on.log)、[ldso-hosted-off.log](../tests/evidence/logs/ldso-hosted-off.log) |
+| QEMU双开、e1000单节点 | 全量PASS (0 failures)，黄金及所有负例、L0–L5/hush回归链通过 | [ldso-on-e1000-matrix.log](../tests/evidence/logs/ldso-on-e1000-matrix.log) |
+| QEMU双开、双NUMA、virtio-net优先+e1000 | 全量PASS (0 failures) | [ldso-on-dual-vnet-matrix.log](../tests/evidence/logs/ldso-on-dual-vnet-matrix.log) |
+| QEMU双开、无网卡 | 全量PASS (0 failures)，网络按既有skip策略 | [ldso-on-no-nic-matrix.log](../tests/evidence/logs/ldso-on-no-nic-matrix.log) |
+| QEMU Linux开/interp关、e1000 | 全量PASS (0 failures)，新动态拒绝，静态及网络链通过 | [ldso-interp-off-matrix.log](../tests/evidence/logs/ldso-interp-off-matrix.log) |
+| QEMU Linux运行时关、e1000 | 全量PASS (0 failures) | [ldso-linux-off-matrix.log](../tests/evidence/logs/ldso-linux-off-matrix.log) |
+| QEMU编译LINUX_ABI=0、双节点两网卡 | 全量PASS (0 failures) | [ldso-compiled-off-matrix.log](../tests/evidence/logs/ldso-compiled-off-matrix.log) |
+| 无ISO产品盘，virtio-blk+e1000 | 动态黄金exit=0、hush脚本、原生重定向/nc/http-get/httpd两次200、关机通过 | [ldso-product-installboot.log](../tests/evidence/logs/ldso-product-installboot.log)、[ldso-httpd-client.log](../tests/evidence/logs/ldso-httpd-client.log) |
+| 同盘冷启动，磁盘专用配置 | 动态黄金再exit=0，原生cat读回持久数据、hush及关机通过 | [ldso-product-second.log](../tests/evidence/logs/ldso-product-second.log) |
+| 离线稳定包enable将interp置0的盘副本 | 动态拒绝shell error=-7；L0、hush、原生hello/cat、数据保留和关机通过 | [ldso-product-interp-off.log](../tests/evidence/logs/ldso-product-interp-off.log) |
+| 默认QEMU产品ISO | Linux enabled=0，原生用户shell/hello/ACPI关机通过 | [ldso-default-product.log](../tests/evidence/logs/ldso-default-product.log) |
+| VBox EFI64/PIIX3/AHCI/SMP4，无ISO | 动态输出四类实际重定位计数、校验成功exit=0；hush、L0、原生cat、ACPI关机通过 | [ldso-vbox-first.log](../tests/evidence/logs/ldso-vbox-first.log) |
 
 初版实验ISO配置没有installed=1，离线包工具正确拒绝修改；本轮没有放宽检查。
 现提供独立 `limine-linux-ldso-disk.conf` 保留installed标志，并在离线盘副本上重测通过。
-VBox第二次冷启动也再次运行动态黄金exit=0、读回持久数据并关机；日志 `/tmp/ldso-vbox-second.log`。
+VBox第二次冷启动也再次运行动态黄金exit=0、读回持久数据并关机；日志 [ldso-vbox-second.log](../tests/evidence/logs/ldso-vbox-second.log)。
 VBox网卡显示down，本轮未验证其网络。QEMU原生网络回归使用TCP9998/UDP9999/HTTP8000
 测试端和httpd转发18081→8080；全量日志由 `tests/check_linux_ldso.py` 检查。
 内核/ISO无新增warning/error；hosted保留原有arch硬件桩unused警告。
@@ -233,3 +235,6 @@ VBox网卡显示down，本轮未验证其网络。QEMU原生网络回归使用TC
 
 没有修改Linux syscall分发、mmap/brk/COW commit实现、KPTI策略、buddy锁、时钟、
 TCP/RTO或安装布局核心。此版本没有“任意Linux动态程序可用”的承诺。
+
+线程续作：已有 [有界clone/futex](LINUX_THREADS.md)。本文单线程/不支持线程的说明为此前范围；
+新子集仍不等于通用pthread，线程组内fork/exec/映射与fd表变更暂拒绝，未创建线程的原路径保留。

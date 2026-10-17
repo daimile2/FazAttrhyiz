@@ -1,6 +1,7 @@
 .global _start
 .section .text
 _start:
+    call compat_check
     cmpq $2,(%rsp)
     jne fail
     mov 16(%rsp),%rax
@@ -38,3 +39,28 @@ ok_end:
 .section .data
 fs: .zero 144
 .section .note.GNU-stack,"",@progbits
+
+.section .text
+compat_check:
+    mov $14,%eax
+    xor %edi,%edi
+    xor %esi,%esi
+    lea compat_old(%rip),%rdx
+    mov $8,%r10d
+    syscall
+    test %rax,%rax
+    jne fail
+    cmpq $2,compat_old(%rip)
+    jne fail
+    mov $13,%eax
+    mov $10,%edi
+    syscall
+    test %rax,%rax
+    jne fail
+    cmpq $1,compat_old(%rip)
+    jne fail
+    ret
+.section .data
+compat_mask: .quad 2
+compat_action: .quad 1,0,0,0
+compat_old: .zero 32

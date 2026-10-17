@@ -1,5 +1,7 @@
 # Linux ABI L1：文件映射与定制静态 BusyBox 子集
 
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+
 后续更新：[L5](LINUX_ABI_L5.md)已新增Linux匿名PRIVATE mmap/munmap、16MiB VA窗口及8MiB映射额度，并细化COW物理页commit归属；下文首版容量/全部mmap拒绝为阶段快照，原生限制不变。
 
 后续 COW fork、有界 brk 与替换式 execve 见 [L2](LINUX_ABI_L2.md)。本文保留本阶段快照；L2 默认关闭且不改变原生 ABI。
@@ -174,17 +176,17 @@ dirent64 小缓冲回滚、结束 cookie、mmap/brk ENOSYS、fd/页回收。host
 
 | 环境 | 结果与证据 |
 | --- | --- |
-| hosted，编译开 / 关 | 全量 `PASS (0 failures)`；`/tmp/linux-l1-hosted-final.log`、`/tmp/linux-l1-hosted-off-final.log` |
-| QEMU KVM SMP4 单节点，Linux 开，e1000 | 全量 PASS，L0 与 BusyBox 三 applet 字节/退出断言；`/tmp/linux-l1-qemu-single-on-final.log` |
-| QEMU KVM SMP4 双 NUMA、e1000+virtio-net，Linux 开 | 全量 PASS；TRACE、EPT、IRQ、sign、NUMA/UDP/TCP/RTO 同跑；`/tmp/linux-l1-qemu-on-final.log` |
-| QEMU KVM SMP4，编译关 / 运行时关 | Linux 拒绝、原生全量 PASS；`/tmp/linux-l1-qemu-compiled-off-final.log`、`/tmp/linux-l1-qemu-runtime-off-final.log` |
-| QEMU SMP4 AHCI 无 ISO 产品盘，开→关冷启动 | BusyBox echo/cat/ls、重定向、原生 hello/cat/nc/http-get、httpd 两次响应、ACPI关机 PASS；关闭后 Linux 拒绝，原生 cat 仍读到两份持久文件；`/tmp/linux-l1-product-on.log`、`/tmp/linux-l1-product-off.log` |
-| 宿主 httpd 独立客户端 | Linux开/关产品路径均两次 HTTP200、25B、EOF 校验 PASS；`/tmp/linux-l1-httpd-client.log`、`/tmp/linux-l1-httpd-client-off.log` |
-| VirtualBox 7.2.20 UEFI/AHCI/e1000 NAT SMP4，无 ISO | L0、BusyBox echo/cat/ls、重定向、原生 hello/cat、ACPI关机 PASS；冷启动再读回 `/vbox-l1`。产品文件测试，不是 VBox 全量 debug。`/tmp/linux-l1-vbox-firstboot.log`、`/tmp/linux-l1-vbox-coldboot.log` |
+| hosted，编译开 / 关 | 全量 `PASS (0 failures)`；[linux-l1-hosted-final.log](../tests/evidence/logs/linux-l1-hosted-final.log)、[linux-l1-hosted-off-final.log](../tests/evidence/logs/linux-l1-hosted-off-final.log) |
+| QEMU KVM SMP4 单节点，Linux 开，e1000 | 全量 PASS，L0 与 BusyBox 三 applet 字节/退出断言；[linux-l1-qemu-single-on-final.log](../tests/evidence/logs/linux-l1-qemu-single-on-final.log) |
+| QEMU KVM SMP4 双 NUMA、e1000+virtio-net，Linux 开 | 全量 PASS；TRACE、EPT、IRQ、sign、NUMA/UDP/TCP/RTO 同跑；[linux-l1-qemu-on-final.log](../tests/evidence/logs/linux-l1-qemu-on-final.log) |
+| QEMU KVM SMP4，编译关 / 运行时关 | Linux 拒绝、原生全量 PASS；[linux-l1-qemu-compiled-off-final.log](../tests/evidence/logs/linux-l1-qemu-compiled-off-final.log)、[linux-l1-qemu-runtime-off-final.log](../tests/evidence/logs/linux-l1-qemu-runtime-off-final.log) |
+| QEMU SMP4 AHCI 无 ISO 产品盘，开→关冷启动 | BusyBox echo/cat/ls、重定向、原生 hello/cat/nc/http-get、httpd 两次响应、ACPI关机 PASS；关闭后 Linux 拒绝，原生 cat 仍读到两份持久文件；[linux-l1-product-on.log](../tests/evidence/logs/linux-l1-product-on.log)、[linux-l1-product-off.log](../tests/evidence/logs/linux-l1-product-off.log) |
+| 宿主 httpd 独立客户端 | Linux开/关产品路径均两次 HTTP200、25B、EOF 校验 PASS；[linux-l1-httpd-client.log](../tests/evidence/logs/linux-l1-httpd-client.log)、[linux-l1-httpd-client-off.log](../tests/evidence/logs/linux-l1-httpd-client-off.log) |
+| VirtualBox 7.2.20 UEFI/AHCI/e1000 NAT SMP4，无 ISO | L0、BusyBox echo/cat/ls、重定向、原生 hello/cat、ACPI关机 PASS；冷启动再读回 `/vbox-l1`。产品文件测试，不是 VBox 全量 debug。[linux-l1-vbox-firstboot.log](../tests/evidence/logs/linux-l1-vbox-firstboot.log)、[linux-l1-vbox-coldboot.log](../tests/evidence/logs/linux-l1-vbox-coldboot.log) |
 | VirtualBox 网络 | 本轮新建 VM 启动 e1000 `link=down`，因此网络未验，不记 PASS；未为此修改网卡核心。网络原生回归证据来自上述 QEMU 产品路径 |
-| 离线重建 / BSS 上限 | 第二个全新目录产物与 fixture 逐字节相同；`/tmp/linux-l1-repro-verify.log`。allocator 耗尽、失败保留旧块、合并、溢出与清零测试 PASS；`/tmp/linux-l1-verify.log` |
+| 离线重建 / BSS 上限 | 第二个全新目录产物与 fixture 逐字节相同；[linux-l1-repro-verify.log](../tests/evidence/logs/linux-l1-repro-verify.log)。allocator 耗尽、失败保留旧块、合并、溢出与清零测试 PASS；[linux-l1-verify.log](../tests/evidence/logs/linux-l1-verify.log) |
 
-以上 `/tmp` 是本次机器上的证据路径，不随源码分发；重新验收应保存自己的串口日志。
+以上矩阵证据已随仓库脱敏归档；重新验收应另存自己的串口日志。
 文件 I/O 断言由 guest selftest 实际检查内容；不是仅凭出现路径名判定通过。
 
 ## 修改文件

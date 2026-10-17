@@ -1,6 +1,20 @@
 .global _start
 .section .text
 _start:
+    mov $14,%eax
+    mov $2,%edi
+    lea compat_mask(%rip),%rsi
+    xor %edx,%edx
+    mov $8,%r10d
+    syscall
+    test %rax,%rax
+    jne fail
+    mov $13,%eax
+    mov $10,%edi
+    lea compat_action(%rip),%rsi
+    syscall
+    test %rax,%rax
+    jne fail
     mov $39,%eax
     syscall
     mov %rax,%r14
@@ -32,6 +46,9 @@ _start:
     mov $0x76543210,%r13d
     mov $57,%eax
     syscall
+    push %rax
+    call compat_check
+    pop %rax
     cmp $0x12345678,%rbx
     jne fail
     cmp $0x76543210,%r13
@@ -161,3 +178,28 @@ status: .long 0
 .align 8
 args: .quad target,arg,0
 .section .note.GNU-stack,"",@progbits
+
+.section .text
+compat_check:
+    mov $14,%eax
+    xor %edi,%edi
+    xor %esi,%esi
+    lea compat_old(%rip),%rdx
+    mov $8,%r10d
+    syscall
+    test %rax,%rax
+    jne fail
+    cmpq $2,compat_old(%rip)
+    jne fail
+    mov $13,%eax
+    mov $10,%edi
+    syscall
+    test %rax,%rax
+    jne fail
+    cmpq $1,compat_old(%rip)
+    jne fail
+    ret
+.section .data
+compat_mask: .quad 2
+compat_action: .quad 1,0,0,0
+compat_old: .zero 32

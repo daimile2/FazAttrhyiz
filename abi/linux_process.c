@@ -23,6 +23,7 @@ static int snapshot(cm_elf_image_t *im,uint64_t address,char (*strings)[256],con
 int64_t cm_linux_execve(uint64_t path_address,uint64_t argv_address,uint64_t env_address)
 {
     cm_proc_t *p=cm_proc_current();if(!p || !p->linux_frame)return -38;
+    if(cm_linux_group(p)->linux_grouped)return -95;
     char path[CM_ELF_PATH_MAX];if(cm_copyinstr(p->elf,path,path_address,sizeof(path)))return -14;
     if(path[0]!='/')return -2;
     char (*strings)[256]=cm_page_alloc(2);if(!strings)return -12;
@@ -40,7 +41,7 @@ int64_t cm_linux_execve(uint64_t path_address,uint64_t argv_address,uint64_t env
     }
     p->elf=next;next=NULL;p->path=p->elf->path;p->task->name=p->path;p->aspace_pages=p->elf->charged;
     memset(p->linux_frame,0,120);p->linux_frame->rcx=p->elf->entry;p->linux_frame->r11=0x202;
-    p->linux_fs=0;p->linux_resume=0;cm_usermode_replace_image();
+    p->linux_clear_tid=0;p->linux_fs=0;p->linux_resume=0;cm_usermode_replace_image();
     cm_elf_destroy(old);
     kinfo("linux L2 execve replace: pid=%llu path=%s entry=%llx FS=0 old-image reclaimed",(unsigned long)p->pid,p->path,(unsigned long)p->elf->entry);
     cm_irq_restore(irq);e=0;

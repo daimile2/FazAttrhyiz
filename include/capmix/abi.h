@@ -7,6 +7,12 @@ int cm_linux_enabled(void);
 int cm_linux_interp_enabled(void);
 int cm_linux_ldso_selftest(void);
 int cm_linux_sh_selftest(void);
+int cm_linux_compat_selftest(void);
+int cm_linux_smp_selftest(void);
+#define CM_LINUX_ENOSYS_BUCKETS 513 /* 0..511, then overflow */
+void cm_linux_enosys_snapshot(uint64_t out[CM_LINUX_ENOSYS_BUCKETS]);
+void cm_linux_enosys_dump(const char *,const uint64_t *);
+int64_t cm_linux_signal_call(uint32_t,uint64_t,uint64_t,uint64_t,uint64_t);
 int cm_linux_l5_selftest(void);
 int cm_linux_l4_selftest(void);
 void cm_linux_random16(uint8_t out[16]);

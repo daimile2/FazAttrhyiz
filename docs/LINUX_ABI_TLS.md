@@ -1,5 +1,7 @@
 # Linux ABI：最小 DSO initial-exec TLS
 
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+
 > 后续真实动态路径已默认启用 [W^X/最小 RELRO](LINUX_ABI_WX_RELRO.md)。
 > 以下环境矩阵保留 TLS 首轮验证记录。
 
@@ -125,19 +127,19 @@ hosted 只检查既有加载/门控与 FS 模型，不执行硬件 TLS，明确�
 
 | 环境 | 结果 | 日志 |
 | --- | --- | --- |
-| 两个干净构建目录，GCC13.3/binutils2.42 | 六份产物逐字节一致，哈希/ELF 审计通过 | `/tmp/tls-fixture-build.log`、`/tmp/tls-reproduce.log` |
-| hosted：Linux关、Linux开/interp关、双开 | 三份全量 `PASS (0 failures)`；硬件 TLS 明确跳过 | `/tmp/tls-hosted-disabled.log`、`/tmp/tls-hosted-interp-off.log`、`/tmp/tls-hosted-on.log` |
-| KVM SMP4，双开，e1000 | 全量 `PASS (0 failures)`，TLS 正负例、同 CPU overlap、实际 UDP/TCP 回归通过 | `/tmp/tls-on-e1000-matrix.log` |
-| KVM SMP4，双 NUMA，virtio-net+e1000 | 全量 `PASS (0 failures)`，TLS 隔离及网络链通过 | `/tmp/tls-on-dual-vnet-matrix.log` |
-| KVM SMP4，双开，无网卡 | 全量 `PASS (0 failures)`，网络按既有策略 skip | `/tmp/tls-on-no-nic-matrix.log` |
-| KVM SMP4，Linux开/interp关，e1000 | 全量 `PASS (0 failures)`，动态拒绝，静态/原生保留 | `/tmp/tls-interp-off-matrix.log` |
-| KVM SMP4，Linux运行时关，e1000 | 全量 `PASS (0 failures)` | `/tmp/tls-linux-off-matrix.log` |
-| KVM SMP4，编译 Linux关，双节点/两网卡 | 全量 `PASS (0 failures)` | `/tmp/tls-compiled-off-matrix.log` |
-| 无 ISO 产品盘，virtio-blk/e1000 | TLS 前台/后台、旧动态、hush、L0/L5、文件重定向、nc/http-get/httpd 两次响应、关机通过 | `/tmp/tls-final-product-first.log`、`/tmp/tls-final-httpd-client.log` |
-| 默认产品 ISO，Linux 关闭 | 用户 shell、原生 hello exit=0、ACPI 关机通过 | `/tmp/tls-default-product.log` |
-| 同产品盘冷启动，无 ISO | TLS/旧动态 exit=0、持久文件 cat、hush、关机通过 | `/tmp/tls-final-product-second.log` |
-| VBox 7.2.20，EFI64/PIIX3/AHCI/SMP4，第一次无 ISO 启动 | TLS 前台/后台、旧动态、L0、hush、原生重定向/读回、关机通过 | `/tmp/tls-vbox-first.log` |
-| VBox 同盘第二次冷启动 | TLS/旧动态/L0/hush exit=0、读回持久文件、关机通过 | `/tmp/tls-vbox-second.log` |
+| 两个干净构建目录，GCC13.3/binutils2.42 | 六份产物逐字节一致，哈希/ELF 审计通过 | [tls-fixture-build.log](../tests/evidence/logs/tls-fixture-build.log)、[tls-reproduce.log](../tests/evidence/logs/tls-reproduce.log) |
+| hosted：Linux关、Linux开/interp关、双开 | 三份全量 `PASS (0 failures)`；硬件 TLS 明确跳过 | [tls-hosted-disabled.log](../tests/evidence/logs/tls-hosted-disabled.log)、[tls-hosted-interp-off.log](../tests/evidence/logs/tls-hosted-interp-off.log)、[tls-hosted-on.log](../tests/evidence/logs/tls-hosted-on.log) |
+| KVM SMP4，双开，e1000 | 全量 `PASS (0 failures)`，TLS 正负例、同 CPU overlap、实际 UDP/TCP 回归通过 | [tls-on-e1000-matrix.log](../tests/evidence/logs/tls-on-e1000-matrix.log) |
+| KVM SMP4，双 NUMA，virtio-net+e1000 | 全量 `PASS (0 failures)`，TLS 隔离及网络链通过 | [tls-on-dual-vnet-matrix.log](../tests/evidence/logs/tls-on-dual-vnet-matrix.log) |
+| KVM SMP4，双开，无网卡 | 全量 `PASS (0 failures)`，网络按既有策略 skip | [tls-on-no-nic-matrix.log](../tests/evidence/logs/tls-on-no-nic-matrix.log) |
+| KVM SMP4，Linux开/interp关，e1000 | 全量 `PASS (0 failures)`，动态拒绝，静态/原生保留 | [tls-interp-off-matrix.log](../tests/evidence/logs/tls-interp-off-matrix.log) |
+| KVM SMP4，Linux运行时关，e1000 | 全量 `PASS (0 failures)` | [tls-linux-off-matrix.log](../tests/evidence/logs/tls-linux-off-matrix.log) |
+| KVM SMP4，编译 Linux关，双节点/两网卡 | 全量 `PASS (0 failures)` | [tls-compiled-off-matrix.log](../tests/evidence/logs/tls-compiled-off-matrix.log) |
+| 无 ISO 产品盘，virtio-blk/e1000 | TLS 前台/后台、旧动态、hush、L0/L5、文件重定向、nc/http-get/httpd 两次响应、关机通过 | [tls-final-product-first.log](../tests/evidence/logs/tls-final-product-first.log)、[tls-final-httpd-client.log](../tests/evidence/logs/tls-final-httpd-client.log) |
+| 默认产品 ISO，Linux 关闭 | 用户 shell、原生 hello exit=0、ACPI 关机通过 | [tls-default-product.log](../tests/evidence/logs/tls-default-product.log) |
+| 同产品盘冷启动，无 ISO | TLS/旧动态 exit=0、持久文件 cat、hush、关机通过 | [tls-final-product-second.log](../tests/evidence/logs/tls-final-product-second.log) |
+| VBox 7.2.20，EFI64/PIIX3/AHCI/SMP4，第一次无 ISO 启动 | TLS 前台/后台、旧动态、L0、hush、原生重定向/读回、关机通过 | [tls-vbox-first.log](../tests/evidence/logs/tls-vbox-first.log) |
+| VBox 同盘第二次冷启动 | TLS/旧动态/L0/hush exit=0、读回持久文件、关机通过 | [tls-vbox-second.log](../tests/evidence/logs/tls-vbox-second.log) |
 
 六组 QEMU 日志均通过 `tests/check_linux_tls.py`，递归检查 L0–L5、hush、旧 ld.so
 及全量结果。启用网卡的 Linux 配置使用 `--wire` 强制要求实际网络回归。

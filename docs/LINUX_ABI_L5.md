@@ -1,5 +1,7 @@
 # Linux ABI L5：匿名 PRIVATE mmap、16MiB 窗口与驻留 COW commit
 
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+
 L5 仅作用于 `CM_ABI_LINUX`。产品默认 `capmix.linux=0`，原生程序继续使用
 CapMix syscall/capability、posix_spawn 和原生 fork=NOTSUP；后续原生软件命名
 `.cmx` 或放 `/bin/cm/`，不强制改名已有 `.elf`。关闭/离线卸载 persona 不删除
@@ -50,7 +52,7 @@ L4a 仍只是固定解释器交接，不是真 ld.so 重定位/符号解析。
 释放PT_LOAD/brk；没有新增按需缺页分配。NX状态不因本轮改变。
 
 修改在同一进程既有固定CPU/单线程纪律下完成；没有为多线程同地址空间设计锁。
-Linux fork/exec继续固定BSP，原生SMP多ELF策略不变。
+Linux fork/exec现支持AP，固定执行位置与生命周期限制见 [Linux SMP](LINUX_SMP.md)；原生SMP多ELF策略不变。
 
 ## no-overcommit 与 COW 所有权
 
@@ -129,19 +131,19 @@ make iso LINUX_ABI=0 LIMINE_CONFIG=boot/limine-linux-off-selftest.conf
 ## 环境矩阵
 
 2026-10-16，x86-64宿主，QEMU8.2.2/KVM、CPU host、512MiB、SMP4。
-日志保留在开发机 `/tmp/`；矩阵对应实际运行，非跨环境保证。
+日志已脱敏归档到仓库 `tests/evidence/`；矩阵对应原轮次实际运行，非跨环境保证。
 
 | 环境/配置 | 结果 | 证据 |
 | --- | --- | --- |
-| hosted Linux开启/编译关闭 | 全量PASS (0 failures) | `/tmp/l5-hosted-final.log`、`/tmp/l5-hosted-off.log` |
-| QEMU Linux开启、单节点e1000 | 全量PASS (0 failures)，L0–L5及原生网络链校验通过 | `/tmp/l5-on-e1000-matrix.log` |
-| QEMU Linux开启、双节点、virtio-net优先+e1000 | 全量PASS (0 failures) | `/tmp/l5-on-dual-vnet-matrix.log` |
-| QEMU Linux开启、无网卡 | 全量PASS (0 failures)，网络按既有skip策略 | `/tmp/l5-on-no-nic-matrix.log` |
-| QEMU 运行时Linux关闭、e1000 | 全量PASS (0 failures) | `/tmp/l5-linux-off-matrix.log` |
-| QEMU 编译LINUX_ABI=0、双节点、两网卡 | 全量PASS (0 failures) | `/tmp/l5-compiled-off-matrix.log` |
-| QEMU 默认产品ISO，Linux默认关 | 用户shell、原生hello、ACPI关机通过；不跑全量selftest | `/tmp/l5-default-product.log` |
-| QEMU 无ISO产品盘两次启动、virtio-blk+e1000 | 两个L5 ELF、L0、原生cat/重定向持久化、nc/http-get/httpd、poweroff通过 | `/tmp/l5-product-installboot.log`、`/tmp/l5-product-first.log`、`/tmp/l5-httpd-client.log` |
-| VBox7.2.20 EFI64/PIIX3/AHCI/SMP4/512MiB，无ISO | 产品路径两个L5 ELF与L0 exit=0，原生文件/重定向写读、第二次冷启动持久读回、ACPI关机通过 | `/tmp/l5-vbox-first.log`、`/tmp/l5-vbox-second.log` |
+| hosted Linux开启/编译关闭 | 全量PASS (0 failures) | [l5-hosted-final.log](../tests/evidence/logs/l5-hosted-final.log)、[l5-hosted-off.log](../tests/evidence/logs/l5-hosted-off.log) |
+| QEMU Linux开启、单节点e1000 | 全量PASS (0 failures)，L0–L5及原生网络链校验通过 | [l5-on-e1000-matrix.log](../tests/evidence/logs/l5-on-e1000-matrix.log) |
+| QEMU Linux开启、双节点、virtio-net优先+e1000 | 全量PASS (0 failures) | [l5-on-dual-vnet-matrix.log](../tests/evidence/logs/l5-on-dual-vnet-matrix.log) |
+| QEMU Linux开启、无网卡 | 全量PASS (0 failures)，网络按既有skip策略 | [l5-on-no-nic-matrix.log](../tests/evidence/logs/l5-on-no-nic-matrix.log) |
+| QEMU 运行时Linux关闭、e1000 | 全量PASS (0 failures) | [l5-linux-off-matrix.log](../tests/evidence/logs/l5-linux-off-matrix.log) |
+| QEMU 编译LINUX_ABI=0、双节点、两网卡 | 全量PASS (0 failures) | [l5-compiled-off-matrix.log](../tests/evidence/logs/l5-compiled-off-matrix.log) |
+| QEMU 默认产品ISO，Linux默认关 | 用户shell、原生hello、ACPI关机通过；不跑全量selftest | [l5-default-product.log](../tests/evidence/logs/l5-default-product.log) |
+| QEMU 无ISO产品盘两次启动、virtio-blk+e1000 | 两个L5 ELF、L0、原生cat/重定向持久化、nc/http-get/httpd、poweroff通过 | [l5-product-installboot.log](../tests/evidence/logs/l5-product-installboot.log)、[l5-product-first.log](../tests/evidence/logs/l5-product-first.log)、[l5-httpd-client.log](../tests/evidence/logs/l5-httpd-client.log) |
+| VBox7.2.20 EFI64/PIIX3/AHCI/SMP4/512MiB，无ISO | 产品路径两个L5 ELF与L0 exit=0，原生文件/重定向写读、第二次冷启动持久读回、ACPI关机通过 | [l5-vbox-first.log](../tests/evidence/logs/l5-vbox-first.log)、[l5-vbox-second.log](../tests/evidence/logs/l5-vbox-second.log) |
 
 VBox本轮仅产品验收，不宣称全量debug PASS；其e1000显示down，未验证VBox网络。
 QEMU开启配置同时启用L4a实验gate，L0–L4日志断言一并通过；普通hosted不打开L4a，
@@ -159,3 +161,6 @@ arch硬件桩unused警告。本轮没有修改KPTI、buddy锁、时钟、TCP/RTO
   `scripts/build-musl-l5.sh`、`third_party/linux-l5/*`：固定黄金ELF、原版musl探针/来源许可/哈希与日志断言。
 - `proc/init.c`、`Makefile`、`.gitignore`：嵌入/构建/校验fixture，仅Linux启用时补文件。
 - 本文、文档导航/总览、L0/L1/L2/L4阶段快照提示及VBox手册：当前边界和实测矩阵。
+
+线程续作：已有 [有界clone/futex](LINUX_THREADS.md)。本文单线程/不支持线程的说明为此前范围；
+新子集仍不等于通用pthread，线程组内fork/exec/映射与fd表变更暂拒绝，未创建线程的原路径保留。

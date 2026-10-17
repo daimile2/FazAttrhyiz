@@ -533,9 +533,12 @@ int capmix_selftest(void)
     fails += cm_linux_selftest();
     fails += cm_linux_l1_selftest();
     fails += cm_linux_l2_selftest();
+    fails += cm_linux_smp_selftest();
     fails += cm_linux_l3_selftest();
     fails += cm_linux_l4_selftest();
     fails += cm_linux_l5_selftest();
+    fails += cm_linux_compat_selftest();
+    fails += cm_linux_threads_selftest();
     fails += cm_linux_sh_selftest();
     fails += cm_linux_ldso_selftest();
     extern int cm_concurrent_selftest(void);
@@ -855,6 +858,7 @@ void cm_selftest_finish(void)
     cm_obs_dump(12);
     cm_mitigations_dump();
     fails += cm_m3_finish();
+    cm_linux_enosys_dump("all",NULL);
     kinfo("--- selftest result: %s (%d failures) ---",
           fails ? "FAIL" : "PASS", fails);
 #ifndef CAPMIX_HOSTED

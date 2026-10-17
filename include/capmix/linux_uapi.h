@@ -6,6 +6,16 @@
 #ifndef CAPMIX_LINUX_UAPI_H
 #define CAPMIX_LINUX_UAPI_H
 #include "types.h"
+/* Linux v6.6 arch/x86/include/uapi/asm/signal.h, x86-64 kernel ABI.
+ * Kernel sigset is 64 bits, distinct from libc's larger sigset_t. */
+/* Linux v6.6 include/uapi/linux/time_types.h __kernel_timespec. */
+typedef struct {int64_t sec,nsec;} cm_linux_timespec_t;
+_Static_assert(sizeof(cm_linux_timespec_t)==16 && offsetof(cm_linux_timespec_t,nsec)==8,"Linux timespec64 layout");
+typedef struct {uint64_t handler,flags,restorer,mask;} cm_linux_sigaction_t;
+_Static_assert(sizeof(cm_linux_sigaction_t)==32 &&
+    offsetof(cm_linux_sigaction_t,flags)==8 &&
+    offsetof(cm_linux_sigaction_t,restorer)==16 &&
+    offsetof(cm_linux_sigaction_t,mask)==24,"Linux x86-64 sigaction layout");
 typedef struct {
     uint64_t dev,ino,nlink;
     uint32_t mode,uid,gid,pad0;

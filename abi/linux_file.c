@@ -227,8 +227,8 @@ int cm_linux_file_call(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d,i
     case 32:*result=fcntl_file(a,0,0);break;
     case 72:*result=fcntl_file(a,b,c);break;
     case 19:case 20:*result=vectors(a,b,c,nr==20);break;
-    case 39:*result=(int64_t)caller()->pid;break;
-    case 110:*result=(int64_t)caller()->parent_pid;break;
+    case 39:*result=(int64_t)cm_linux_group(caller())->pid;break;
+    case 110:*result=(int64_t)cm_linux_group(caller())->parent_pid;break;
     case 79: {
         if(b<2){*result=-34;break;}const char root[]="/";
         *result=cm_copyout(caller()->elf,a,root,2)?-14:2;break;
@@ -239,9 +239,10 @@ int cm_linux_file_call(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d,i
         *result=cm_copyout(caller()->elf,a,&u,sizeof(u))?-14:0;break;
     }
     case 102:case 104:case 107:case 108:*result=0;break; /* fixed identity, not kernel privilege */
-    case 218:*result=(int64_t)caller()->pid;break; /* one thread; no clear_child_tid/futex */
+    case 186:*result=(int64_t)caller()->pid;break;
+    case 218:caller()->linux_clear_tid=a;*result=(int64_t)caller()->pid;break;
     case 16:*result=valid(a)?-25:-9;break; /* ENOTTY, no fake tty ioctl */
-    case 231:*result=cm_native_exit(a&255u);break; /* one thread == whole process */
+    case 231:if(cm_linux_group(caller())->linux_grouped)cm_linux_group_kill(caller(),a&255u);*result=cm_native_exit(a&255u);break;
     default:return 0;
     }
     return 1;

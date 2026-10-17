@@ -66,3 +66,9 @@
 - [Linux 动态 W^X 与最小 GNU_RELRO](LINUX_ABI_WX_RELRO.md)
 
 - [TCP 32 槽连接池、RX 窗口与内存预算](TCP_POOL.md)
+
+Linux未实现调用排序、13/14有限元数据与复现脚本：[LINUX_ENOSYS](LINUX_ENOSYS.md)。
+
+Linux多CPU、AP创建/fork/回收与CPU查询：[LINUX_SMP](LINUX_SMP.md)。
+
+有界Linux clone线程、futex与固定黄金探针：[LINUX_THREADS](LINUX_THREADS.md)。

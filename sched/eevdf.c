@@ -122,6 +122,7 @@ uint64_t     cm_sched_preempts(void)
 
 int cm_sched_runnable(void)
 {
+    cm_linux_futex_poll();
     void (*hook)(void)=__atomic_load_n(&g_poll_hook,__ATOMIC_ACQUIRE);
     if(hook)hook(); /* no rq lock held; may enqueue a deferred sleeper */
     int n = 0;
@@ -654,7 +655,7 @@ void cm_sched_tick(void)
      * kernel view. A ring3 victim holds no kernel resources on its suspended
      * ISR frame. Syscall continuations must resume and unwind instead. */
     cm_proc_t *victim=cm_proc_current();
-    if(victim && victim->elf && !victim->exited && victim->elf_started &&
+    if(victim && victim->elf && !victim->exited && !victim->linux_thread_dead && victim->elf_started &&
        __atomic_load_n(&victim->kill_pending,__ATOMIC_ACQUIRE) &&
        !__atomic_load_n(&victim->syscall_depth,__ATOMIC_ACQUIRE)) {
         cm_proc_finish_exit(victim,137);

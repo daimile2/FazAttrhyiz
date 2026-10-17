@@ -18,3 +18,6 @@ build/
 
 # Pinned minimal initial-exec TLS golden executable.
 !tests/fixtures/ldso/linux-tls.elf
+
+# Reproducible bounded Linux clone/futex static golden executable.
+!tests/fixtures/linux-threads.elf

@@ -1,0 +1,380 @@
+[INF] boot mode: product (Limine cmdline snapshot)
+[INF] req: mmap=<KERNEL_ADDR> hhdm=<KERNEL_ADDR> kaddr=<KERNEL_ADDR>
+[INF] kaddr: phys=1f26d000 virt=<KERNEL_ADDR> size=9306112 (excluded from buddy)
+[INF] limine: usable phys=100000 pages=127309 hhdm=<KERNEL_ADDR> → buddy virt=<KERNEL_ADDR> n=16384
+[INF] gdt: lgdt + ltr 0x30 cpu=0 ist1=<KERNEL_ADDR> ist2=<KERNEL_ADDR>
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] gdt: lgdt + ltr 0x30 cpu=0 ist1=<KERNEL_ADDR> ist2=<KERNEL_ADDR>
+[INF] gdt: seg reload was cs=8 ds=10 ss=10 -> now cs=8 ss=10
+[INF] idt: lidt base=<KERNEL_ADDR> #PF/#GP/#DF/#SS IST=1 timer=0x40 IST=0
+[INF] ====================================================
+[INF] CapMix 0.8.0-phase8 — capability hybrid kernel
+[INF] skeleton: capability hybrid (Zircon + L4 IPC + XNU split)
+[INF] mm: no-overcommit + buddy/SLUB + 4-level pressure
+[INF] sched: EEVDF + QoS bands + turnstile
+[INF] obs: trace_id on every IPC (day-0, not bolted on)
+[INF] proc: posix_spawn first-class, fork is compat-only
+[INF] fs: COW volume (APFS + Btrfs csum + XFS AG + ReFS scrub)
+[INF] io: irq split + uring + blk-mq + user-mode drivers
+[INF] net: in-kernel + XDP/eBPF (kill-switch) + nft
+[INF] sec: cap + Seatbelt + SIP + one-shot authz + signing
+[INF] virt: Type-1 KVM + job/cgroup v2
+[INF] obs: ETW session + hist + cap-gated consume
+[INF] ====================================================
+[INF] mm: commit limit 15401 pages (no-overcommit, reserve 983)
+[INF] mm: watermarks min=256 low=512 high=768 pages
+[INF] mm: commit limit 16425 pages (+1024 backed by swap)
+[INF] anon: 52428 page slots, compressor pool <= 8192 segs, swap 1024 x 4 KiB segs
+[INF] mm: buddy ready, 16384 pages (65536 KiB), max order 11
+[INF] paging: active levels=4 max=5 folded=1
+[INF] paging: mapped kernel virt=<KERNEL_ADDR> phys=1f26d000 pages=2272
+[INF] paging: mapped heap virt=<KERNEL_ADDR> phys=110000 pages=16384
+[INF] lapic: mapped phys=fee00000 -> <KERNEL_ADDR> (PCD)
+[INF] probe rsp=<KERNEL_ADDR> (boot_stack=<KERNEL_ADDR>) land
+[INF] paging: CR3=4100000 tables=44 mapped=18657 stack=bss (own walker live)
+[INF] paging: KPTI enabled, PGE disabled
+[INF] fb console ready: 1280x800 pitch=5120 bpp=32 text=100x40 serial retained
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] numa: single node0 fallback (SRAT absent/invalid or one domain), existing arena unchanged
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] acpi poweroff ready: S5=0/0 PM1=604/0
+[INF] irq: top/bottom half ready, 32 lines
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 2 response page(s) on demand at <KERNEL_ADDR>
+[INF] ioapic: MADT addr=fec00000 IRQ1 gsi=1
+[INF] ioapic: version=170011
+[INF] ioapic: IRQ1 gsi=1 -> vec 0x41 dest=0
+[INF] ps2: ready set1 IRQ1 echo (bounded i8042 initialization)
+[INF] io: uring SQ/CQ 256 entries, IOCP inflight counter on
+[INF] virtio-blk PCI: 0:4.0 legacy IO=c000
+[INF] virtio-blk ready: sectors=262144 queue=256 DMA bounce=4096 FLUSH=1 polling INTx=off
+[INF] ahci skipped: no supported controller
+[INF] disk install: layout verified backend=1 root_base_lba=2048 ESP separate, root window=8MiB
+[INF] blk root backend: virtio-blk
+[INF] blk: mq 4 queues x qd 32, ramdisk 16384 sectors (raw 64 / swap 8192 / fs 8128)
+[INF] drv: user-mode framework, capability IRQ broker ready
+[INF] cowfs: mounted gen=78 (slot A, other slot valid/older) snaps=0
+[INF] vfs: '/' = cowfs (in-kernel, no IPC hop); snapshots under /.snap
+[INF] ebpf: verifier on, kill-switch available, JIT later
+[INF] udp: lo/NIC datagrams, 16 capability endpoints x 8 queued, max payload=1472
+[INF] virtio-net skipped: no supported PCI device
+[INF] e1000 PCI: 0:3.0 device=100e BAR0=feb80000 model=8254x
+[INF] net: iface enet0 id=0 addr=a00020f
+[INF] irq rx route: PCI INTx GSI=11 pin=11 vector=0x42 dest=0 level/low
+[INF] e1000 irq rx enabled: INTx line=11 RXDMT0/RXO/RXT0; top=ack+notify
+[INF] e1000 ready: link=up RX/TX=16 legacy DMA=2048 MAC=52:54:0:12:34:56 irq=1
+[INF] e1000 ip: enet0=10.0.2.15/24 gateway=10.0.2.2
+[INF] net primary: enet0 (priority virtio-net > e1000)
+[INF] net: in-kernel stack (XNU lesson), XDP + nft
+[INF] sip: mask=f cr4=20
+[INF] mitigations=0 SMEP=0 SMAP=0 KPTI=0 kpti_configured=1 kaslr=unimplemented kaslr_slide=0
+[INF] mitigations: KPTI awaiting actual ring3 shadow/full CR3 verification (hosted has no hardware entry)
+[INF] sec: cap deny-by-default + Seatbelt + SIP + one-shot authz + sign
+[INF] virt: Type-1 KVM + VFIO/SR-IOV stubs, job/cgroup v2 ready
+[INF] lapic: cpuid1 edx.apic=1 ecx.tsc_deadline=1
+[INF] lapic: tsc_freq=3187443462 Hz (3187 MHz, src=pit-median)
+[INF] lapic: TSC-deadline tick_tsc=3187443 (target 1000000 ns), armed after sti
+[INF] lapic: BSP tsc-deadline=1 calib_hz=3187443462 target_ns=1000000 initial_count=0
+[INF] lapic: readback lvt(0x320)=40040 dcr(0x3E0)=0
+[INF] probe rsp=<KERNEL_ADDR> (boot_stack=<KERNEL_ADDR>) after_paging
+[INF] fault: installed error-code stubs for 8,10,11,12,13,14,17 (IST=1)
+[INF] smp: probe enter cpu_id=0
+[INF] mp: response=<KERNEL_ADDR> max_ids=8
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: revision=0 flags=0 bsp=0 cpu_count=4 cpus=<KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp: mapped 1 response page(s) on demand at <KERNEL_ADDR>
+[INF] mp:   [0] info=<KERNEL_ADDR> lapic_id=0
+[INF] mp:   [1] info=<KERNEL_ADDR> lapic_id=1
+[INF] mp:   [2] info=<KERNEL_ADDR> lapic_id=2
+[INF] mp:   [3] info=<KERNEL_ADDR> lapic_id=3
+[INF] smp: cm_limine_mp rc=0 n=4 bsp=0
+[INF] smp: cpu_count=4 bsp_lapic_id=0 (this cpu=0, index=0)
+[INF] smp:   cpu[0] lapic_id=0 (BSP)
+[INF] smp:   cpu[1] lapic_id=1
+[INF] smp:   cpu[2] lapic_id=2
+[INF] smp:   cpu[3] lapic_id=3
+[INF] numa: node=0 domain=0 cpu_mask=f total=16384 free=13751
+[INF] numa: distance node0->node0=10
+[INF] gdt: lgdt + ltr 0x30 cpu=1 ist1=<KERNEL_ADDR> ist2=<KERNEL_ADDR>
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=1 timer armed tsc-deadline=1 calib_hz=3187443462 initial_count=0
+[INF] ap: cpu=1 lapic_id=1 up on stack <KERNEL_ADDR>
+[INF] gdt: lgdt + ltr 0x30 cpu=2 ist1=<KERNEL_ADDR> ist2=<KERNEL_ADDR>
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=2 timer armed tsc-deadline=1 calib_hz=3187443462 initial_count=0
+[INF] ap: cpu=2 lapic_id=2 up on stack <KERNEL_ADDR>
+[INF] gdt: lgdt + ltr 0x30 cpu=3 ist1=<KERNEL_ADDR> ist2=<KERNEL_ADDR>
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=3 timer armed tsc-deadline=1 calib_hz=3187443462 initial_count=0
+[INF] ap: cpu=3 lapic_id=3 up on stack <KERNEL_ADDR>
+[INF] smp: started 3 AP(s), online=4/4
+[INF] fault: installed error-code stubs for 8,10,11,12,13,14,17 (IST=1)
+[INF] idt[64]: off=<KERNEL_ADDR> sel=8 ist=0 type=8e present=1
+[INF] idt[64]: timer stub is MATCHED (cm_timer_stub=<KERNEL_ADDR>)
+[INF] probe rsp=<KERNEL_ADDR> (boot_stack=<KERNEL_ADDR>) pre-sti
+[INF] lapic: pre-sti lvt=40040 id=0 svr=1ff
+[INF] lapic: armed dl=5b4e9aed tsc=5b1e21e9 (dl>tsc=1)
+[INF] irq: after bare-spin IF=1 firings=52 ticks=4 ccr=0
+[INF] timer: tick=1 tsc=5b4fbc10 (baseline, no delta yet)
+[INF] timer: tick=2 tsc=5b806e79 delta_tsc=3191401 (~1001 us, target 1000 us)
+[INF] timer: tick=3 tsc=5bb11f04 delta_tsc=3190923 (~1001 us, target 1000 us)
+[INF] timer: tick=4 tsc=5be1cf13 delta_tsc=3190799 (~1001 us, target 1000 us)
+[INF] timer: tick=5 tsc=5c221a21 delta_tsc=4213518 (~1321 us, target 1000 us)
+[INF] net: iface lo id=1 addr=7f000001
+[INF] linux package ready: /data/linux retained; persona enabled; uninstall via offline profile (no hot unload)
+[INF] elf load: path=/sbin/init.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=1 path=/sbin/init.elf ELF entry=400000 full=151000 shadow=15e000
+[INF] disk install: system ELF provisioning synced; root=disk base_lba=2048 ready
+[INF] linux persona: compiled=1 enabled=1 product default=off native files retained
+[INF] init: kernel bootstrap -> /sbin/init.elf PID1 (user ELF)
+[INF] net bg RX started: scheduler thread tid=2 budget=16/interface IRQ=e1000/virtio-net-if-routed; idle=BLOCKED timer=10ms watchdog=100ms
+[INF] usermode: EFER.SCE LSTAR=<KERNEL_ADDR> STAR user=0x18 kernel=0x08
+[INF] exec ring3: pid=1 entry=400000 rsp=7fff90 cpu=0
+init ELF: pid=1 CPL=3
+[INF] cowfs: mounted gen=78 (slot A, other slot valid/older) snaps=0
+[INF] user init: root mount finalized backend=virtio-blk
+[INF] dhcp enet0 discover: UDP 68->67 broadcast timeout_ms=3000
+[INF] dhcp enet0 offer/request: offered=0xa00020f server=0xa000202 attempt=1
+[INF] dhcp enet0 ack: ip=10.0.2.15 mask=0xffffff00 gateway=0xa000202 server=0xa000202 lease=86400 seconds renew=unimplemented expire=not-scheduled
+init: CapMix product root=disk backend=virtio-blk nic=enet0/up
+[INF] elf load: path=/bin/shell.elf ET_EXEC entry=400000 PT_LOAD=2 pages=7 BSS zeroed
+[INF] exec spawn: pid=2 path=/bin/shell.elf ELF entry=400000 full=162000 shadow=17d000
+[INF] user spawn: parent=1 child=2 cpu=0 child-cap=4
+init: shell pid=2 user ELF launched
+[INF] exec ring3: pid=2 entry=400000 rsp=7fff90 cpu=0
+shell ELF ready: CPL=3 PS/2 -> user shell -> FB+serial
+capmix> run /bin/cat.elf /data/linux/sh-output.txt
+[INF] elf load: path=/bin/cat.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=3 path=/bin/cat.elf ELF entry=400000 full=188000 shadow=195000
+[INF] user spawn: parent=2 child=3 cpu=0 child-cap=4
+shell run: pid=3 cpu=0
+[INF] exec ring3: pid=3 entry=400000 rsp=7fff70 cpu=0
+[INF] user[3]: sh-redirect-ok
+[INF] user[3]: cat bytes read=15
+[INF] sys: exit pid=3 code=0
+[INF] exec exit: pid=3 code=0 writes=2 bytes=33 timer_entries=3
+[INF] elf preempt: pid=3 preempts=3 run_ticks=4 cpu=0
+[INF] exec reap: pid=3 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=3 task/entry-stack slot recycled
+shell child done: pid=3 exit=0 reap=ok
+capmix> run /bin/linux-tls.elf
+[INF] linux ldso interp mapped: path=/lib/ld-capmix.so.1 base=600000 entry=601000 pages=7 user-space RELA
+[INF] elf load: path=/bin/linux-tls.elf ET_EXEC entry=601000 PT_LOAD=4 pages=15 BSS zeroed
+[INF] linux ldso image ready: main_entry=401181 initial_rip=601000 AT_BASE=600000 dynamic tables deferred to user-space
+[INF] linux L2 affinity: requested cpu=1 -> BSP0 (bounded fork/reap ownership)
+[INF] exec spawn: pid=4 path=/bin/linux-tls.elf ELF entry=601000 full=18c000 shadow=1aa000
+[INF] user spawn: parent=2 child=4 cpu=0 child-cap=4
+[INF] exec ring3: pid=4 entry=601000 rsp=7fff10 cpu=0
+ldso: loaded /lib/libcm_tls_a.so.1
+ldso: loaded /lib/libcm_tls_b.so.1
+ldso: reloc RELATIVE=0 GLOB_DAT=0 JUMP_SLOT=4 R64=0
+shell run: pid=4 cpu=0
+ldso: tls init modules=2 TPOFF64=4
+linux tls: payload verified
+[INF] linux exit: pid=4 write_bytes=185 ENOSYS=0
+[INF] sys: exit pid=4 code=0
+[INF] exec exit: pid=4 code=0 writes=0 bytes=0 timer_entries=42
+[INF] elf preempt: pid=4 preempts=42 run_ticks=43 cpu=0
+[INF] exec reap: pid=4 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=4 task/entry-stack slot recycled
+shell child done: pid=4 exit=0 reap=ok
+capmix> run /bin/linux-dynamic.elf
+[INF] linux ldso interp mapped: path=/lib/ld-capmix.so.1 base=600000 entry=601000 pages=7 user-space RELA
+[INF] elf load: path=/bin/linux-dynamic.elf ET_EXEC entry=601000 PT_LOAD=4 pages=16 BSS zeroed
+[INF] linux ldso image ready: main_entry=40108f initial_rip=601000 AT_BASE=600000 dynamic tables deferred to user-space
+[INF] linux L2 affinity: requested cpu=2 -> BSP0 (bounded fork/reap ownership)
+[INF] exec spawn: pid=5 path=/bin/linux-dynamic.elf ELF entry=601000 full=1a0000 shadow=1bf000
+[INF] user spawn: parent=2 child=5 cpu=0 child-cap=4
+[INF] exec ring3: pid=5 entry=601000 rsp=7fff10 cpu=0
+ldso: loaded /lib/libcmgold.so.1
+ldso: reloc RELATIVE=1 GLOB_DAT=4 JUMP_SLOT=1 R64=1
+linux ldso: relocation verified
+shell run: pid=5 cpu=0
+[INF] linux exit: pid=5 write_bytes=117 ENOSYS=0
+[INF] sys: exit pid=5 code=0
+[INF] exec exit: pid=5 code=0 writes=0 bytes=0 timer_entries=4
+[INF] elf preempt: pid=5 preempts=4 run_ticks=5 cpu=0
+[INF] exec reap: pid=5 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=5 task/entry-stack slot recycled
+shell child done: pid=5 exit=0 reap=ok
+capmix> run /bin/busybox-sh.elf sh /data/linux/sh-smoke.sh
+[INF] elf load: path=/bin/busybox-sh.elf ET_EXEC entry=4010f9 PT_LOAD=4 pages=30 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=6
+[INF] linux L2 affinity: requested cpu=3 -> BSP0 (bounded fork/reap ownership)
+[INF] exec spawn: pid=6 path=/bin/busybox-sh.elf ELF entry=4010f9 full=1c1000 shadow=1e1000
+[INF] user spawn: parent=2 child=6 cpu=0 child-cap=4
+[INF] exec ring3: pid=6 entry=4010f9 rsp=7ffef0 cpu=0
+[INF] linux ENOSYS: pid=6 nr=14 count=1
+[INF] linux ENOSYS: pid=6 nr=13 count=2
+[INF] linux ENOSYS: pid=6 nr=13 count=3
+shell run: pid=6 cpu=0
+sh-product-start
+[INF] linux ENOSYS: pid=6 nr=14 count=4
+[INF] linux ENOSYS: pid=6 nr=14 count=5
+[INF] linux L2 fork: parent=6 child=7 pages=34 COW=RO reserves=resident cpu=0
+[INF] linux L2 COW fault: pid=6 va=7ffb58 split_total=1
+[INF] exec ring3: pid=7 entry=4010f9 rsp=7ffef0 cpu=0
+[INF] linux ENOSYS: pid=6 nr=14 count=6
+[INF] linux L2 COW fault: pid=7 va=7ffb58 split_total=1
+[INF] linux ENOSYS: pid=6 nr=14 count=7
+[INF] linux L2 COW fault: pid=6 va=800ae0 split_total=2
+[INF] linux L2 COW fault: pid=7 va=419068 split_total=3
+[INF] linux L2 COW fault: pid=6 va=41906c split_total=3
+[INF] linux L2 COW fault: pid=7 va=418344 split_total=4
+[INF] linux ENOSYS: pid=7 nr=14 count=1
+[INF] linux ENOSYS: pid=7 nr=14 count=2
+[INF] linux L2 COW fault: pid=7 va=800ae0 split_total=4
+[INF] linux L2 COW fault: pid=7 va=41b148 split_total=5
+child
+[INF] linux exit: pid=7 write_bytes=6 ENOSYS=2
+[INF] sys: exit pid=7 code=0
+[INF] exec exit: pid=7 code=0 writes=0 bytes=0 timer_entries=9
+[INF] elf preempt: pid=7 preempts=6 run_ticks=7 cpu=0
+[INF] exec reap: pid=7 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=7 task/entry-stack slot recycled
+[INF] linux L2 wait4 reap: parent=6 child=7 status=0
+[INF] linux L2 COW fault: pid=6 va=41b14c split_total=5
+[INF] linux L2 COW fault: pid=6 va=418438 split_total=5
+[INF] linux L2 COW fault: pid=6 va=801030 split_total=5
+parent
+[INF] linux ENOSYS: pid=6 nr=14 count=8
+[INF] linux L2 fork: parent=6 child=8 pages=34 COW=RO reserves=resident cpu=0
+[INF] linux L2 COW fault: pid=6 va=7ffb58 split_total=6
+[INF] linux L2 COW fault: pid=6 va=800a20 split_total=7
+[INF] exec ring3: pid=8 entry=4010f9 rsp=7ffef0 cpu=0
+[INF] linux L2 COW fault: pid=8 va=7ffb58 split_total=7
+[INF] linux L2 COW fault: pid=6 va=41b0e8 split_total=8
+[INF] linux L2 COW fault: pid=6 va=418488 split_total=9
+[INF] linux L2 COW fault: pid=8 va=419068 split_total=10
+[INF] linux L2 COW fault: pid=8 va=418344 split_total=10
+[INF] linux L2 COW fault: pid=6 va=41906c split_total=10
+[INF] linux ENOSYS: pid=8 nr=14 count=1
+[INF] linux ENOSYS: pid=8 nr=14 count=2
+[INF] linux L2 COW fault: pid=8 va=800a20 split_total=10
+[INF] elf load: path=/bin/busybox-sh.elf ET_EXEC entry=4010f9 PT_LOAD=4 pages=30 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=6
+[INF] linux L2 execve replace: pid=8 path=/bin/busybox-sh.elf entry=4010f9 FS=0 old-image reclaimed
+sh-exec-ok
+[INF] linux exit: pid=8 write_bytes=11 ENOSYS=2
+[INF] sys: exit pid=8 code=0
+[INF] exec exit: pid=8 code=0 writes=0 bytes=0 timer_entries=5
+[INF] elf preempt: pid=8 preempts=4 run_ticks=5 cpu=0
+[INF] exec reap: pid=8 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=8 task/entry-stack slot recycled
+[INF] linux L2 wait4 reap: parent=6 child=8 status=0
+[INF] linux L2 COW fault: pid=6 va=801030 split_total=10
+[INF] linux L2 fork: parent=6 child=9 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 COW fault: pid=6 va=7ffb58 split_total=11
+[INF] linux L2 COW fault: pid=6 va=802030 split_total=12
+[INF] exec ring3: pid=9 entry=4010f9 rsp=7ffef0 cpu=0
+[INF] linux L2 COW fault: pid=9 va=7ffb58 split_total=12
+[INF] linux L2 COW fault: pid=6 va=8005ec split_total=13
+[INF] linux L2 fork: parent=6 child=10 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 COW fault: pid=9 va=419068 split_total=14
+[INF] linux L2 COW fault: pid=9 va=418344 split_total=15
+[INF] exec ring3: pid=10 entry=4010f9 rsp=7ffef0 cpu=0
+[INF] linux L2 COW fault: pid=10 va=7ffb58 split_total=16
+[INF] linux L2 COW fault: pid=6 va=7ffb58 split_total=16
+[INF] linux L2 COW fault: pid=6 va=802058 split_total=17
+[INF] linux ENOSYS: pid=9 nr=14 count=1
+[INF] linux ENOSYS: pid=9 nr=14 count=2
+[INF] linux L2 COW fault: pid=10 va=419068 split_total=18
+[INF] linux L2 COW fault: pid=10 va=418344 split_total=19
+[INF] linux L2 COW fault: pid=6 va=8005ec split_total=20
+[INF] linux L2 COW fault: pid=6 va=41906c split_total=20
+[INF] linux L2 COW fault: pid=9 va=802030 split_total=20
+[INF] linux L2 COW fault: pid=9 va=800088 split_total=20
+[INF] linux ENOSYS: pid=10 nr=14 count=1
+[INF] linux ENOSYS: pid=10 nr=14 count=2
+[INF] linux L2 COW fault: pid=9 va=41b1d8 split_total=21
+[INF] linux exit: pid=9 write_bytes=11 ENOSYS=2
+[INF] sys: exit pid=9 code=0
+[INF] exec exit: pid=9 code=0 writes=0 bytes=0 timer_entries=10
+[INF] elf preempt: pid=9 preempts=4 run_ticks=5 cpu=0
+[INF] linux L2 COW fault: pid=10 va=802058 split_total=21
+[INF] linux L2 COW fault: pid=10 va=800088 split_total=21
+[INF] exec reap: pid=9 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=9 task/entry-stack slot recycled
+[INF] linux L2 wait4 reap: parent=6 child=9 status=0
+[INF] linux L2 COW fault: pid=10 va=41b1d8 split_total=22
+[INF] elf load: path=/bin/busybox-sh.elf ET_EXEC entry=4010f9 PT_LOAD=4 pages=30 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=6
+[INF] linux L2 execve replace: pid=10 path=/bin/busybox-sh.elf entry=4010f9 FS=0 old-image reclaimed
+sh-pipe-ok
+[INF] linux exit: pid=10 write_bytes=11 ENOSYS=2
+[INF] sys: exit pid=10 code=0
+[INF] exec exit: pid=10 code=0 writes=0 bytes=0 timer_entries=10
+[INF] elf preempt: pid=10 preempts=5 run_ticks=6 cpu=0
+[INF] exec reap: pid=10 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=10 task/entry-stack slot recycled
+[INF] linux L2 wait4 reap: parent=6 child=10 status=0
+[INF] linux L2 COW fault: pid=6 va=41b14c split_total=22
+[INF] linux L2 COW fault: pid=6 va=418448 split_total=22
+[INF] linux L2 COW fault: pid=6 va=801030 split_total=22
+[INF] linux L2 fork: parent=6 child=11 pages=34 COW=RO reserves=resident cpu=0
+[INF] linux L2 COW fault: pid=6 va=7ffb58 split_total=23
+[INF] linux L2 COW fault: pid=6 va=800a20 split_total=24
+[INF] exec ring3: pid=11 entry=4010f9 rsp=7ffef0 cpu=0
+[INF] linux L2 COW fault: pid=11 va=7ffb58 split_total=24
+[INF] linux L2 COW fault: pid=6 va=41b0e8 split_total=25
+[INF] linux L2 COW fault: pid=6 va=418488 split_total=26
+[INF] linux L2 COW fault: pid=11 va=419068 split_total=27
+[INF] linux L2 COW fault: pid=11 va=418344 split_total=27
+[INF] linux L2 COW fault: pid=6 va=41906c split_total=27
+[INF] linux ENOSYS: pid=11 nr=14 count=1
+[INF] linux ENOSYS: pid=11 nr=14 count=2
+[INF] linux L2 COW fault: pid=11 va=800a20 split_total=27
+[INF] elf load: path=/bin/busybox-sh.elf ET_EXEC entry=4010f9 PT_LOAD=4 pages=30 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=6
+[INF] linux L2 execve replace: pid=11 path=/bin/busybox-sh.elf entry=4010f9 FS=0 old-image reclaimed
+CapMix examples: persistent root ready
+[INF] linux exit: pid=11 write_bytes=39 ENOSYS=2
+[INF] sys: exit pid=11 code=0
+[INF] exec exit: pid=11 code=0 writes=0 bytes=0 timer_entries=7
+[INF] elf preempt: pid=11 preempts=6 run_ticks=7 cpu=0
+[INF] exec reap: pid=11 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=11 task/entry-stack slot recycled
+[INF] linux L2 wait4 reap: parent=6 child=11 status=0
+[INF] linux L2 COW fault: pid=6 va=801030 split_total=27
+[INF] linux L2 fork: parent=6 child=12 pages=34 COW=RO reserves=resident cpu=0
+[INF] linux L2 COW fault: pid=6 va=7ffb58 split_total=28
+[INF] linux L2 COW fault: pid=6 va=800a20 split_total=29
+[INF] exec ring3: pid=12 entry=4010f9 rsp=7ffef0 cpu=0
+[INF] linux L2 COW fault: pid=12 va=7ffb58 split_total=29
+[INF] linux L2 COW fault: pid=6 va=41b0e8 split_total=30
+[INF] linux L2 COW fault: pid=6 va=418488 split_total=31
+[INF] linux L2 COW fault: pid=12 va=419068 split_total=32
+[INF] linux L2 COW fault: pid=12 va=418344 split_total=32
+[INF] linux L2 COW fault: pid=6 va=41906c split_total=32
+[INF] linux ENOSYS: pid=12 nr=14 count=1
+[INF] linux ENOSYS: pid=12 nr=14 count=2
+[INF] linux L2 COW fault: pid=12 va=800a20 split_total=32
+[INF] elf load: path=/bin/busybox-sh.elf ET_EXEC entry=4010f9 PT_LOAD=4 pages=30 BSS zeroed
+[INF] linux static ELF: persona=LINUX phdr=400040 phnum=6
+[INF] linux L2 execve replace: pid=12 path=/bin/busybox-sh.elf entry=4010f9 FS=0 old-image reclaimed
+sh-redirect-ok
+[INF] linux exit: pid=12 write_bytes=15 ENOSYS=2
+[INF] sys: exit pid=12 code=0
+[INF] exec exit: pid=12 code=0 writes=0 bytes=0 timer_entries=5
+[INF] elf preempt: pid=12 preempts=4 run_ticks=5 cpu=0
+[INF] exec reap: pid=12 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=12 task/entry-stack slot recycled
+[INF] linux L2 wait4 reap: parent=6 child=12 status=0
+[INF] linux L2 COW fault: pid=6 va=801030 split_total=32
+sh-product-ok
+[INF] linux exit: pid=6 write_bytes=53 ENOSYS=27
+[INF] sys: exit pid=6 code=0
+[INF] exec exit: pid=6 code=0 writes=0 bytes=0 timer_entries=65
+[INF] elf preempt: pid=6 preempts=36 run_ticks=53 cpu=0
+[INF] exec reap: pid=6 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=6 task/entry-stack slot recycled
+shell child done: pid=6 exit=0 reap=ok
+capmix> poweroff
+[INF] user poweroff: capability authorized root sync=0
+[INF] poweroff: ACPI S5 request

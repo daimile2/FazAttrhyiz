@@ -37,7 +37,7 @@ SRC = \
 	cap/handle.c \
 	sched/eevdf.c \
 	ipc/channel.c \
-	proc/syscall.c proc/control.c proc/uaccess.c abi/linux.c abi/linux_file.c abi/linux_process.c abi/linux_socket.c abi/linux_pipe.c \
+	proc/syscall.c proc/control.c proc/uaccess.c abi/linux.c abi/linux_futex.c abi/linux_signal.c abi/linux_file.c abi/linux_process.c abi/linux_socket.c abi/linux_pipe.c \
 	proc/spawn.c proc/elf.c proc/elf_args.c proc/init.c user/shell.c \
 	fs/vfs.c \
 	fs/cowfs.c \
@@ -56,7 +56,7 @@ SRC = \
 	security/gate.c \
 	virt/job.c \
 	virt/kvm.c virt/hardware.c virt/vmcs.c virt/ept.c arch/x86_64/virt_probe.S arch/x86_64/vmcs.S \
-	boot/kernel.c boot/linux_ldso_test.c boot/linux_sh_test.c boot/linux_l5_test.c boot/linux_l4_test.c boot/linux_l3_test.c boot/linux_l2_test.c boot/linux_l1_test.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
+	boot/kernel.c boot/linux_threads_test.c boot/linux_smp_test.c boot/linux_compat_test.c boot/linux_ldso_test.c boot/linux_sh_test.c boot/linux_l5_test.c boot/linux_l4_test.c boot/linux_l3_test.c boot/linux_l2_test.c boot/linux_l1_test.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
 	boot/phase9_test.c boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c \
 	boot/phase3_test.c \
  
@@ -419,3 +419,15 @@ build/tcp-rx-$(TCP_RX_BYTES).stamp:
 	@rm -f build/tcp-rx-*.stamp
 	@touch $@
 $(HOST_BIN) $(FREE_BIN): build/tcp-rx-$(TCP_RX_BYTES).stamp
+
+build/linux_threads.inc: tests/fixtures/linux-threads.elf tests/fixtures/linux-threads.sha256 scripts/embed-elf.py
+	sha256sum -c tests/fixtures/linux-threads.sha256
+	python3 scripts/embed-elf.py $< $@ cm_linux_threads_elf
+$(HOST_BIN) $(FREE_BIN): build/linux_threads.inc
+.PHONY: linux-threads-verify
+linux-threads-verify:
+	@mkdir -p build
+	$(CC) -nostdlib -static -no-pie -Wl,--build-id=none,-z,max-page-size=0x1000,-T,tests/linux_hello.ld -o build/linux-threads-rebuilt.elf tests/linux_threads.S
+	python3 scripts/mark-linux.py build/linux-threads-rebuilt.elf
+	cmp tests/fixtures/linux-threads.elf build/linux-threads-rebuilt.elf
+	sha256sum -c tests/fixtures/linux-threads.sha256

@@ -25,6 +25,7 @@ static int64_t sys_nop(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 
 void cm_proc_finish_exit(cm_proc_t *p, int64_t code)
 {
+    if(p && cm_linux_thread_finish(p,code))return;
     if (p) {
         p->exit_code = code;
         if (!p->elf) {
@@ -55,7 +56,7 @@ static int64_t sys_exit(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
     cm_thread_t *th = cm_sched_current();
     cm_proc_finish_exit(p, (int64_t)a0);
     if (th) th->state = CM_TH_DEAD;
-    if (p) __atomic_store_n(&p->exited,1,__ATOMIC_RELEASE);
+    if (p && !p->linux_thread_dead) __atomic_store_n(&p->exited,1,__ATOMIC_RELEASE);
 #ifndef CAPMIX_HOSTED
     {
         cm_usermode_exit_request();
@@ -706,7 +707,7 @@ int64_t cm_syscall(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
     if(!p || !p->elf)return dispatch(nr,a,b,c,d);
     __atomic_add_fetch(&p->syscall_depth,1,__ATOMIC_ACQ_REL);
     int64_t result=p->abi==CM_ABI_LINUX?cm_linux_dispatch(nr,a,b,c,d):dispatch(nr,a,b,c,d);
-    if(!p->exited && __atomic_load_n(&p->kill_pending,__ATOMIC_ACQUIRE))
+    if(!p->exited && !p->linux_thread_dead && __atomic_load_n(&p->kill_pending,__ATOMIC_ACQUIRE))
         result=sys_exit(137,0,0,0);
     __atomic_sub_fetch(&p->syscall_depth,1,__ATOMIC_RELEASE);
     return result;

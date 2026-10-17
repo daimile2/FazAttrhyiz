@@ -1071,7 +1071,7 @@ write/exit/arch_prctl分发、Linux auxv与FS基址上下文。产品默认关�
 ### Linux ABI L2 内存与进程续作
 
 可选 Linux persona 增加驻留 COW fork、有限 brk、wait4 和同 PID execve；
-fork 提前扣 commit 并预留潜在副本物理页，COW 页不参与压缩/swap。首版 Linux 固定 BSP，
+fork 提前扣 commit 并预留潜在副本物理页，COW 页不参与压缩/swap。Linux现支持AP固定执行位置及fork/wait/reap（见 [Linux SMP](LINUX_SMP.md)），
 L2首版每镜像128页；[L5](LINUX_ABI_L5.md)已将Linux窗口扩到16MiB、映射额度扩到8MiB，原生仍128页。产品默认关闭。原生 fork 保持 NOTSUP，原生 ELF SMP 并发保留。
 L1 的定制 BusyBox/64KiB BSS 分配器未替换，不代表通用 musl 或 sh 已可用；详见 [LINUX_ABI_L2](LINUX_ABI_L2.md)。
 
@@ -1135,3 +1135,9 @@ FS base 复用 L0 上下文保存/恢复，默认 Linux/解释器关闭。
 MSS、单待确认段、RTO、原生/Linux I/O 与 fd 上限不变。
 新增池满/复用、8 路被动 payload、RX 环回及 8 路实网卡并发测试。
 详见 [TCP_POOL](TCP_POOL.md)。
+
+### 有界Linux线程续作
+
+已有同CPU线程组clone、进程内FUTEX_WAIT/WAKE、独立FS与最后线程回收；
+每组累计最多8个执行记录，线程组内映射/fd表变更和fork/exec暂拒绝。
+固定静态探针与完整边界见 [LINUX_THREADS](LINUX_THREADS.md)，不宣称通用pthread。

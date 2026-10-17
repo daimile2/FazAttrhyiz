@@ -1,5 +1,7 @@
 # Linux ABI L3：有界 IPv4 socket 映射
 
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+
 Linux persona 仍是可选翻译层，产品启动默认关闭。原生 syscall、capability 与
 `/bin/*.elf` 保留；新原生软件建议 `.cmx` 或 `/bin/cm/`。关闭编译/启动开关不会删除
 程序或用户数据。本轮没有扩大为通用 Linux、通用 BusyBox 或任意 musl 兼容。
@@ -119,18 +121,18 @@ hosted 加 `--hosted`，禁用配置加 `--disabled`。
 
 ### 本轮环境矩阵（2026-10-15）
 
-| 环境 | 实测结果 | 日志（本次宿主 /tmp，非仓库永久产物） |
+| 环境 | 实测结果 | 归档日志 |
 | --- | --- | --- |
-| hosted，Linux 开 | 全量 PASS (0 failures)，L0–L2 与 L3 fd/cap/UDP/容量/回收 | `/tmp/linux-l3-hosted-release.log` |
-| hosted，LINUX_ABI=0 | 全量 PASS (0 failures)，persona 跳过、原生保留 | `/tmp/linux-l3-hosted-off-final.log` |
-| KVM host SMP4 单节点 e1000，Linux 开 | 全量 PASS (0 failures)，真实 CPL3 UDP/TCP/fork+exec | `/tmp/linux-l3-qemu-dual-single-final.log` |
-| KVM host SMP4 双节点，virtio-net + e1000 | 全量 PASS (0 failures)，优先 virtio-net，L0–L3/NUMA/原生测试 | `/tmp/linux-l3-qemu-dual-on-final.log` |
-| KVM SMP4，Linux 编译关闭 | 全量 PASS (0 failures) | `/tmp/linux-l3-qemu-compiled-off-final.log` |
-| KVM SMP4，Linux 运行时关闭 | 全量 PASS (0 failures) | `/tmp/linux-l3-qemu-runtime-off-final.log` |
-| 无 ISO 安装盘，AHCI/e1000，Linux 开 | 冷启动 UDP/TCP/HTTP/fork+exec 全部 exit=0；旧持久文件读回；服务端回应校验 | `/tmp/linux-l3-product-final.log`、`/tmp/linux-l3-product-final-client.log` |
-| 同一安装盘，Linux 关 | Linux ELF 拒绝；文件保留；原生重定向/cat/httpd 两次响应、poweroff 正常 | `/tmp/linux-l3-product-off.log`、`/tmp/linux-l3-native-off-httpd.log` |
-| QEMU 原生网络与 kill 回归 | nc 控制台 echo、http-get、httpd 两次响应；kill 等待 accept 的 Linux pid 后 reap、8082 重新监听成功 | `/tmp/linux-l3-product.log`、`/tmp/linux-l3-native-httpd-client.log`、`/tmp/linux-l3-server-after-kill.log` |
-| VirtualBox 7.2.20，UEFI/AHCI/e1000 NAT，4 CPU，无 ISO | 产品 UDP lo/TCP echo/fork+exec/HTTP 客户及服务端全部 exit=0；冷启动持久文件、poweroff 正常；未跑 VBox 全量 debug | `/tmp/linux-l3-vbox-final.log`、`/tmp/linux-l3-vbox-client.log` |
+| hosted，Linux 开 | 全量 PASS (0 failures)，L0–L2 与 L3 fd/cap/UDP/容量/回收 | [linux-l3-hosted-release.log](../tests/evidence/logs/linux-l3-hosted-release.log) |
+| hosted，LINUX_ABI=0 | 全量 PASS (0 failures)，persona 跳过、原生保留 | [linux-l3-hosted-off-final.log](../tests/evidence/logs/linux-l3-hosted-off-final.log) |
+| KVM host SMP4 单节点 e1000，Linux 开 | 全量 PASS (0 failures)，真实 CPL3 UDP/TCP/fork+exec | [linux-l3-qemu-dual-single-final.log](../tests/evidence/logs/linux-l3-qemu-dual-single-final.log) |
+| KVM host SMP4 双节点，virtio-net + e1000 | 全量 PASS (0 failures)，优先 virtio-net，L0–L3/NUMA/原生测试 | [linux-l3-qemu-dual-on-final.log](../tests/evidence/logs/linux-l3-qemu-dual-on-final.log) |
+| KVM SMP4，Linux 编译关闭 | 全量 PASS (0 failures) | [linux-l3-qemu-compiled-off-final.log](../tests/evidence/logs/linux-l3-qemu-compiled-off-final.log) |
+| KVM SMP4，Linux 运行时关闭 | 全量 PASS (0 failures) | [linux-l3-qemu-runtime-off-final.log](../tests/evidence/logs/linux-l3-qemu-runtime-off-final.log) |
+| 无 ISO 安装盘，AHCI/e1000，Linux 开 | 冷启动 UDP/TCP/HTTP/fork+exec 全部 exit=0；旧持久文件读回；服务端回应校验 | [linux-l3-product-final.log](../tests/evidence/logs/linux-l3-product-final.log)、[linux-l3-product-final-client.log](../tests/evidence/logs/linux-l3-product-final-client.log) |
+| 同一安装盘，Linux 关 | Linux ELF 拒绝；文件保留；原生重定向/cat/httpd 两次响应、poweroff 正常 | [linux-l3-product-off.log](../tests/evidence/logs/linux-l3-product-off.log)、[linux-l3-native-off-httpd.log](../tests/evidence/logs/linux-l3-native-off-httpd.log) |
+| QEMU 原生网络与 kill 回归 | nc 控制台 echo、http-get、httpd 两次响应；kill 等待 accept 的 Linux pid 后 reap、8082 重新监听成功 | [linux-l3-product.log](../tests/evidence/logs/linux-l3-product.log)、[linux-l3-native-httpd-client.log](../tests/evidence/logs/linux-l3-native-httpd-client.log)、[linux-l3-server-after-kill.log](../tests/evidence/logs/linux-l3-server-after-kill.log) |
+| VirtualBox 7.2.20，UEFI/AHCI/e1000 NAT，4 CPU，无 ISO | 产品 UDP lo/TCP echo/fork+exec/HTTP 客户及服务端全部 exit=0；冷启动持久文件、poweroff 正常；未跑 VBox 全量 debug | [linux-l3-vbox-final.log](../tests/evidence/logs/linux-l3-vbox-final.log)、[linux-l3-vbox-client.log](../tests/evidence/logs/linux-l3-vbox-client.log) |
 
 VBox 首次启动横幅可能显示 link down；后台 RX 后续会更新 link。第一次用 `nonet`
 探针时网卡已经 up，因其严格预期 ENETUNREACH 而 exit=12；这不是无网卡测试通过。
@@ -160,9 +162,9 @@ QEMU 首次产品盘缺 lo 导致 UDP bind 失败；最终产品初始化已补�
 均通过，L3 selftest 为 PASS；但全量是 **FAIL (1 failures)**，失败点是更早的
 `linux L0 image/page-table reclaim mismatch`。两次重跑可复现。
 保留的 L2 验收 ISO `/tmp/linux-l2-on-final.iso` 在同样 `-nic none` 下也报该断言，
-对照日志 `/tmp/linux-l3-qemu-dual-l2-baseline-no-nic-final.log`。
+对照日志 [linux-l3-qemu-dual-l2-baseline-no-nic-final.log](../tests/evidence/logs/linux-l3-qemu-dual-l2-baseline-no-nic-final.log)。
 因此没有把无网卡全量标 PASS，也没有在本轮修改 L0/内存核心来掩盖旧断言。
-L3 当前日志为 `/tmp/linux-l3-qemu-dual-no-nic-final.log`。
+L3 当前日志为 [linux-l3-qemu-dual-no-nic-final.log](../tests/evidence/logs/linux-l3-qemu-dual-no-nic-final.log)。
 
 后续修复已定位为 IPC 自测后台线程延迟释放4页内核栈，
 处理及最终开关矩阵见 [L0_RECLAIM](L0_RECLAIM.md)。上段 FAIL 是修复前证据，保留供对照。

@@ -26,9 +26,9 @@ typedef struct {
 } linux_socket_t;
 _Static_assert(sizeof(linux_socket_t)<=2*CM_PAGE_SIZE,"socket plus private capspace");
 static unsigned live;
-static uint16_t udp_next=49152;
+static unsigned udp_next;
 unsigned cm_linux_socket_live(void){return __atomic_load_n(&live,__ATOMIC_RELAXED);}
-static int unsupported(void){cm_proc_t *p=cm_proc_current();if(p)p->linux_enosys++;return -38;}
+static int unsupported(void){return -38;} /* final dispatch accounts once */
 int cm_linux_socket_is(cm_proc_t *p,uint64_t fd)
 {
     if(!p || p->abi!=CM_ABI_LINUX || fd>=CM_FD_MAX || p->fd[fd]<0 || p->linux_console[fd])return 0;
@@ -125,7 +125,7 @@ static int udp_bind(linux_socket_t *s,int id,uint16_t port)
 {
     int e=CM_ERR_EXIST;
     for(unsigned i=0;i<(port?1u:64u);i++) {
-        uint16_t candidate=port;if(!candidate){if(udp_next<49152)udp_next=49152;candidate=udp_next++;}
+        uint16_t candidate=port;if(!candidate){candidate=(uint16_t)(49152+(__atomic_fetch_add(&udp_next,1,__ATOMIC_RELAXED)%16384));}
         e=cm_udp_bind(&s->caps,s->hid,id,candidate);
         if(!e){s->bound=1;s->ifid=id;s->sport=candidate;s->local=cm_if_get(id)->addr;return 0;}
         if(e!=CM_ERR_EXIST || port)break;

@@ -1,0 +1,9 @@
+mkdir -p build
+sha256sum -c third_party/linux-l1/SHA256SUMS
+third_party/linux-l1/busybox-1.36.0.tar.bz2: OK
+third_party/linux-l1/musl-1.2.5.tar.gz: OK
+sha256sum -c tests/fixtures/busybox-l1.sha256
+tests/fixtures/busybox-l1.elf: OK
+cc -Os -Werror -fno-builtin -fno-stack-protector tests/linux_bss_alloc.c -o build/linux-l1-allocator-test
+build/linux-l1-allocator-test
+Linux L1 bounded BSS: exhaustion/coalesce/overflow verified

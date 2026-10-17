@@ -23,6 +23,7 @@ else:
     assert 'linux golden verified: CPL=3 write_bytes=24 exit=0 ENOSYS=0' in text
     assert 'linux FS/auxv verified: same-cpu overlap' in text
     assert 'scheduler_FS=0 ENOSYS=2/2' in text
-    assert text.splitlines().count('linux auxv/fs isolation ok') == 2
+    smp_probes=len(re.findall(r'linux SMP AP lifecycle: cpu=\d+ mode=FS-getcpu-affinity create/run/reap=ok',text))
+    assert text.splitlines().count('linux auxv/fs isolation ok') == 2+smp_probes
 assert 'PT_INTERP dynamic loader unsupported' in text or 'elf rejected: malformed PT_INTERP' in text
 print(f'Linux L0 {"disabled/native retained" if a.disabled else "golden/auxv/FS/ENOSYS"}: PASS')

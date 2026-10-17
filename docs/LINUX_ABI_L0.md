@@ -1,5 +1,7 @@
 # Linux ABI L0：可关闭的静态 persona，与原生 ABI 并存
 
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+
 后续更新：[L5](LINUX_ABI_L5.md)已新增Linux匿名PRIVATE mmap/munmap、16MiB VA窗口及8MiB映射额度，并细化COW物理页commit归属；下文首版容量/全部mmap拒绝为阶段快照，原生限制不变。
 
 后续 COW fork、有界 brk 与替换式 execve 见 [L2](LINUX_ABI_L2.md)。本文保留本阶段快照；L2 默认关闭且不改变原生 ABI。
@@ -164,12 +166,12 @@ python3 tests/check_linux_l0.py --disabled /tmp/linux-l0-qemu-runtime-off-final.
 
 | 环境（2026-10-15） | 结果/日志 |
 | --- | --- |
-| hosted，编译开/关 | 全量PASS；`/tmp/linux-l0-hosted-final.log`、`/tmp/linux-l0-hosted-off-final.log` |
-| QEMU KVM SMP4双NUMA/双NIC，Linux开 | 黄金/FS探针与全量PASS；`/tmp/linux-l0-qemu-on-final.log` |
-| QEMU KVM SMP4，编译关 | Linux拒绝、原生全量PASS；`/tmp/linux-l0-qemu-compiled-off-final.log` |
-| QEMU KVM SMP4，运行时关 | Linux拒绝、原生全量PASS；`/tmp/linux-l0-qemu-runtime-off-final.log` |
-| QEMU SMP4 AHCI无ISO安装盘开→关 | PASS：Linux输出/重定向与关闭拒绝、文件保留，原生hello/cat/httpd/nc/http-get、冷启动读回及关机；`/tmp/linux-l0-product-on-final.log`、`/tmp/linux-l0-product-off-final.log` |
-| VirtualBox7.2.20 UEFI/AHCI/e1000 NAT SMP4，无ISO | 产品PASS：Linux黄金与重定向、原生hello/httpd，宿主两次HTTP200校验；非VBox全量debug；`/tmp/linux-l0-vbox-product.log`、`/tmp/linux-l0-vbox-httpd-client.log` |
+| hosted，编译开/关 | 全量PASS；[linux-l0-hosted-final.log](../tests/evidence/logs/linux-l0-hosted-final.log)、[linux-l0-hosted-off-final.log](../tests/evidence/logs/linux-l0-hosted-off-final.log) |
+| QEMU KVM SMP4双NUMA/双NIC，Linux开 | 黄金/FS探针与全量PASS；[linux-l0-qemu-on-final.log](../tests/evidence/logs/linux-l0-qemu-on-final.log) |
+| QEMU KVM SMP4，编译关 | Linux拒绝、原生全量PASS；[linux-l0-qemu-compiled-off-final.log](../tests/evidence/logs/linux-l0-qemu-compiled-off-final.log) |
+| QEMU KVM SMP4，运行时关 | Linux拒绝、原生全量PASS；[linux-l0-qemu-runtime-off-final.log](../tests/evidence/logs/linux-l0-qemu-runtime-off-final.log) |
+| QEMU SMP4 AHCI无ISO安装盘开→关 | PASS：Linux输出/重定向与关闭拒绝、文件保留，原生hello/cat/httpd/nc/http-get、冷启动读回及关机；[linux-l0-product-on-final.log](../tests/evidence/logs/linux-l0-product-on-final.log)、[linux-l0-product-off-final.log](../tests/evidence/logs/linux-l0-product-off-final.log) |
+| VirtualBox7.2.20 UEFI/AHCI/e1000 NAT SMP4，无ISO | 产品PASS：Linux黄金与重定向、原生hello/httpd，宿主两次HTTP200校验；非VBox全量debug；[linux-l0-vbox-product.log](../tests/evidence/logs/linux-l0-vbox-product.log)、[linux-l0-vbox-httpd-client.log](../tests/evidence/logs/linux-l0-vbox-httpd-client.log) |
 
 后续层级只是范围划分，不是已实现的兼容承诺：L1可补Linux fd/文件调用；
 L2可补用户内存、brk/mmap和libc所需状态；L3可补socket等网络表面；
@@ -179,8 +181,8 @@ mmap/brk、socket、futex/线程、信号、32位或namespaces，也不把原生
 ## 回归中发现并修复的唤醒交接竞态
 
 早期产品回归曾出现timer iretq的#GP，随后RX worker的park路径出现两个CPU使用同一
-栈地址的#PF；原始证据保留于 `/tmp/linux-l0-product-on.log`、
-`/tmp/linux-l0-product-off.log`，这两份不能记为PASS。
+栈地址的#PF；原始证据保留于 [linux-l0-product-on.log](../tests/evidence/logs/linux-l0-product-on.log)、
+[linux-l0-product-off.log](../tests/evidence/logs/linux-l0-product-off.log)，这两份不能记为PASS。
 检查发现wake可在blocker完成上下文保存之前发布RUNNABLE，原选队列只检查state，
 另一CPU可提前进入同一continuation。`sched/eevdf.c`仅为普通/aging候选补充已有
 跨CPU持有检查，等待原CPU交接结束；没有修改EEVDF权重/预算算法。
@@ -199,3 +201,5 @@ mmap/brk、socket、futex/线程、信号、32位或namespaces，也不把原生
 `scripts/mark-linux.py`、`tests/check_linux_l0.py`：固定黄金文件、探针和核验；
 `Makefile`、`.gitignore`及文档索引/EXTERNAL_ELF/本文。
 未修改KPTI策略、buddy锁、时钟标定、TCP RTO/主动连接语义或安装布局。
+
+多CPU续作已支持AP固定执行位置、getcpu(309)及CPU集合查询(204)，见 [Linux SMP](LINUX_SMP.md)。

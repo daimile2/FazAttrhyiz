@@ -22,7 +22,7 @@ else:
         for name,code in [('basic',0),('subshell',0),('exec',0),('pipe',0),('stream',0),('missing',127),('exit',7)]:
             assert f'linux sh {name}: CPL=3 output verified exit={code}' in s
             state=re.search(rf'linux sh state {name}: exited=1 tid=0 code={code} last=\d+ calls=\d+ ENOSYS=(\d+)',s)
-            assert state and int(state[1])<=32
+            assert state and int(state[1])==0
         assert 'linux sh captured stream: bytes=6000' in s
         assert "sh: can't execute '/missing-command': No such file or directory" in s
 print('Linux fixed musl BusyBox sh '+('disabled/native retained' if a.disabled else 'commands/fork/exec/pipe/error/reclaim')+': PASS')

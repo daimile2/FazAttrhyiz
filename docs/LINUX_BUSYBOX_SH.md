@@ -1,5 +1,7 @@
 # 可复现静态 BusyBox sh：非交互 hush 子集
 
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+
 本轮验收对象是固定的 **BusyBox 1.36.0 + musl 1.2.5 静态 hush 子集**，
 不是通用 BusyBox、glibc、完整 POSIX shell 或任意 Linux 二进制兼容性承诺。
 产品 Linux persona 默认关闭；仅明确标记的 Linux ELF 走翻译路径。原生 init/shell、
@@ -84,13 +86,13 @@ Pipe首版语义：
 
 ## 诚实限制
 
-- Linux仍固定BSP CPU0、单线程；16MiB VA窗口、8MiB合计映射额度、8192个全局物理backing/reserve槽。
+- hush验收使用AP固定执行位置、单线程路径（见 [Linux SMP](LINUX_SMP.md)）；16MiB VA窗口、8MiB合计映射额度、8192个全局物理backing/reserve槽。
   栈仍4页，argv≤32、单参数≤256字节、总参数4KiB；受32个proc槽和32个fd等更小资源限制。
 - COW页/reserve仍驻留，不参与压缩/swap，no-overcommit纪律完全沿用L5。
-- rt_sigaction(13)、rt_sigprocmask(14)仍ENOSYS+计数。hush非交互脚本通过waitpid检查子进程；
-  不提供SIGCHLD处理器、信号屏蔽、trap、Ctrl-C、作业控制或futex/线程。
-  这些已知探测不是0 ENOSYS；自测限制每父进程≤32次，实际状态日志打印计数。
-  内核仅记录每进程前8次ENOSYS的号，后续仍计数以免刷屏。
+- 13/14现有有限元数据支持，详见 [ENOSYS兼容范围](LINUX_ENOSYS.md)。
+  不提供SIGCHLD处理器执行、信号投递、trap、Ctrl-C、作业控制或futex/线程。
+  固定七组脚本现要求ENOSYS=0；自定义handler仍明确EOPNOTSUPP。
+  单进程日志前8次限流，但按号汇总不再受限流影响。
 - cwd仍固定`/`，没有新增chdir、完整access/权限检查、symlink、/proc/self/exe、文件mmap或动态链接。
   本轮不承诺cd、任意脚本、shell交互会话、通用glibc或真实ld.so。
 - Linux execve只接Linux persona ELF。不要从hush直接exec原生CapMix `.elf`；使用
@@ -140,22 +142,22 @@ make iso LINUX_ABI=0 LIMINE_CONFIG=boot/limine-linux-off-selftest.conf
 
 2026-10-16，QEMU8.2.2/KVM、CPU host、512MiB、SMP4；VBox7.2.20。
 
-| 环境 | 实际结果 | 日志（开发机/tmp） |
+| 环境 | 实际结果 | 归档日志 |
 | --- | --- | --- |
-| 两个干净构建目录 | cmp逐字节一致，SHA-256 `83576b81f0972e75676b1e595d6e0bd403ce5ef71bbd08fbeefdf283a528e050` | `/tmp/sh-repro.log`、`/tmp/sh-repro2.log` |
-| hosted Linux开/编译关 | 全量PASS (0 failures)；机制测试通过，实际ELF执行不在hosted中模拟 | `/tmp/sh-hosted-final.log`、`/tmp/sh-hosted-off.log` |
-| QEMU Linux开、e1000单节点 | 全量PASS (0 failures)，sh各用例及L0–L5/原生链checker通过 | `/tmp/sh-on-e1000-matrix.log` |
-| QEMU Linux开、双NUMA节点，两网卡/virtio优先 | 全量PASS (0 failures) | `/tmp/sh-on-dual-vnet-matrix.log` |
-| QEMU Linux开、无网卡 | 全量PASS (0 failures)，网络按既有skip规则 | `/tmp/sh-on-no-nic-matrix.log` |
-| QEMU 运行时Linux关闭、e1000 | 全量PASS (0 failures)，原生保留 | `/tmp/sh-linux-off-matrix.log` |
-| QEMU LINUX_ABI=0、双节点两网卡 | 全量PASS (0 failures) | `/tmp/sh-compiled-off-matrix.log` |
-| 无ISO QEMU产品盘 | sh-smoke脚本、原生cat/重定向、nc、http-get、httpd两次200响应、poweroff通过 | `/tmp/sh-product-installboot.log`、`/tmp/sh-httpd-client.log` |
-| QEMU同盘冷启动 | 读回sh-redirect-ok，脚本再次exit=0并关机 | `/tmp/sh-product-second.log` |
-| 同盘副本离线禁用Linux后启动 | 原生cat仍读回数据、hello exit=0；Linux sh被拒绝，shell error=-7；可关机 | `/tmp/sh-product-off.log` |
-| QEMU默认产品ISO | Linux enabled=0、原生shell/hello/ACPI关机通过 | `/tmp/sh-default-product.log` |
-| VBox EFI64/PIIX3/AHCI/SMP4，无ISO | sh-smoke含子shell/exec/pipe/重定向、原生cat、L0 ELF exit=0及ACPI关机通过 | `/tmp/sh-vbox-first.log` |
+| 两个干净构建目录 | cmp逐字节一致，SHA-256 `83576b81f0972e75676b1e595d6e0bd403ce5ef71bbd08fbeefdf283a528e050` | [sh-repro.log](../tests/evidence/logs/sh-repro.log)、[sh-repro2.log](../tests/evidence/logs/sh-repro2.log) |
+| hosted Linux开/编译关 | 全量PASS (0 failures)；机制测试通过，实际ELF执行不在hosted中模拟 | [sh-hosted-final.log](../tests/evidence/logs/sh-hosted-final.log)、[sh-hosted-off.log](../tests/evidence/logs/sh-hosted-off.log) |
+| QEMU Linux开、e1000单节点 | 全量PASS (0 failures)，sh各用例及L0–L5/原生链checker通过 | [sh-on-e1000-matrix.log](../tests/evidence/logs/sh-on-e1000-matrix.log) |
+| QEMU Linux开、双NUMA节点，两网卡/virtio优先 | 全量PASS (0 failures) | [sh-on-dual-vnet-matrix.log](../tests/evidence/logs/sh-on-dual-vnet-matrix.log) |
+| QEMU Linux开、无网卡 | 全量PASS (0 failures)，网络按既有skip规则 | [sh-on-no-nic-matrix.log](../tests/evidence/logs/sh-on-no-nic-matrix.log) |
+| QEMU 运行时Linux关闭、e1000 | 全量PASS (0 failures)，原生保留 | [sh-linux-off-matrix.log](../tests/evidence/logs/sh-linux-off-matrix.log) |
+| QEMU LINUX_ABI=0、双节点两网卡 | 全量PASS (0 failures) | [sh-compiled-off-matrix.log](../tests/evidence/logs/sh-compiled-off-matrix.log) |
+| 无ISO QEMU产品盘 | sh-smoke脚本、原生cat/重定向、nc、http-get、httpd两次200响应、poweroff通过 | [sh-product-installboot.log](../tests/evidence/logs/sh-product-installboot.log)、[sh-httpd-client.log](../tests/evidence/logs/sh-httpd-client.log) |
+| QEMU同盘冷启动 | 读回sh-redirect-ok，脚本再次exit=0并关机 | [sh-product-second.log](../tests/evidence/logs/sh-product-second.log) |
+| 同盘副本离线禁用Linux后启动 | 原生cat仍读回数据、hello exit=0；Linux sh被拒绝，shell error=-7；可关机 | [sh-product-off.log](../tests/evidence/logs/sh-product-off.log) |
+| QEMU默认产品ISO | Linux enabled=0、原生shell/hello/ACPI关机通过 | [sh-default-product.log](../tests/evidence/logs/sh-default-product.log) |
+| VBox EFI64/PIIX3/AHCI/SMP4，无ISO | sh-smoke含子shell/exec/pipe/重定向、原生cat、L0 ELF exit=0及ACPI关机通过 | [sh-vbox-first.log](../tests/evidence/logs/sh-vbox-first.log) |
 
-VBox第二次冷启动也由原生cat读回sh-redirect-ok，脚本再次exit=0并关机；日志 `/tmp/sh-vbox-second.log`。
+VBox第二次冷启动也由原生cat读回sh-redirect-ok，脚本再次exit=0并关机；日志 [sh-vbox-second.log](../tests/evidence/logs/sh-vbox-second.log)。
 VBox本轮为产品路径验收，不声称全量debug PASS；网卡状态down，没有宣称VBox网络通过。
 QEMU网络回归使用本机TCP9998/UDP9999/HTTP8000测试端及httpd端口转发18081→8080。
 所有QEMU全量日志均经 `tests/check_linux_sh.py` 检查；Linux开启的两网卡场景加--wire。
@@ -170,3 +172,6 @@ QEMU网络回归使用本机TCP9998/UDP9999/HTTP8000测试端及httpd端口转�
 - `scripts/build-busybox-sh.sh`、`user/linux/busybox-sh.config`、`user/linux/busybox-sh-signals.patch`、`tests/fixtures/busybox-sh.*`：源码配方、定制补丁、固定ELF/哈希和许可说明。
 - `user/linux/sh-smoke.sh`、`proc/init.c`、`Makefile`、`.gitignore`：构建/嵌入及仅Linux开启时补产品脚本与ELF。
 - 本文、总览/导航、L5文档和VBox手册：边界、复现、产品用法和矩阵。
+
+线程续作：已有 [有界clone/futex](LINUX_THREADS.md)。本文单线程/不支持线程的说明为此前范围；
+新子集仍不等于通用pthread，线程组内fork/exec/映射与fd表变更暂拒绝，未创建线程的原路径保留。
