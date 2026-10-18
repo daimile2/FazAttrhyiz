@@ -176,3 +176,40 @@ ABI检查器可能随实现演进而增加断言；旧轮次日志应按其原�
 
 hosted明确skip guest执行；实际脚本/异常/GC/回收由CPL3 guest日志证明。
 产品断言不是全量selftest。原生/hush/ldso等既有黄金由递归断言保留。
+
+## 2026-10-18：产品用户旅程（无内核改动）
+
+命令、边界与完整矩阵见 [USER_JOURNEY.md](../../docs/USER_JOURNEY.md)。
+QEMU与VBox分别完成三次**无ISO**冷启动：默认原生→离线启用Linux→MicroPython/原生HTTP→
+离线关闭Linux→拒绝解释器而保留原生和持久文件。自动化使用PS/2输入，不绕过用户shell。
+
+| 环境 | 本轮证据 |
+| --- | --- |
+| QEMU KVM/SMP4/AHCI/e1000 | [完整结果](logs/journey-qemu-complete-check.log)、[脚本及HTTP运行](logs/journey-qemu-linux.log)、[HTTP200/25字节/EOF校验](logs/journey-qemu-http-client.log)、[关闭后](logs/journey-qemu-disabled.log) |
+| VBox7.2.20 UEFI/SMP4/AHCI/e1000 | [完整结果](logs/journey-vbox-complete-check.log)、[脚本及HTTP运行](logs/journey-vbox-linux.log)、[HTTP客户端](logs/journey-vbox-http-client.log)、[关闭后](logs/journey-vbox-disabled.log) |
+| 构建/hosted/默认产品ISO | [产物标识](logs/journey-build-id.log)、[hosted全量](logs/journey-hosted.log)、[ISO提示符烟测](logs/journey-iso-boot.log) |
+| 保留失败：VBox状态查询返回1 | [首轮失败](logs/journey-vbox-first-failure.log)、[guest关机记录](logs/journey-vbox-first-native.log) |
+| 保留失败：SMP控制台交错导致文本断言过严 | [断言失败](logs/journey-qemu-console-assert-failure.log)、[原始交错](logs/journey-qemu-console-interleaved.log) |
+
+旅程PASS不是全量freestanding selftest；ISO烟测为产品提示符闲置超时，不冒充0 failures。
+本轮没有改KPTI/buddy/调度/网络/ABI等内核源码。失败说明与关闭方式见旅程文档。
+
+## Hosts-only stub（2026-10-18）
+
+[接口/限制与环境矩阵](../../docs/HOSTS_RESOLVER.md)。未增加网络 DNS、未修改 TCP/RTO/IRQ。
+QEMU 与 VBox 各两次无 ISO 冷启动，原生/Linux HTTP 按 hostname、alias、literal 取得并校验正文，
+未知名称 exit=2，hosts 文件冷启动保留：
+[QEMU结果](logs/hosts-qemu-result.log)、[VBox结果](logs/hosts-vbox-result.log)。
+全量：[hosted开](logs/hosts-hosted-on.log)、[hosted关](logs/hosts-hosted-off.log)、
+[QEMU开](logs/hosts-qemu-debug-on.log)、[QEMU关](logs/hosts-qemu-debug-off.log)。
+[默认ISO](logs/hosts-product-iso-boot.log)仅提示符闲置烟测。
+失败保留并说明关闭方式，见上述文档，未将失败或 skip 当作网络通过。
+
+## 最小 SIGCHLD（2026-10-18）
+
+[语义/限制与矩阵](../../docs/LINUX_SIGCHLD.md)。合并 pending、DFL 可 wait、IGN/NOCLDWAIT 自动回收；
+用户 handler 仍拒绝，sigreturn ENOSYS 仍计数一次，不是完整信号框架。
+[QEMU开启全量](logs/sigchld-qemu-on.log)、[关闭](logs/sigchld-qemu-off.log)、
+[VBox UEFI四核全量](logs/sigchld-vbox-on.log)、[检查](logs/sigchld-vbox-on-check.log)、
+[hosted开](logs/sigchld-hosted-on.log)、[hosted关](logs/sigchld-hosted-off.log)。
+均有全量0 failures；无NIC的wire项明确skip。hush JOB/TRAP未开启。

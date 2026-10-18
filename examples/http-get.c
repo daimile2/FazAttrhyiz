@@ -1,4 +1,4 @@
-#include "capmix.h"
+#include "cm_resolve.h"
 /* HTTP/1.0 preview client. No libc, DNS, TLS, redirects or chunked decoding. */
 #define BODY_PREVIEW 1024u
 #define BODY_LIMIT (1024u*1024u)
@@ -82,9 +82,11 @@ static int consume(struct response *r,const char *p,unsigned n)
 int main(int argc,char **argv,char **envp)
 {
     (void)envp;uint32_t ip;uint16_t port;
-    if((argc!=3 && argc!=4) || !cm_parse_ipv4(argv[1],&ip) || !cm_parse_port(argv[2],&port)) {
-        cm_print("usage: http-get.elf IPv4 PORT [/path]\n");return 2;
+    if((argc!=3 && argc!=4) || !cm_parse_port(argv[2],&port)) {
+        cm_print("usage: http-get.elf HOST PORT [/path]\n");return 2;
     }
+    int resolved=cm_resolve_ipv4(argv[1],&ip);
+    if(resolved){cm_print(cm_hosts_error(resolved));return 2;}
     const char *path=argc==4?argv[3]:"/";unsigned pathlen=0;
     if(path[0]!='/'){cm_print("http-get: path must start with /\n");return 2;}
     while(path[pathlen]) {

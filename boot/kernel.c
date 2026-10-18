@@ -539,11 +539,15 @@ int capmix_selftest(void)
     fails += cm_linux_l4_selftest();
     fails += cm_linux_l5_selftest();
     fails += cm_linux_compat_selftest();
+    extern int cm_linux_sigchld_selftest(void);
+    fails += cm_linux_sigchld_selftest();
     fails += cm_linux_threads_selftest();
     fails += cm_linux_sh_selftest();
     fails += cm_linux_micropython_selftest();
     fails += cm_linux_ldso_selftest();
     extern int cm_concurrent_selftest(void);
+    extern int cm_hosts_selftest(void);
+    fails += cm_hosts_selftest();
     fails += cm_concurrent_selftest();
     extern int cm_control_selftest(void);
     fails += cm_control_selftest();

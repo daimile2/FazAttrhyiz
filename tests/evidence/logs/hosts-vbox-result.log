@@ -1,0 +1,3 @@
+hosts vbox first: poweroff=ok no-ISO root=disk
+hosts vbox cold: poweroff=ok no-ISO root=disk
+hosts vbox: PASS (2 cold boots, no ISO, native/Linux hostname+alias+literal HTTP body, missing=exit2, persistent hosts)

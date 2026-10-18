@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "<repo>/tests/check_hosts_product.py", line 141, in <module>
+    s=command('run /bin/http-get.elf '+host+' 8000 /hello.txt','exit=0 reap=ok')
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/tests/check_hosts_product.py", line 88, in command
+    offset=len(text());send(cmd);return wait(marker,offset)
+                                        ^^^^^^^^^^^^^^^^^^^
+  File "<repo>/tests/check_hosts_product.py", line 44, in wait
+    raise AssertionError('timeout waiting for '+marker+'; see '+str(log))
+AssertionError: timeout waiting for exit=0 reap=ok; see <lab>/capmix-hosts-vbox-final/hosts-first.log

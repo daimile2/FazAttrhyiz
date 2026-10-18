@@ -16,6 +16,9 @@
 static cm_proc_t g_procs[CM_MAX_PROCS];
 static cm_id_t   g_pid_next = 1;
 static int       g_hello_ran;
+static int lifecycle_enter(uint64_t *);
+static void lifecycle_leave(uint64_t);
+static void child_events_locked(void);
 
 
 static cm_proc_t *alloc_proc(void)
@@ -237,6 +240,7 @@ int cm_proc_children_pending(cm_id_t parent)
 }
 int cm_proc_reap_orphans(void)
 {
+    cm_linux_child_events();
     int pending=0;
     for(unsigned i=0;i<CM_MAX_PROCS;i++) {
         cm_proc_t *p=&g_procs[i];if(!p->used || !p->elf || !p->parent_pid)continue;
@@ -440,6 +444,7 @@ static int64_t linux_fork(void)
     p->path=p->elf->path;p->aspace_pages=p->elf->charged;p->user_mode=1;p->elf_cpu=parent->elf_cpu;
     p->task=cm_task_create(p->path,parent->task->qos);if(!p->task || !p->task->self_obj){e=CM_ERR_NOSPC;goto fail;}
     p->linux_sigmask=parent->linux_sigmask;p->linux_sigignored=parent->linux_sigignored;
+    p->linux_chld_policy=parent->linux_chld_policy;
     p->stdio_mask=parent->stdio_mask;
     for(int fd=0;fd<CM_FD_MAX;fd++)if(parent->fd[fd]>=0) {
         p->linux_console[fd]=parent->linux_console[fd];p->linux_cloexec[fd]=parent->linux_cloexec[fd];
@@ -466,19 +471,28 @@ int64_t cm_linux_wait4(int64_t pid,uint64_t status,uint64_t options,uint64_t usa
     if(usage)return -95;
     if(status && !cm_user_access(p->elf,status,4,1))return -14;
     for(;;) {
+        uint64_t irq;
+        if(!lifecycle_enter(&irq)){if(options&1)return -11;cm_sched_yield();cm_usermode_resume_entry();continue;}
+        child_events_locked();
         int found=0;
         for(unsigned i=0;i<CM_MAX_PROCS;i++) {
             cm_proc_t *c=&g_procs[i];if(!c->used || !c->linux_fork_child || c->parent_pid!=p->pid || (pid>0 && c->pid!=(uint64_t)pid))continue;
+            if(c->linux_chld_autoreap)continue;
             found=1;
             if(!__atomic_load_n(&c->exited,__ATOMIC_ACQUIRE) || (c->main && __atomic_load_n(&c->main->id,__ATOMIC_ACQUIRE)==c->elf_thread_id))continue;
             uint32_t st=((uint32_t)c->exit_code&255u)<<8;cm_id_t result=c->pid;
-            if(status && cm_copyout(p->elf,status,&st,4))return -14;
-            int e=cm_proc_release_child(p->pid,result);if(e==CM_ERR_BUSY){if(options&1)return 0;cm_sched_yield();cm_usermode_resume_entry();break;}if(e)return -11;
+            if(status && cm_copyout(p->elf,status,&st,4)){lifecycle_leave(irq);return -14;}
+            int e=release_elf_record(result);
+            lifecycle_leave(irq);
+            if(e==CM_ERR_BUSY){if(options&1)return 0;goto retry;}
+            if(e)return -11;
             kinfo("linux L2 wait4 reap: parent=%llu child=%llu status=%x",(unsigned long)p->pid,(unsigned long)result,st);
             return (int64_t)result;
         }
+        lifecycle_leave(irq);
         if(!found)return -10;
         if(options&1)return 0;
+retry:
         cm_sched_yield();cm_usermode_resume_entry();
         if(__atomic_load_n(&p->kill_pending,__ATOMIC_ACQUIRE))return -4;
     }
@@ -497,6 +511,51 @@ static int lifecycle_enter(uint64_t *flags)
 }
 static void lifecycle_leave(uint64_t flags)
 {__atomic_store_n(&lifecycle_busy,0,__ATOMIC_RELEASE);cm_irq_restore(flags);}
+/* Disposition changes are deliberately bounded: no live/unreaped fork children.
+ * This makes the exit-time policy stable without extending the lifecycle gate
+ * across a user continuation. Read-only queries and identical sets are allowed. */
+int cm_linux_chld_policy(cm_proc_t *p,uint64_t next,uint64_t *old)
+{
+    uint64_t irq;if(!lifecycle_enter(&irq))return -11;
+    *old=__atomic_load_n(&p->linux_chld_policy,__ATOMIC_ACQUIRE);
+    if(next!=UINT64_MAX && next!=*old) {
+        for(unsigned i=0;i<CM_MAX_PROCS;i++)if(g_procs[i].used && g_procs[i].linux_fork_child && g_procs[i].parent_pid==p->pid) {
+            lifecycle_leave(irq);return -16;
+        }
+        __atomic_store_n(&p->linux_chld_policy,next,__ATOMIC_RELEASE);
+        if(next&1)__atomic_fetch_and(&p->linux_sigpending,~(1ull<<16),__ATOMIC_ACQ_REL);
+    }
+    lifecycle_leave(irq);return 0;
+}
+static void child_events_locked(void)
+{
+    for(unsigned i=0;i<CM_MAX_PROCS;i++) {
+        cm_proc_t *c=&g_procs[i];
+        if(!c->used || !c->linux_fork_child || !__atomic_load_n(&c->exited,__ATOMIC_ACQUIRE))continue;
+        if(!c->linux_chld_notified) {
+            cm_proc_t *p=cm_proc_lookup(c->parent_pid);
+            if(p && p->abi==CM_ABI_LINUX && !p->exited) {
+                uint64_t policy=__atomic_load_n(&p->linux_chld_policy,__ATOMIC_ACQUIRE);
+                c->linux_chld_autoreap=!!(policy&3);
+                if(!(policy&1) && (__atomic_load_n(&p->linux_sigmask,__ATOMIC_ACQUIRE)&(1ull<<16)))
+                    __atomic_fetch_or(&p->linux_sigpending,1ull<<16,__ATOMIC_ACQ_REL);
+                kinfo("linux SIGCHLD: parent=%llu child=%llu pending=%u autoreap=%d handler=none",
+                    (unsigned long)p->pid,(unsigned long)c->pid,
+                    !!(__atomic_load_n(&p->linux_sigpending,__ATOMIC_ACQUIRE)&(1ull<<16)),c->linux_chld_autoreap);
+            }
+            c->linux_chld_notified=1;
+        }
+        if(c->linux_chld_autoreap && (!c->main || __atomic_load_n(&c->main->id,__ATOMIC_ACQUIRE)!=c->elf_thread_id)) {
+            cm_id_t pid=c->pid;
+            if(!release_elf_record(pid))kinfo("linux SIGCHLD autoreap: child=%llu off-cpu reclaim=ok",(unsigned long)pid);
+        }
+    }
+}
+void cm_linux_child_events(void)
+{
+    uint64_t irq;if(!lifecycle_enter(&irq))return; /* retry at syscall/wait/PID1 safe point */
+    child_events_locked();lifecycle_leave(irq);
+}
 cm_error_t cm_posix_spawn(const cm_spawn_attr_t *a,cm_id_t *pid)
 {
     uint64_t f;if(!lifecycle_enter(&f))return CM_ERR_AGAIN;

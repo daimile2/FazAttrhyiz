@@ -756,7 +756,7 @@ shell要求前台使用，拒绝 `run -i ... &`；父进程需console DUPLICATE�
 | `/bin/nc.elf` | `run -i`后主动TCP连接、逐行键盘发送、网络回显；`/quit`关闭，空闲30秒退出124 |
 | `/bin/cat.elf` | FILE syscall流式读持久根文本，最多显示1MiB，非文本替换为`.` |
 | `/bin/ls.elf` | READDIR列目录，最多256项 |
-| `/bin/http-get.elf` | 数字IPv4+端口+path，HTTP/1.0 GET，状态行与前1024B正文 |
+| `/bin/http-get.elf` | hosts主机名/数字IPv4+端口+path，HTTP/1.0 GET，状态行与前1024B正文 |
 
 HTTP客户端不做TLS/DNS/自动重定向/chunked解码；正文最多1MiB并drain至EOF，
 头最多8192B，接收总10秒/空闲3秒超时；2xx退出0，3xx–5xx退出4，
@@ -1157,3 +1157,11 @@ Linux opt-in 产品路径可运行钉住的 MicroPython1.24.1 + musl1.2.5 静态
 禁用浮点、线程、外部模块、JIT和REPL；不是通用Python/Linux兼容。
 配方、哈希、限制和本轮证据见 [LINUX_MICROPYTHON.md](LINUX_MICROPYTHON.md)。
 默认Linux仍关闭，原生/hush/ldso黄金保留。
+
+
+### Hosts-only stub 补充
+
+原生 `nc/http-get` 与 Linux 静态 HTTP 探针现可使用共享用户库读取 `/etc/hosts`，
+支持别名、ASCII大小写匹配，未命中回退数字IPv4；无记录明确失败。
+这不包含 DNS 网络客户端或 libc 全局 getaddrinfo 替换。接口、边界与测试见
+[HOSTS_RESOLVER.md](HOSTS_RESOLVER.md)。

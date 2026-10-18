@@ -1,0 +1,3 @@
+hosts qemu first: poweroff=ok no-ISO root=disk
+hosts qemu cold: poweroff=ok no-ISO root=disk
+hosts qemu: PASS (2 cold boots, no ISO, native/Linux hostname+alias+literal HTTP body, missing=exit2, persistent hosts)

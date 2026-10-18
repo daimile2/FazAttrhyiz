@@ -255,3 +255,10 @@ VBox初轮真实失败与诊断日志保留：[初轮](../tests/evidence/logs/th
 
 独立单线程进程新增受控跨CPU迁移，见 [LINUX_MIGRATION.md](LINUX_MIGRATION.md)。
 本文件的线程组仍固定同CPU，即使其他成员退出也不放宽；迁移请求返回EOPNOTSUPP。
+
+
+### SIGCHLD 后续边界
+
+[最小 SIGCHLD](LINUX_SIGCHLD.md) 不提供线程信号 handler 或任意线程路由。
+线程组中拒绝设置 SIGCHLD action；普通 clone 线程退出不发送 SIGCHLD。
+进程级 fork 子进程整体结束的通知与自动回收，不等同于完整 pthread/作业控制。

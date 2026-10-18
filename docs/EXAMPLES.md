@@ -92,7 +92,7 @@ WRITE 返回写入字节数，暂忙 -5；普通 ELF 尝试访问返回 -3（DEN
 
 cat 是文本查看器：保留 ASCII、换行和 tab，其他字节显示 `.`，不保证二进制原样输出。
 诊断 stdout 每次最多127B，可能带 `user[pid]:` 日志前缀。ls/cat 只读，不改变文件。
-nc 接受数字 IPv4 与1～65535端口；每行最多254个可打印 ASCII 字符，随后发送换行；
+nc 接受 `/etc/hosts` 主机名或数字 IPv4 与1～65535端口；每行最多254个可打印 ASCII 字符，随后发送换行；
 超长行额外字符忽略。网络接收每次256B，可能分多次显示，日志计数不能当报文边界。
 `/quit` 是本地命令，不发送给对端；无输入/无网络数据30秒退出124，避免永久挂前台。
 CONNECT/SEND/CLOSE 各有3000ms等待限制，RECV 非阻塞并主动 yield；没有 listen、
@@ -145,7 +145,7 @@ run /bin/http-get.elf 10.0.2.2 8000 /hello.txt
 
 协议与资源边界：
 
-- 只接受数字 IPv4、必填端口1–65535、以 `/` 开头的 origin-form path，最多255B；
+- 接受 `/etc/hosts` 主机名或数字 IPv4、必填端口1–65535、以 `/` 开头的 origin-form path，最多255B；
   不解析完整 URL，不做 DNS/TLS/代理、认证或任何自动重定向。path 禁止空格、控制字符、
   非 ASCII、`#`，不做自动 URL 编码；可自行传已编码路径或 query。
 - 发送 `GET ... HTTP/1.0`、`Host: IPv4:PORT`、`Connection: close`。
@@ -191,3 +191,12 @@ run /bin/micropython.elf /data/linux/micropython-demo.py
 重定向，再用原生cat读回。固定256KiB GC、无浮点/线程/外部模块/REPL；
 不是通用MicroPython/Python生态。配方、哈希、窗口与测试矩阵见
 [LINUX_MICROPYTHON.md](LINUX_MICROPYTHON.md)。默认Linux仍关闭。
+
+
+## Hosts-only 名称解析
+
+`http-get.elf` 和 `nc.elf` 共用 [hosts stub](HOSTS_RESOLVER.md)，先读 `/etc/hosts`，
+未匹配再尝试数字 IPv4。不发 DNS 请求；无记录退出 2。
+例如 `run /bin/http-get.elf host.capmix.test 8000 /hello.txt`。
+Linux 开启后 `/bin/linux-hosts-http.elf HOST PORT` 可验证同一解析器和 Linux TCP ABI；
+不代表任意现成 wget/getaddrinfo 自动接入。已有盘上 ELF 不会被启动流程覆盖，应显式升级工具或用新测试盘。

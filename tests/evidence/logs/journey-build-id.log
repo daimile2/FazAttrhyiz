@@ -1,0 +1,12 @@
+2026-10-18 product user journey; no kernel behavior/source modifications
+baseline 7cd5e00
+QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)
+7.2.20r175154
+QEMU: KVM 512MiB SMP4 AHCI disk + e1000 usernet, no ISO, PS/2 monitor input.
+VBox: UEFI 512MiB SMP4 AHCI disk + e1000 NAT, no ISO, PS/2 scan-code input.
+138a212693162923e5af44eb5fbd2d6c4a702d579412a406578d3ceb252c770a  scripts/demo-user-journey.sh
+785edf0c89e27e7b22ba0662c97ad5b8f7784d4296cdde1b2f62806fa7303e24  tests/check_user_journey.py
+a23b9a426c4243fd9314ec1314fa01264312f4769ca79d3df22fadc6172a7ae2  capmix.elf
+02a84770cb4912e20136b6c8351a44b7ac9e1a864e2a6238f178c5b99301ab98  capmix.iso
+No guest Linux hot-toggle: enable/disable performed on offline latest RAW copy.
+Journey PASS is product evidence, not a full freestanding selftest PASS claim.

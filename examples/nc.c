@@ -1,11 +1,13 @@
-#include "capmix.h"
+#include "cm_resolve.h"
 /* One foreground interactive stream. No signals, listen, pipes or TLS. */
 int main(int argc,char **argv,char **envp)
 {
     (void)envp;uint32_t ip;uint16_t port;
-    if(argc!=3 || !cm_parse_ipv4(argv[1],&ip) || !cm_parse_port(argv[2],&port)) {
-        cm_print("usage: run -i /bin/nc.elf IPv4 PORT; /quit closes\n");return 2;
+    if(argc!=3 || !cm_parse_port(argv[2],&port)) {
+        cm_print("usage: run -i /bin/nc.elf HOST PORT; /quit closes\n");return 2;
     }
+    int resolved=cm_resolve_ipv4(argv[1],&ip);
+    if(resolved){cm_print(cm_hosts_error(resolved));return 2;}
     long e=cm_console_probe();if(e<0){cm_print("nc: console denied; use foreground run -i\n");return 3;}
     uint64_t hz=cm_hz();if(!hz){cm_print("nc: clock unavailable\n");return 1;}
     long h=cm_tcp_dial(ip,port);if(h<0){cm_report("nc connect error",h);return 1;}

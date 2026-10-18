@@ -1,13 +1,14 @@
 # CapMix 文档导航
 
 当前能力以 [内核总览](KERNEL_OVERVIEW.zh-CN.md)、源码和后续功能文档为准。
-第一次使用先读 [VirtualBox 测试手册](VIRTUALBOX_TESTING.zh-CN.md)；开发用户程序先读
+第一次从冷启动体验先读 [用户旅程](USER_JOURNEY.md)；平台配置再读 [VirtualBox 测试手册](VIRTUALBOX_TESTING.zh-CN.md)。开发用户程序先读
 [外部静态 ELF/SDK](EXTERNAL_ELF.md) 与 [示例](EXAMPLES.md)。
 
 ## 当前使用与接口
 
 | 主题 | 文档 |
 | --- | --- |
+| 冷启动→shell→可选Linux→MicroPython→原生HTTP，QEMU/VBox命令 | [用户旅程](USER_JOURNEY.md) |
 | 系统设计、接口、容量与状态 | [内核总览](KERNEL_OVERVIEW.zh-CN.md) |
 | VBox 配置、产品/自测、验收清单 | [VirtualBox 测试手册](VIRTUALBOX_TESTING.zh-CN.md) |
 | 磁盘安装与无 ISO 冷启动 | [INSTALL_DISK](INSTALL_DISK.md) |
@@ -22,6 +23,8 @@
 | NIC UDP 与后台入队 | [P1B_UDP_NIC](P1B_UDP_NIC.md) |
 | DHCP 与静态回退 | [P1C_DHCP](P1C_DHCP.md) |
 | 最小主动 TCP | [P1D_TCP](P1D_TCP.md) |
+| SIGCHLD最小pending/自动回收与hush边界 | [LINUX_SIGCHLD](LINUX_SIGCHLD.md) |
+| hosts-only 名称解析（原生/Linux共享，非DNS客户端） | [HOSTS_RESOLVER](HOSTS_RESOLVER.md) |
 | 用户 TCP/UDP ABI | [USER_NETWORK_ABI](USER_NETWORK_ABI.md) |
 | SYN/数据/FIN 重传 | [TCP_RTO](TCP_RTO.md) |
 | e1000/virtio-net RX IRQ | [NET_RX_IRQ](NET_RX_IRQ.md) |

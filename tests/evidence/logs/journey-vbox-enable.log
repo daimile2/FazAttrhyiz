@@ -1,0 +1,4 @@
+cowfs: mounted gen=39 (slot B, other slot valid/older) snaps=0
+cowfs: mounted gen=41 (slot B, other slot valid/older) snaps=0
+linux package data: present=1 removed=0 remount=verified
+linux package enable published: next boot; data=retained; native /bin retained; no hot unload

@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "<repo>/tests/check_user_journey.py", line 124, in <module>
+    stop('native')
+  File "<repo>/tests/check_user_journey.py", line 94, in stop
+    if 'VMState="poweroff"' in call('VBoxManage','showvminfo',vm,'--machinereadable'):break
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/tests/check_user_journey.py", line 26, in call
+    return subprocess.run(list(map(str,args)),check=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True).stdout
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['VBoxManage', 'showvminfo', 'CapMix-Journey-1792318468461395400', '--machinereadable']' returned non-zero exit status 1.

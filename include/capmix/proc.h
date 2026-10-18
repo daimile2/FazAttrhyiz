@@ -43,7 +43,9 @@ typedef struct cm_proc {
     uint64_t linux_fd_owner; /* leader: nonblocking syscall gate, owner TID */
     unsigned linux_fd_depth; /* recursive writev -> write by the same owner */
     uint64_t linux_fs;
-    uint64_t linux_sigmask,linux_sigignored; /* single-thread metadata; no delivery */
+    uint64_t linux_sigmask,linux_sigignored;
+    uint64_t linux_sigpending,linux_chld_policy; /* coalesced SIGCHLD, no handler frames */
+    int linux_chld_notified,linux_chld_autoreap;
     int linux_resume,linux_fork_child;
     /* 0 idle, 1 requested, 2 off-user-stack handoff; rq lock publishes CPU. */
     int linux_migrate,linux_migrate_cpu,linux_migrate_fail_once;
@@ -78,6 +80,8 @@ typedef struct cm_proc {
 cm_proc_t *cm_linux_group(cm_proc_t *);
 int cm_linux_thread_finish(cm_proc_t *,int64_t);
 void cm_linux_group_kill(cm_proc_t *,int64_t);
+void cm_linux_child_events(void);
+int cm_linux_chld_policy(cm_proc_t *,uint64_t,uint64_t *);
 int64_t cm_linux_clone(uint64_t,uint64_t,uint64_t,uint64_t,uint64_t);
 void cm_linux_futex_poll(void);
 void cm_linux_futex_cancel(cm_proc_t *);

@@ -1,5 +1,5 @@
 {
-  "archive_date": "2026-10-17",
+  "archive_date": "2026-10-18",
   "kind": "sanitized historical logs and dated regression evidence; see per-file evidence_round and documents",
   "files": [
     {
@@ -4100,6 +4100,774 @@
         "docs/LINUX_MICROPYTHON.md"
       ],
       "evidence_round": "micropython-static-2026-10-17"
+    },
+    {
+      "source_name": "journey-build-id.log",
+      "source_sha256": "37aaaf7e7d54567b001ef47ec95488e10d6b786b622dbcb1fe15db55e9072f93",
+      "archive": "logs/journey-build-id.log",
+      "archive_sha256": "37aaaf7e7d54567b001ef47ec95488e10d6b786b622dbcb1fe15db55e9072f93",
+      "source_bytes": 819,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-hosted.log",
+      "source_sha256": "7396b8a4419b31e230900f8f108af779d759d7440e48e74dc2cd2f4236ab6125",
+      "archive": "logs/journey-hosted.log",
+      "archive_sha256": "7396b8a4419b31e230900f8f108af779d759d7440e48e74dc2cd2f4236ab6125",
+      "source_bytes": 72449,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-iso-boot-status.log",
+      "source_sha256": "e5d2ada9557aee91826f0aaa92b57dbd25b70973c8924e377516e93e92604b88",
+      "archive": "logs/journey-iso-boot-status.log",
+      "archive_sha256": "e5d2ada9557aee91826f0aaa92b57dbd25b70973c8924e377516e93e92604b88",
+      "source_bytes": 80,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-iso-boot.log",
+      "source_sha256": "b0d04dff77e4272fe52abfb63ac52815c66d17aa187ae1fcdc46f4b1fdbbb62c",
+      "archive": "logs/journey-iso-boot.log",
+      "archive_sha256": "d715fb28ed6127c4b7913bf5ea2a497c1d4098a8cb69891e9c6a3a70449450cf",
+      "source_bytes": 21358,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-iso.log",
+      "source_sha256": "7ca953fd3af60f58d4919c6650216ec4681dfe1b34a1c89176dd947f26018aa5",
+      "archive": "logs/journey-iso.log",
+      "archive_sha256": "4d5dcea1f744af0bbffd43fd6ea8ceb30b1d0884e429bf7d0f7c908a83eddedb",
+      "source_bytes": 1943,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-kernel.log",
+      "source_sha256": "ff50869b7cf5251fb81ab1325557ce01b261a3790fb8dd279c26bc1f9244bc96",
+      "archive": "logs/journey-kernel.log",
+      "archive_sha256": "ff50869b7cf5251fb81ab1325557ce01b261a3790fb8dd279c26bc1f9244bc96",
+      "source_bytes": 39,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-qemu-complete-check.log",
+      "source_sha256": "3ae13d1746dbd8987989245e4405d85c203d8fabddbd3909f70a89e44a9028e6",
+      "archive": "logs/journey-qemu-complete-check.log",
+      "archive_sha256": "3ae13d1746dbd8987989245e4405d85c203d8fabddbd3909f70a89e44a9028e6",
+      "source_bytes": 284,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-qemu-complete-prepare.log",
+      "source_sha256": "1da27baaaf3edf07daf4002065b6141aaa8298137e6bafbadc26f8e2777811a5",
+      "archive": "logs/journey-qemu-complete-prepare.log",
+      "archive_sha256": "5888337a042e0e5b1950580684c75c57347fa85fef1ce078494926cc20f6f6f5",
+      "source_bytes": 1211,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-qemu-verified-check.log",
+      "source_sha256": "8037f7203d7b1ccbb1f23a678ae97c7afe26a2f576890c4ee0c9ecf611049b97",
+      "archive": "logs/journey-qemu-console-assert-failure.log",
+      "archive_sha256": "25d6cb67015335d1cda0cc042a445342953f44d3b8bcf176426cd011a89d16e8",
+      "source_bytes": 282,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-linux.log",
+      "source_sha256": "97804ee48f5e4c6646320a553ff2db6c94f59ad0d5eef0bc35d73bbeb6a43631",
+      "archive": "logs/journey-qemu-console-interleaved.log",
+      "archive_sha256": "118e57b938717af5f0cd36305f1dbac13f6529c9acc26c2e7b7c6a056819ab77",
+      "source_bytes": 12080,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-disable.log",
+      "source_sha256": "57eacaad4b1c240821d5117aec06c6ec6c901f1e23b3d2e7c9f454db4babbf31",
+      "archive": "logs/journey-qemu-disable.log",
+      "archive_sha256": "57eacaad4b1c240821d5117aec06c6ec6c901f1e23b3d2e7c9f454db4babbf31",
+      "source_bytes": 278,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-disabled.log",
+      "source_sha256": "b46928963bdf3fcc0327119d42803295240d1948326c01e9b6583867e43de93e",
+      "archive": "logs/journey-qemu-disabled.log",
+      "archive_sha256": "5f788e7f5e3193b3f97bc1b7862017c9b20cb0bfe4df1d87be114f54a33b9e4b",
+      "source_bytes": 12249,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-enable.log",
+      "source_sha256": "c9e47c841f476be38b7dc501381d20ec3ce914afadcdf8022245c225ddc4cc26",
+      "archive": "logs/journey-qemu-enable.log",
+      "archive_sha256": "c9e47c841f476be38b7dc501381d20ec3ce914afadcdf8022245c225ddc4cc26",
+      "source_bytes": 277,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-http-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/journey-qemu-http-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-linux.log",
+      "source_sha256": "b1b531336acf2c54cc52b8f7e29ff5ca4fb4518b21f35084d4e5730761d09384",
+      "archive": "logs/journey-qemu-linux.log",
+      "archive_sha256": "4770ea3ef4774c1177616227d27b0923a87c2f6a07240f8cb66fc0bb7c5228fd",
+      "source_bytes": 16295,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-native.log",
+      "source_sha256": "33ea4682492012af58a819102495e5997e2dcabd1cc2163ed1b5176139ca898f",
+      "archive": "logs/journey-qemu-native.log",
+      "archive_sha256": "d2b58f07cd37c087250f486cae4ef5d9daf3eaf59be0db0f0314726b08365613",
+      "source_bytes": 11700,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-profile-before.log",
+      "source_sha256": "c68510e20b98c591a298c358127b4f047b9817d28607980ba346369b1aaaed08",
+      "archive": "logs/journey-qemu-profile-before.log",
+      "archive_sha256": "c68510e20b98c591a298c358127b4f047b9817d28607980ba346369b1aaaed08",
+      "source_bytes": 189,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-result.log",
+      "source_sha256": "c9da08d1a4fe5dbf9f824402e02a8b2c065bdd249a6b1402c8503c5a51fdc564",
+      "archive": "logs/journey-qemu-result.log",
+      "archive_sha256": "c9da08d1a4fe5dbf9f824402e02a8b2c065bdd249a6b1402c8503c5a51fdc564",
+      "source_bytes": 133,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-vbox-complete-check.log",
+      "source_sha256": "becc64b904a5cac84ea710cc145d100d839f0a1166e96c52db7abc521c863809",
+      "archive": "logs/journey-vbox-complete-check.log",
+      "archive_sha256": "becc64b904a5cac84ea710cc145d100d839f0a1166e96c52db7abc521c863809",
+      "source_bytes": 284,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-vbox-complete-prepare.log",
+      "source_sha256": "f42a9ba6e95229a5c5d6cf0a61c2f4af29289a59b1d667af2ee8845e9b64c6b6",
+      "archive": "logs/journey-vbox-complete-prepare.log",
+      "archive_sha256": "435ab3a8c01f83fda61a578c61ddcfab4dc2799305b954ec4c50a957d87537bc",
+      "source_bytes": 1211,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-control-host.log",
+      "source_sha256": "32eb63abb40d5c684a50a0acc0ddbcb5e91017b06cb0960c1ebe2504ef600211",
+      "archive": "logs/journey-vbox-control-host.log",
+      "archive_sha256": "32eb63abb40d5c684a50a0acc0ddbcb5e91017b06cb0960c1ebe2504ef600211",
+      "source_bytes": 369,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-disable.log",
+      "source_sha256": "57eacaad4b1c240821d5117aec06c6ec6c901f1e23b3d2e7c9f454db4babbf31",
+      "archive": "logs/journey-vbox-disable.log",
+      "archive_sha256": "57eacaad4b1c240821d5117aec06c6ec6c901f1e23b3d2e7c9f454db4babbf31",
+      "source_bytes": 278,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-disabled.log",
+      "source_sha256": "eff4735af585b7780f9d1e23269704e771adf7ccdac87a7d65a99bfdacede657",
+      "archive": "logs/journey-vbox-disabled.log",
+      "archive_sha256": "1972b5f373b0475fd7e0c63c946a3fbf925bdb4e47ea79a8e38fa7f0846e79eb",
+      "source_bytes": 12540,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-enable.log",
+      "source_sha256": "c9e47c841f476be38b7dc501381d20ec3ce914afadcdf8022245c225ddc4cc26",
+      "archive": "logs/journey-vbox-enable.log",
+      "archive_sha256": "c9e47c841f476be38b7dc501381d20ec3ce914afadcdf8022245c225ddc4cc26",
+      "source_bytes": 277,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-vbox-check.log",
+      "source_sha256": "149f40bbf3aceab381ae0bcd6bc431905d47c37a9991c8fe15d8dfcb5068aa94",
+      "archive": "logs/journey-vbox-first-failure.log",
+      "archive_sha256": "889e99c527ca2ab21e2b2ab6a717de3dabe772dff4b744ebcd39442f8c2b1f4f",
+      "source_bytes": 1024,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-native.log",
+      "source_sha256": "dd4a9b11f957c24f3590c28bfd87b35578bc6295ffc16ad4d92439632fca42b0",
+      "archive": "logs/journey-vbox-first-native.log",
+      "archive_sha256": "4fa12b30f5ae86e29b0c221921837117977fcb09e09ce0b77dcfa65d88808dea",
+      "source_bytes": 11987,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-http-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/journey-vbox-http-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-linux.log",
+      "source_sha256": "533ea1c825913d5de12eec57152319c6ad38b4adabb1cf9fbbf336e8ad5064cc",
+      "archive": "logs/journey-vbox-linux.log",
+      "archive_sha256": "a11a21e708d04f86ba5427fb3edd3bd0581e46c832d60694b46f77c9b9f7b88b",
+      "source_bytes": 16583,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-native.log",
+      "source_sha256": "b92e05f7349f3262bb1002b9987b24e2b0a5ab9539609cd3af5388f7d29dfcfe",
+      "archive": "logs/journey-vbox-native.log",
+      "archive_sha256": "fb4e06c89ee3c2c7f1e4aef362b5d637e31171cef27e5d901100df26b5064cf8",
+      "source_bytes": 11991,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-profile-before.log",
+      "source_sha256": "c68510e20b98c591a298c358127b4f047b9817d28607980ba346369b1aaaed08",
+      "archive": "logs/journey-vbox-profile-before.log",
+      "archive_sha256": "c68510e20b98c591a298c358127b4f047b9817d28607980ba346369b1aaaed08",
+      "source_bytes": 189,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "journey-result.log",
+      "source_sha256": "0f0f37499da920c69aa70769ad16629db60ce149e69ab6b3e691e32a8e0a1ad3",
+      "archive": "logs/journey-vbox-result.log",
+      "archive_sha256": "0f0f37499da920c69aa70769ad16629db60ce149e69ab6b3e691e32a8e0a1ad3",
+      "source_bytes": 133,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/USER_JOURNEY.md"
+      ],
+      "evidence_round": "user-journey-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-product-first.log",
+      "source_sha256": "cf6a38b85d1dee0357f26293accb849e62e36e8c7705fdb5d0c521c4b39faa56",
+      "archive": "logs/hosts-fixture-empty-load.log",
+      "archive_sha256": "cf6a38b85d1dee0357f26293accb849e62e36e8c7705fdb5d0c521c4b39faa56",
+      "source_bytes": 13823,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-off-hosted.log",
+      "source_sha256": "46bba7b57d275c1f249cfc8e8d4f9aa4064c004244d27f2172f1f3cc2bb085c0",
+      "archive": "logs/hosts-hosted-off.log",
+      "archive_sha256": "46bba7b57d275c1f249cfc8e8d4f9aa4064c004244d27f2172f1f3cc2bb085c0",
+      "source_bytes": 55879,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-final-hosted.log",
+      "source_sha256": "b792ab38dabad7195e01adbfcca827b505cc8ecb0895b6a72f0c60b8ef051071",
+      "archive": "logs/hosts-hosted-on.log",
+      "archive_sha256": "b792ab38dabad7195e01adbfcca827b505cc8ecb0895b6a72f0c60b8ef051071",
+      "source_bytes": 72561,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-product-iso.log",
+      "source_sha256": "6022302ee5869de3b42e4f175a46883d59a9869a08bf3f6c17cd8f21b5bef819",
+      "archive": "logs/hosts-iso.log",
+      "archive_sha256": "466206f2350193eb96be2f6e639049ea8f6e43cbcadaff94a712aa0768ec6034",
+      "source_bytes": 1943,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-kernel.log",
+      "source_sha256": "440a349983a81ce3428b829f5100fcea2d3372eb80d7c107b865e6ae8964f64c",
+      "archive": "logs/hosts-kernel.log",
+      "archive_sha256": "440a349983a81ce3428b829f5100fcea2d3372eb80d7c107b865e6ae8964f64c",
+      "source_bytes": 5213,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-product-iso-boot.log",
+      "source_sha256": "27c9f896787cfe56909cc4c3fab7bf99c238c2e76ac2fb2ea1d741b8d0afddf3",
+      "archive": "logs/hosts-product-iso-boot.log",
+      "archive_sha256": "27c9f896787cfe56909cc4c3fab7bf99c238c2e76ac2fb2ea1d741b8d0afddf3",
+      "source_bytes": 21494,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "hosts-cold.log",
+      "source_sha256": "f1f49b359e1fabf9f12cb44d63a377558e9c15cc5b93bab3a5666d49c1088f8a",
+      "archive": "logs/hosts-qemu-cold.log",
+      "archive_sha256": "f1f49b359e1fabf9f12cb44d63a377558e9c15cc5b93bab3a5666d49c1088f8a",
+      "source_bytes": 20115,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-off-check.log",
+      "source_sha256": "5c87cd4287d956890318a76ca6723c6e9a2c36a5283f634138cfe57d285eeacd",
+      "archive": "logs/hosts-qemu-debug-off-check.log",
+      "archive_sha256": "5c87cd4287d956890318a76ca6723c6e9a2c36a5283f634138cfe57d285eeacd",
+      "source_bytes": 637,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-off-qemu.log",
+      "source_sha256": "513d2446d3a0e6ac07dbeafd6f4744b74cb0858d53a906ecb87981a8e396c71f",
+      "archive": "logs/hosts-qemu-debug-off.log",
+      "archive_sha256": "513d2446d3a0e6ac07dbeafd6f4744b74cb0858d53a906ecb87981a8e396c71f",
+      "source_bytes": 68801,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-debug-check.log",
+      "source_sha256": "ae10584324eb79e5ce3d17dcb8d44e9883ef504a8264ad4f4c5b109288a3d0af",
+      "archive": "logs/hosts-qemu-debug-on-check.log",
+      "archive_sha256": "ae10584324eb79e5ce3d17dcb8d44e9883ef504a8264ad4f4c5b109288a3d0af",
+      "source_bytes": 664,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-debug-qemu.log",
+      "source_sha256": "50c7ead7fa1985ad39d39b181dd59acaa70d21764ed8fb2f37a9579b52a04c55",
+      "archive": "logs/hosts-qemu-debug-on.log",
+      "archive_sha256": "50c7ead7fa1985ad39d39b181dd59acaa70d21764ed8fb2f37a9579b52a04c55",
+      "source_bytes": 169103,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "hosts-first.log",
+      "source_sha256": "9bb92a23556d4201940ade5daea56dbb90719818c744035b66fe782a108cca81",
+      "archive": "logs/hosts-qemu-first.log",
+      "archive_sha256": "9bb92a23556d4201940ade5daea56dbb90719818c744035b66fe782a108cca81",
+      "source_bytes": 22241,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-final-qemu.log",
+      "source_sha256": "352a6f2e187a45b773b07f37f3f9576e4a892f54f4226d6b04dcb553841d0cee",
+      "archive": "logs/hosts-qemu-result.log",
+      "archive_sha256": "352a6f2e187a45b773b07f37f3f9576e4a892f54f4226d6b04dcb553841d0cee",
+      "source_bytes": 213,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-v2-product-result.log",
+      "source_sha256": "08a826a83e91d58a93b17a0d2ade9796c35a08b7ec51d6c5f87208d9f3f4aec4",
+      "archive": "logs/hosts-split-error-assert.log",
+      "archive_sha256": "b97f4ae7d716b7a20d502bd0a1eae12b8cf62fccc195389aa4bf65000fc9074b",
+      "source_bytes": 421,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-v2-product-first.log",
+      "source_sha256": "6c2d1645385fe3cd987bd61873d88c8ab31e9f6839b70ab926c64722a24f43e0",
+      "archive": "logs/hosts-split-error-guest.log",
+      "archive_sha256": "6c2d1645385fe3cd987bd61873d88c8ab31e9f6839b70ab926c64722a24f43e0",
+      "source_bytes": 21049,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "hosts-cold.log",
+      "source_sha256": "80450cdc433d9599c70f54747e943788fc22e7779f1de91a53825c3ff3327941",
+      "archive": "logs/hosts-vbox-cold.log",
+      "archive_sha256": "6324a6bf3018b59826bde017e4e4b9eec118728d6a72cc95c6fdff74dabe3fcf",
+      "source_bytes": 20233,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "hosts-first.log",
+      "source_sha256": "f044a56f2557fb6c3bb47dcc97a88615e88ce932de5704bbd71f6c4984a1f76c",
+      "archive": "logs/hosts-vbox-first.log",
+      "archive_sha256": "1a8d1933ada0dde84955756e666bc1e9f3e7964a7821885733a4ca1bbb4b06eb",
+      "source_bytes": 22101,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-final-vbox.log",
+      "source_sha256": "53cd6af8b5bd1fe79136261a149ac016aa79e07a756a984761b80e1c3ce4d641",
+      "archive": "logs/hosts-vbox-localhost-failure.log",
+      "archive_sha256": "a0f418bfa8326d79d9c67c3272cd3f986bc27f8ce775817304f098c080646741",
+      "source_bytes": 776,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "hosts-first.log",
+      "source_sha256": "fcb1b48363b905576112492404233f88ec13be4fc6a9e683834e75e7593612ca",
+      "archive": "logs/hosts-vbox-localhost-guest.log",
+      "archive_sha256": "652b539bb2ac3396005eb914d9bbfe1be7cc6b8189956343123b1b17bbff17a3",
+      "source_bytes": 13996,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-hosts-final-vbox-v2.log",
+      "source_sha256": "86acde2edbfa1cad1197a0edbaa1a9dbfd026e271256f575188df1cd053df6e6",
+      "archive": "logs/hosts-vbox-result.log",
+      "archive_sha256": "86acde2edbfa1cad1197a0edbaa1a9dbfd026e271256f575188df1cd053df6e6",
+      "source_bytes": 213,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HOSTS_RESOLVER.md"
+      ],
+      "evidence_round": "hosts-stub-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-final-hosted-on.log",
+      "source_sha256": "917aafe1a7169f9bc9e63b6d9f5a1838939bb986530a0931150ad37b1a5f7a06",
+      "archive": "logs/sigchld-hosted-on.log",
+      "archive_sha256": "917aafe1a7169f9bc9e63b6d9f5a1838939bb986530a0931150ad37b1a5f7a06",
+      "source_bytes": 74976,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-final-hosted-off.log",
+      "source_sha256": "a00db88be93ecc43c3d6e771548283277fdb40145b2af4cca38efee890e159b6",
+      "archive": "logs/sigchld-hosted-off.log",
+      "archive_sha256": "a00db88be93ecc43c3d6e771548283277fdb40145b2af4cca38efee890e159b6",
+      "source_bytes": 55928,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-hosted-on-check.log",
+      "source_sha256": "cce8139a9e14546f047b3bbd1b7b9d5a8e262975d4e8d1c95e289e13e0ea21a0",
+      "archive": "logs/sigchld-hosted-on-check.log",
+      "archive_sha256": "cce8139a9e14546f047b3bbd1b7b9d5a8e262975d4e8d1c95e289e13e0ea21a0",
+      "source_bytes": 669,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-hosted-off-check.log",
+      "source_sha256": "54d4c32cb1b5643234441464bedc45217a1ed85d79e2e44f8586e6fd7763f63b",
+      "archive": "logs/sigchld-hosted-off-check.log",
+      "archive_sha256": "54d4c32cb1b5643234441464bedc45217a1ed85d79e2e44f8586e6fd7763f63b",
+      "source_bytes": 653,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-final-qemu-on.log",
+      "source_sha256": "8cdaec68b749e57afcf1fb67e10406dfa691eddc91af28c22f3ccf8ce3fa54a8",
+      "archive": "logs/sigchld-qemu-on.log",
+      "archive_sha256": "8cdaec68b749e57afcf1fb67e10406dfa691eddc91af28c22f3ccf8ce3fa54a8",
+      "source_bytes": 176886,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-final-qemu-on-check.log",
+      "source_sha256": "6569e38592a82d9305c1d6195d809d409c34049bfac4dfcf36b7e16c7d53310e",
+      "archive": "logs/sigchld-qemu-on-check.log",
+      "archive_sha256": "6569e38592a82d9305c1d6195d809d409c34049bfac4dfcf36b7e16c7d53310e",
+      "source_bytes": 732,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-qemu-off.log",
+      "source_sha256": "ee600b6775d964462480d2f46487242b577d912d79971a33a806374d3d01226f",
+      "archive": "logs/sigchld-qemu-off.log",
+      "archive_sha256": "ee600b6775d964462480d2f46487242b577d912d79971a33a806374d3d01226f",
+      "source_bytes": 68773,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-qemu-off-check.log",
+      "source_sha256": "cdf9ef123bb270f8fa1fcf31a8fe0059ba5e3e4a2e82d16f74accdfcc017d790",
+      "archive": "logs/sigchld-qemu-off-check.log",
+      "archive_sha256": "cdf9ef123bb270f8fa1fcf31a8fe0059ba5e3e4a2e82d16f74accdfcc017d790",
+      "source_bytes": 693,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "serial.log",
+      "source_sha256": "bc0ef293dbe45fb95ea1cd02dbf18f759e2427a93252abadd61563b6b6f22837",
+      "archive": "logs/sigchld-vbox-on.log",
+      "archive_sha256": "a037cde1bdeb5d8ce169d9249b11a2dc0c1a835755bd81cfbd984f4c0f128a6f",
+      "source_bytes": 164266,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-vbox-check.log",
+      "source_sha256": "0b8c35749a07807b75843f7b3c4c470a764229886f4c1530916889f030296891",
+      "archive": "logs/sigchld-vbox-on-check.log",
+      "archive_sha256": "0b8c35749a07807b75843f7b3c4c470a764229886f4c1530916889f030296891",
+      "source_bytes": 787,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-product-boot.log",
+      "source_sha256": "d692e5cfa20fa50de4ecac6cb7f7297ff3421fe2a810cdba56f14b65fd3b8bc4",
+      "archive": "logs/sigchld-product-boot.log",
+      "archive_sha256": "d692e5cfa20fa50de4ecac6cb7f7297ff3421fe2a810cdba56f14b65fd3b8bc4",
+      "source_bytes": 21415,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-final-kernel.log",
+      "source_sha256": "d8f8a0449b1aeabc67373f9132feb98edf204a90da3eb7ca00fa8f5e54d17d5d",
+      "archive": "logs/sigchld-kernel.log",
+      "archive_sha256": "d8f8a0449b1aeabc67373f9132feb98edf204a90da3eb7ca00fa8f5e54d17d5d",
+      "source_bytes": 2344,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
+    },
+    {
+      "source_name": "capmix-chld-product-iso.log",
+      "source_sha256": "c597ef186757e86b9ea231a5c4307ae87dd0fc571242ed35f322a65ffa3f976c",
+      "archive": "logs/sigchld-iso.log",
+      "archive_sha256": "5aba860cf69af8eeda0fbd54309894d9b0824323fa71e94efa3f5ab1ef228898",
+      "source_bytes": 1943,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/LINUX_SIGCHLD.md"
+      ],
+      "evidence_round": "sigchld-minimal-2026-10-18"
     }
   ]
 }

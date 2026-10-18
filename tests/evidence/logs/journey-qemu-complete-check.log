@@ -1,0 +1,4 @@
+journey qemu native: poweroff=ok no-ISO root=disk
+journey qemu linux: poweroff=ok no-ISO root=disk
+journey qemu disabled: poweroff=ok no-ISO root=disk
+user journey qemu: PASS (3 cold boots, no ISO, native -> offline Linux -> MicroPython -> native HTTP200 -> disabled/native retained)

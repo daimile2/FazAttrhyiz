@@ -25,6 +25,7 @@
 #include "../build/example_cat.inc"
 #include "../build/example_ls.inc"
 #include "../build/example_http-get.inc"
+#include "../build/linux_hosts_http.inc"
 #include "../build/example_httpd.inc"
 #include "../build/linux_hello.inc"
 #include "../build/busybox_l1.inc"
@@ -79,6 +80,7 @@ static cm_error_t provision(void)
     if(!e)e=install_missing("/bin/ls.elf",cm_example_ls_elf,sizeof(cm_example_ls_elf));
     if(!e)e=install_missing("/bin/http-get.elf",cm_example_http_get_elf,sizeof(cm_example_http_get_elf));
     if(!e)e=install_missing("/bin/httpd.elf",cm_example_httpd_elf,sizeof(cm_example_httpd_elf));
+    if(!e && cm_linux_enabled())e=install_missing("/bin/linux-hosts-http.elf",cm_linux_hosts_http_elf,sizeof(cm_linux_hosts_http_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-hello.elf",cm_linux_hello_elf,sizeof(cm_linux_hello_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/busybox-l1.elf",cm_busybox_l1_elf,sizeof(cm_busybox_l1_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-net.elf",cm_linux_l3_elf,sizeof(cm_linux_l3_elf));
@@ -109,6 +111,14 @@ static cm_error_t provision(void)
         if(!e)e=install_missing("/data/linux/sh-smoke.sh",cm_linux_sh_demo,sizeof(cm_linux_sh_demo));
         if(!e)kinfo("linux package ready: /data/linux retained; persona enabled; uninstall via offline profile (no hot unload)");
     }
+    if(!e){
+        cm_stat_t st;e=cm_vfs_stat("/etc",&st);
+        if(e==CM_ERR_NOENT)e=cm_vfs_mkdir("/etc");
+        else if(!e && st.kind!=CM_INO_DIR)e=CM_ERR_NOTDIR;
+    }
+    /* Only create a missing file; preserve disk administrators' hosts entries. */
+    static const char hosts[]="# CapMix hosts-only resolver; no DNS queries\n127.0.0.1 localhost\n10.0.2.2 host.capmix.test hostgateway\n";
+    if(!e)e=install_missing("/etc/hosts",hosts,sizeof(hosts)-1);
     static const char sample[]="CapMix examples: persistent root ready\n";
     if(!e)e=install_missing("/example.txt",sample,sizeof(sample)-1);
     return e;

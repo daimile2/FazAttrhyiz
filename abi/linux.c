@@ -104,6 +104,7 @@ static int64_t dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
 {
 #if CM_LINUX_ABI
     cm_proc_t *active=cm_proc_current();
+    cm_linux_child_events();
     if(nr==24){cm_sched_yield();cm_usermode_resume_entry();return 0;}
     if(nr==56)return cm_linux_clone(a,b,c,d,active->linux_regs.r8);
     if(nr==202)return cm_linux_futex(a,b,c,d);
@@ -132,7 +133,7 @@ static int64_t dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
         uint64_t mask=cm_cpu_count()>=64?UINT64_MAX:(1ull<<cm_cpu_count())-1;
         return cm_copyout(active->elf,c,&mask,8)?-14:8;
     }
-    if(nr==13 || nr==14)return cm_linux_signal_call(nr,a,b,c,d);
+    if(nr==13 || nr==14 || nr==127)return cm_linux_signal_call(nr,a,b,c,d);
     if(nr==22 || nr==293)return cm_linux_pipe_create(active,a,nr==293?b:0);
     if(nr==57)return cm_linux_fork();
     if(nr==61)return cm_linux_wait4((int64_t)a,b,c,d);

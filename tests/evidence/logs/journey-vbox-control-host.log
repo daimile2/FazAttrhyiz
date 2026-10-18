@@ -1,0 +1,4 @@
+shutdown state query retry: VBoxManage: error: Failed to get a console object from the direct session (VBOX_E_INVALID_OBJECT_STATE)
+VBoxManage: error: Details: code VBOX_E_VM_ERROR (0x80bb0003), component MachineWrap, interface IMachine, callee nsISupports
+VBoxManage: error: Context: "LockMachine(a->session, LockType_Shared)" at line 3328 of file VBoxManageInfo.cpp
+

@@ -55,7 +55,7 @@ int cm_linux_compat_selftest(void)
     CHECK(after[13]==before[13] && after[14]==before[14]);
     cm_linux_enosys_dump("negative",before);
     kinfo("linux compat accounting: helper nr=41 + unknown overflow counted once verified");
-    kinfo("linux compat nr=13/14: mask/action/copy/errno verified; handlers=EOPNOTSUPP delivery=unsupported");
+    kinfo("linux compat nr=13/14: mask/action/copy/errno verified; handlers=EOPNOTSUPP delivery=SIGCHLD-only");
 cleanup:
     cm_sched_set_current(NULL);
     if(p){cm_proc_finish_exit(p,137);if(p->main && p->main->id)cm_thread_reap(p->main);if(cm_proc_release_elf(pid))failed++;}

@@ -1,0 +1,4 @@
+journey vbox native: poweroff=ok no-ISO root=disk
+journey vbox linux: poweroff=ok no-ISO root=disk
+journey vbox disabled: poweroff=ok no-ISO root=disk
+user journey vbox: PASS (3 cold boots, no ISO, native -> offline Linux -> MicroPython -> native HTTP200 -> disabled/native retained)

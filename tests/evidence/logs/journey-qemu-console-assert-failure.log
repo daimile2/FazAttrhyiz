@@ -1,0 +1,6 @@
+journey qemu native: poweroff=ok no-ISO root=disk
+Traceback (most recent call last):
+  File "<repo>/tests/check_user_journey.py", line 144, in <module>
+    assert 'micropython golden\n42\n' in s
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

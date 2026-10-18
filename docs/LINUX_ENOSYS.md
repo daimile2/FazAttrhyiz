@@ -53,7 +53,7 @@ Linux v6.6 x86-64 UAPI：`arch/x86/include/uapi/asm/signal.h`、
   SA_RESTORER 可附带但不执行、不保存为回调；其他 flags、非零 action mask、
   自定义 handler → EOPNOTSUPP。坏指针 → EFAULT。
 
-这两个接口只管理元数据，**没有 pending 队列、信号投递、handler 执行、
+本篇初版这两个接口只管理元数据，**没有 pending 队列、信号投递、handler 执行、
 rt_sigreturn、信号中断 wait 或作业控制**。不能借此声称实现 POSIX 信号。
 原有 hush sigaction 失败处理补丁保留：用户 handler 仍会明确失败。
 新 spawn 清零；fork 复制掩码和忽略位；成功 exec 保留掩码和忽略位，
@@ -137,3 +137,12 @@ arch未使用变量/函数warning。最终ISO恢复默认产品配置、Linux默
 - `scripts/linux-enosys.py`：固定fixture验哈希、启动/采集/排序/断言。
 - `Makefile`：新增源码纳入两个构建。
 - 本文、`docs/LINUX_BUSYBOX_SH.md`、`docs/README.md`：范围、复现与导航。
+
+
+## 后续：SIGCHLD 最小子集
+
+新增 nr=127 `rt_sigpending`，以及 nr=13 的 SIGCHLD `SA_NOCLDWAIT` 子集。
+只投递阻塞的 SIGCHLD 合并位，默认忽略仍保留 wait4 状态；显式 IGN/NOCLDWAIT 自动回收。
+用户 handler 继续 EOPNOTSUPP，rt_sigreturn 继续 ENOSYS 并计数，既有负例与计数断言保留。
+策略修改的 EBUSY 限制、线程组边界、hush JOB 仍关闭及测试证据见
+[LINUX_SIGCHLD.md](LINUX_SIGCHLD.md)。上文 ENOSYS 排序是该历史轮数据，不改写成新一轮统计。
