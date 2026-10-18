@@ -1,0 +1,95 @@
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_l1.py", line 11, in <module>
+    assert 'selftest result: PASS (0 failures)' in text
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_l2.py", line 11, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_l1.py'))]+(['--disabled'] if a.disabled else [])+(['--hosted'] if a.hosted else [])+[str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_l1.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_l3.py", line 13, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_l2.py'))]+(['--disabled'] if a.disabled else [])+(['--hosted'] if a.hosted else [])+[str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_l2.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_l4.py", line 15, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_l3.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_l3.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_l5.py", line 12, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_l4.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_l4.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_sh.py", line 13, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_l5.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_l5.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_ldso.py", line 11, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_sh.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_sh.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_tls.py", line 9, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_ldso.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_ldso.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_wx.py", line 9, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_tls.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_tls.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_tcp_pool.py", line 10, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_wx.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_wx.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_smp.py", line 13, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_tcp_pool.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_tcp_pool.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_threads.py", line 14, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_smp.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_smp.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_migration.py", line 14, in <module>
+    subprocess.run(['python3', str(Path(__file__).with_name('check_linux_threads.py')),
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_threads.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_linux_micropython.py", line 14, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_migration.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_migration.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_sigchld.py", line 11, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_linux_micropython.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_linux_micropython.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "<repo>/tests/check_fd_table.py", line 10, in <module>
+    subprocess.run(['python3',str(Path(__file__).with_name('check_sigchld.py')),*flags,str(a.log)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '<repo>/tests/check_sigchld.py', '<lab>/capmix-fd64-qemu-on.log']' returned non-zero exit status 1.

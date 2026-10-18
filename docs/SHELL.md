@@ -169,3 +169,69 @@ python3 tests/check_shell_redirection.py vbox /tmp/redir-vbox-final2.log
 目录无诊断污染、拒绝操作后guard内容、已有盘挂载与ACPI关机。QEMU另查HTTP正文，
 不因仅出现键盘命令回显就判定成功。串口中init偶尔在提示符后插入日志，脚本匹配
 完整命令而不要求prompt和命令相邻。断言结果保存在[redir-qemu-assertions.log](../tests/evidence/logs/redir-qemu-assertions.log)、[redir-vbox-assertions.log](../tests/evidence/logs/redir-vbox-assertions.log)。
+
+## 控制台前缀行协议 v1（2026-10-18）
+
+选择三种方案中的**前缀行协议**：不新增tty/kmsg设备、不改调度、不延迟逐键回显。
+内核日志仍为 `[INF]`、`[ERR]` 等既有前缀；用户态产品shell增加：
+
+```text
+[SHELL v=1 event=ready seq=1 status=0]
+capmix> echo hello
+[SHELL v=1 event=begin seq=1 status=0]
+hello
+[SHELL v=1 event=end seq=1 status=0]
+[SHELL v=1 event=ready seq=2 status=0]
+capmix>
+```
+
+每条记录以换行开始、以换行结束，小于112字节，用一次既有CONSOLE_WRITE capability调用输出。
+该接口已在整次调用期间持有现有console/klog消息锁；发生EAGAIN则沿用uputs的yield/retry，
+不引入新锁、调度规则或内核全局观测开关。串口和FB均可见相同记录。
+
+- shell每次启动seq从1开始；每次提交Enter（含空行、语法错误、输入过长）发begin，
+  dispatch返回发end，下一个ready递增seq。退格和输入字符仍即时回显。
+- status是shell dispatch原有返回码，不是子进程exit码。普通run等待成功但子进程非零退出时，
+  仍须读取独立的 `shell child done: ... exit=... reap=ok`；没有改变原有shell返回语义。
+- `exit`成功发end status=1，然后shell退出，不再发ready。
+- `poweroff/shutdown`先发begin；成功关机不返回，因此不承诺end/ready。脚本需同时核对实际关机。
+- shell错误行及child-done行也合并成单次console写，避免pid/exit等字段之间插入其他CPU日志。
+- 记录直接走console，不进入命令的 `> / >>` 输出文件；普通重定向文件正文不被协议污染。
+
+人工可读性改善在于：每次提交/完成有独立完整行，能区分键盘回显、shell状态和内核日志，
+无需从夹杂日志的提示符行猜测命令是否结束。代价是每条普通命令多三条简短记录。
+不保证用户程序多次write的正文、后台任务输出或逐键回显组成不可交错的整行；不是完整VT/多tty。
+这是可信测试环境中的同步约定，不是防伪审计通道；用户程序也能打印相似文字。
+旧debug内核shell和不含本轮shell ELF的旧安装盘不承诺v1协议。
+
+`tests/check_user_journey.py`现在等待指定seq的ready/begin/end和预期status，
+只在begin之后检查正文/child状态，排除输入命令中的路径、字符串所造成的假命中。
+例如cat命令中的 `/journey-native.txt` 不再能替代实际文件正文 `journey-native`。
+后台httpd仍须等待listening并通过宿主HTTP正文检查；协议end只表示后台启动命令返回。
+关机等待begin及QEMU退出/VBox poweroff，不等待不可能到来的end。
+
+### 本轮环境矩阵
+
+| 环境（2026-10-18） | 结果与范围 | 证据 |
+|---|---|---|
+| QEMU 8.2.2 KVM SMP4 512MiB，AHCI安装盘/e1000，无ISO | 完整三次冷启动旅程PASS：默认原生→离线启用Linux/MicroPython/HTTP→禁用保留原生；各命令序号/status核对 | [旅程检查](../tests/evidence/logs/shellproto-qemu-check.log)、[原生](../tests/evidence/logs/shellproto-qemu-native.log)、[Linux](../tests/evidence/logs/shellproto-qemu-linux.log)、[禁用](../tests/evidence/logs/shellproto-qemu-disabled.log) |
+| VBox 7.2.20 UEFI PIIX3 SMP4 512MiB，AHCI安装盘/e1000 NAT，无ISO | 相同三次冷启动旅程PASS，PS/2注入+串口，HTTP与ACPI关机通过 | [旅程检查](../tests/evidence/logs/shellproto-vbox-check.log)、[原生](../tests/evidence/logs/shellproto-vbox-native.log)、[Linux](../tests/evidence/logs/shellproto-vbox-linux.log)、[禁用](../tests/evidence/logs/shellproto-vbox-disabled.log) |
+| hosted | 全量0 failures；不模拟PS/2/ring3旅程 | [日志](../tests/evidence/logs/shellproto-hosted.log) |
+
+复现使用新的可丢弃目录（安装工具继续拒绝覆盖已有盘）：
+
+```sh
+scripts/demo-user-journey.sh prepare /tmp/capmix-protocol-qemu
+scripts/demo-user-journey.sh check-qemu /tmp/capmix-protocol-qemu
+# 待QEMU完全退出，再测VBox；两者不并发
+scripts/demo-user-journey.sh prepare /tmp/capmix-protocol-vbox
+scripts/demo-user-journey.sh check-vbox /tmp/capmix-protocol-vbox
+```
+
+旅程PASS不是全量selftest。完整命令及双轨限制仍见 [USER_JOURNEY](USER_JOURNEY.md)。
+
+补充回归：[QEMU四核Linux+interp debug串口](../tests/evidence/logs/shellproto-debug.log)、
+[完整检查链](../tests/evidence/logs/shellproto-debug-check.log)为全量0 failures（无NIC wire明确skip）。
+[内核构建](../tests/evidence/logs/shellproto-kernel.log)无新增warning/error，
+[默认产品ISO](../tests/evidence/logs/shellproto-product-iso.log)成功；
+[默认ISO启动](../tests/evidence/logs/shellproto-product.log)看到ready seq=1与提示符，空闲timeout=124，非全量自测。

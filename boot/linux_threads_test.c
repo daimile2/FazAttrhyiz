@@ -140,6 +140,61 @@ cleanup:
     return failed;
 }
 #endif
+/* Trusted stopped-image model checks the reuse safety boundary itself. */
+static int recycle_mechanism(void)
+{
+    int failed=0;cm_id_t pid=0,ids[48]={0};unsigned made=0;cm_proc_t *p=NULL;
+    uint64_t pages=cm_mm_free_pages()+cm_file_cache_pages(),charge,limit,after;cm_commit_stats(&charge,&limit);
+    cm_spawn_attr_t a={.path="/bin/linux-threads.elf",.qos=CM_QOS_USER_INTERACTIVE};
+    CHECK(cm_posix_spawn(&a,&pid)==0);p=cm_proc_lookup(pid);CHECK(p);
+    cm_linux_regs_t frame={0};p->linux_frame=&frame;cm_sched_set_current(p->main);
+    uint64_t u=0x7fc100;cm_id_t old=0;int slot=-1;
+    for(unsigned round=0;round<32;round++) {
+        int64_t tid=cm_linux_clone(0x1390f00,CM_ELF_STACK_TOP,u+4,u,u+16);CHECK(tid>0);
+        ids[made++]=(cm_id_t)tid;cm_proc_t *t=cm_proc_lookup((cm_id_t)tid);CHECK(t && t->pid>old);
+        CHECK(!old || !cm_proc_lookup(old));
+        if(slot<0)slot=t->elf_entry_slot;else CHECK(t->elf_entry_slot==slot);
+        CHECK(t->fd==p->fd && t->elf==p->elf && t->task==p->task);
+        cm_proc_finish_exit(t,0);uint32_t word=1;CHECK(!cm_copyin(p->elf,&word,u,4) && !word);
+        CHECK(t->main->id==t->elf_thread_id && cm_proc_lookup(t->pid)==t);
+        if(!round) {
+            /* Dead + clear-tid is insufficient while its scheduler context exists. */
+            int64_t other=cm_linux_clone(0x10f00,CM_ELF_STACK_TOP,0,0,0);CHECK(other>0);
+            ids[made++]=(cm_id_t)other;cm_proc_t *q=cm_proc_lookup((cm_id_t)other);
+            CHECK(q && q->elf_entry_slot!=slot && cm_proc_lookup(t->pid)==t);
+            cm_proc_finish_exit(q,0);cm_thread_reap(q->main);
+        }
+        old=t->pid;cm_thread_reap(t->main);CHECK(!cm_linux_futex_wake(p,u,1));
+        if(!round) {
+            __atomic_store_n(&p->linux_fd_owner,old,__ATOMIC_RELEASE);
+            int64_t other=cm_linux_clone(0x10f00,CM_ELF_STACK_TOP,0,0,0);
+            __atomic_store_n(&p->linux_fd_owner,0,__ATOMIC_RELEASE);
+            CHECK(other>0);ids[made++]=(cm_id_t)other;cm_proc_t *q=cm_proc_lookup((cm_id_t)other);
+            CHECK(q && q->elf_entry_slot!=slot && cm_proc_lookup(old)==t);
+            cm_proc_finish_exit(q,0);cm_thread_reap(q->main);
+        }
+    }
+    uint32_t marker=0xfeed,word=0;CHECK(!cm_copyout(p->elf,u,&marker,4));
+    int64_t tid=cm_linux_clone(0x10f00,CM_ELF_STACK_TOP,0,0,0);CHECK(tid>0);ids[made++]=(cm_id_t)tid;
+    cm_proc_t *t=cm_proc_lookup((cm_id_t)tid);CHECK(t && !t->linux_clear_tid && t->linux_fs==cm_arch_user_fs_get());
+    cm_proc_finish_exit(t,0);cm_thread_reap(t->main);CHECK(!cm_copyin(p->elf,&word,u,4) && word==marker);
+    for(unsigned i=0;i<7;i++){tid=cm_linux_clone(0x10f00,CM_ELF_STACK_TOP,0,0,0);CHECK(tid>0);ids[made++]=(cm_id_t)tid;}
+    CHECK(cm_linux_clone(0x10f00,CM_ELF_STACK_TOP,0,0,0)==-11);
+    CHECK(p->linux_grouped && cm_linux_dispatch(57,0,0,0,0)==-95 && cm_linux_dispatch(59,0,0,0,0)==-95);
+    kinfo("linux thread recycle mechanism: cycles=32 same-slot/TID-detach guarded-context/fd-owner clear-tid-reset shared-fd/mm retained cap=8 EAGAIN verified");
+cleanup:
+    for(unsigned i=0;i<made;i++) {
+        cm_proc_t *member=cm_proc_lookup(ids[i]);if(!member)continue;
+        if(!member->linux_thread_dead)cm_proc_finish_exit(member,137);
+        if(member->main && member->main->id==member->elf_thread_id)cm_thread_reap(member->main);
+    }
+    cm_sched_set_current(NULL);
+    if(p){p->linux_frame=NULL;cm_proc_finish_exit(p,0);if(p->main && p->main->id)cm_thread_reap(p->main);if(cm_proc_release_elf(pid))failed++;}
+    for(unsigned i=0;i<made;i++)if(cm_proc_lookup(ids[i]))failed++;
+    cm_commit_stats(&after,&limit);
+    if(after!=charge || cm_mm_free_pages()+cm_file_cache_pages()!=pages){kerr("linux thread recycle reclaim mismatch");failed++;}
+    return failed;
+}
 int cm_linux_threads_selftest(void)
 {
     if(!cm_linux_enabled()){kinfo("linux threads skipped: persona disabled");return 0;}
@@ -151,10 +206,12 @@ int cm_linux_threads_selftest(void)
     if(e)return 1;
     e=cm_vfs_write(f,cm_linux_threads_elf,sizeof(cm_linux_threads_elf))==sizeof(cm_linux_threads_elf)?cm_vfs_fsync(f):CM_ERR_IO;
     cm_vfs_close(f);if(e)return 1;
-    int failed=run("join",0,0);
+    int failed=recycle_mechanism();
+    failed+=run("join",0,0);
 #ifndef CAPMIX_HOSTED
     failed+=run("leader",0,0);failed+=run("group",9,0);
-    if(cm_cpu_count()>1){failed+=run("ap",0,1);failed+=pair();}
+    failed+=run("reuse",0,0);
+    if(cm_cpu_count()>1){failed+=run("ap",0,1);failed+=run("reuse",0,1);failed+=pair();}
 #else
     kinfo("linux threads hosted: futex errno/key/wake mechanism verified; CPL3 clone/blocking skipped");
 #endif

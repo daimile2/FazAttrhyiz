@@ -38,8 +38,8 @@ CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_THREAD = 0x10f00
 clone3本身仍未实现。不是把任何clone组合都转成fork。
 
 - 至多8个执行记录/组，含leader；与进程共用32个全局执行槽，不扩大MAX。
-  第一版已退出成员记录保留到组最终回收，因此是整个组生命周期累计8个，
-  不承诺反复创建/销毁无限线程。达到任一上限或生命周期门竞争返回EAGAIN；
+  已退出非leader在调度上下文/入口栈完成回收后，可在后续clone时回收记录并复用槽位；
+  不再累计耗尽8个名额。尚未完成回收的记录仍占名额。达到任一上限或生命周期门竞争返回EAGAIN；
   调用者须处理/重试，黄金探针对竞争做有界yield重试。
 - 用户自己准备栈和TLS；child_stack须16字节对齐，顶端下方16字节可写，
   否则EFAULT。没有自动栈/TLS分配、guard page或完整用户故障信号处理。
@@ -80,7 +80,7 @@ Linux ENOSYS/write等计数按执行记录记录；组leader退出摘要不自�
 | fork/wait4/execve | **仍拒绝EOPNOTSUPP** | 创建过线程后，成员退出也不解除限制 |
 | brk/mmap/munmap/mprotect | **仍拒绝EOPNOTSUPP** | 包括查询式brk；不做运行中映射扩缩或权限修改 |
 
-fd表仍32项，没有扩大线程/映射/commit容量。所有FILE复制仍经现有capability的DUPLICATE权限检查，
+本篇初版fd表32项，后续统一扩至64（[FD64](FD_TABLE.md)）；线程/映射/commit容量不因此扩大。所有FILE复制仍经现有capability的DUPLICATE权限检查，
 不提升原句柄权限。成功dup/dup2清新fd的CLOEXEC；本轮不允许用fcntl修改它。
 保留fd0–2是明确的首版限制：stdio_mask仍为每执行记录元数据，不声称已支持线程间重绑定标准流。
 没有创建线程的Linux进程继续使用原来完整的有界fd实现；CapMix原生ABI不走新门控。
@@ -128,7 +128,7 @@ CLONE_FS对应当前固定cwd等有限FS状态；SIGHAND共享已有默认/忽�
 固定ELF为 `tests/fixtures/linux-threads.elf`，SHA-256：
 
 ```
-0306559518f8fbeb4e5600a2b3adc7b4217e7f5e79ae0d8ca9df9c5d35dcb22e
+db9ae3206e1b4bd5fb0158273a4e6c9099a0f89110db6a87505627e0c42e083b
 ```
 
 配方为GNU GCC13.3.0/Binutils2.42，`tests/linux_hello.ld`及Linux OSABI标记脚本：
@@ -262,3 +262,51 @@ VBox初轮真实失败与诊断日志保留：[初轮](../tests/evidence/logs/th
 [最小 SIGCHLD](LINUX_SIGCHLD.md) 不提供线程信号 handler 或任意线程路由。
 线程组中拒绝设置 SIGCHLD action；普通 clone 线程退出不发送 SIGCHLD。
 进程级 fork 子进程整体结束的通知与自动回收，不等同于完整 pthread/作业控制。
+
+FD64 更新：探针满表循环与暂存数组共用 `include/capmix/fd_limits.h`，重建黄金ELF及哈希；
+不是删除满表断言。旧环境矩阵保留历史证据，本轮矩阵见 [FD_TABLE](FD_TABLE.md)。
+
+
+## 线程槽回收复用（2026-10-18）
+
+本节取代历史矩阵中的“生命周期累计8个”限制：仍最多8个组内执行记录（含leader），
+与进程共用32个全局槽。不是无限线程池或通用pthread。Linux默认关闭、clone旗标白名单不变。
+
+后续clone持现有生命周期门扫描本组非leader成员：必须已退出且线程dead，
+调度器已完成旧上下文、内核栈与入口槽回收，并且共享fd门不再引用旧TID，才可清除记录。
+clear-child-tid清零本身不能证明已经离开CPU；尚在退出的成员仍占位，允许暂时EAGAIN。
+回收前移除futex等待登记，旧TID不再可查；新成员获得新的递增TID。
+仅回收成员记录，不释放共享mm、task、fd表，不提前回收leader。
+最后一个已退出成员也可以保留到下一次clone或组最终回收。
+
+用户仍自行管理栈/TLS和join协议；没有新增pthread_join或自动用户栈分配。
+黄金ELF使用clear-child-tid/futex等待并有界重试EAGAIN，同一用户栈/TID地址连续32轮。
+组曾创建过线程的标记保持不变：即使其他成员都已退出，fork/exec/映射变更和迁移禁止点仍生效。
+
+验证分两层：hosted/guest机制测试32轮同槽复用，检查旧TID移除、共享对象保持、
+clear-tid状态重置、上下文未回收和fd门仍引用时禁止复用；累计超过8次后仍能创建7个并存成员，
+第9个含leader返回EAGAIN，最终页/commit完全归还。
+真实ring3黄金ELF在BSP与AP各32轮，验证TLS、栈、单调TID、clear-tid、结果与exit=0；
+原有join、leader先退出、exit_group、跨组futex隔离和迁移测试保留。
+
+日志关键字：`linux thread recycle mechanism: cycles=32`、`linux thread recycle: tgid=`、
+`linux threads reuse: rounds=32 joined=32`、`mode=reuse exit=0 pages/commit/reap=ok`。
+
+### 本轮环境矩阵
+
+| 环境（2026-10-18） | 结果与边界 | 证据 |
+|---|---|---|
+| hosted Linux开/关 | 全量0 failures；用户指令执行仍为hosted skip，机制测试实际执行 | [开](../tests/evidence/logs/threadreuse-hosted-on.log)、[关](../tests/evidence/logs/threadreuse-hosted-off.log) |
+| QEMU KVM SMP4 Linux+interp开，无网卡 | 全量0 failures；BSP/AP各32轮真实ring3；wire网络明确skip | [串口](../tests/evidence/logs/threadreuse-qemu-on.log)、[断言](../tests/evidence/logs/threadreuse-qemu-on-check.log) |
+| QEMU KVM SMP4 Linux关，无网卡 | 全量0 failures；原生路径回归，Linux用例明确skip | [串口](../tests/evidence/logs/threadreuse-qemu-off.log)、[断言](../tests/evidence/logs/threadreuse-qemu-off-check.log) |
+| QEMU KVM SMP4 双NUMA Linux+interp开，无网卡 | 全量0 failures；线程循环与迁移断言通过 | [串口](../tests/evidence/logs/threadreuse-numa.log)、[断言](../tests/evidence/logs/threadreuse-numa-check.log) |
+| VirtualBox 7.2.20 UEFI SMP4 Linux+interp开，无网卡 | 全量0 failures；BSP/AP循环与既有迁移用例通过；wire网络明确skip | [串口](../tests/evidence/logs/threadreuse-vbox-on.log)、[断言](../tests/evidence/logs/threadreuse-vbox-check.log) |
+
+[编译](../tests/evidence/logs/threadreuse-kernel.log)、[黄金ELF可复现校验](../tests/evidence/logs/threadreuse-fixture.log)。
+本轮未新增有网卡产品旅程测试，不将无网卡skip记为HTTP/nc线缆收发PASS。
+
+双节点使用 `-object memory-backend-ram,id=n0,size=256M -object memory-backend-ram,id=n1,size=256M
+-numa node,memdev=n0 -numa node,memdev=n1`。本机QEMU不支持旧式 `-numa node,mem=...`，
+[启动配置拒绝日志](../tests/evidence/logs/threadreuse-numa-config-rejected.log)保留；这不是guest测试PASS。
+
+默认产品ISO另验Linux关闭并到达用户shell提示符（30秒空闲timeout=124，非全量自测）：[串口](../tests/evidence/logs/threadreuse-product.log)、[默认ISO构建](../tests/evidence/logs/threadreuse-product-iso.log)。

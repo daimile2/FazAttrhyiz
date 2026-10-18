@@ -8,6 +8,50 @@
 #include "../build/linux_l5.inc"
 #include "../build/linux_l5_musl.inc"
 #define CHECK(x) do{if(!(x)){kerr("linux L5 line=%d: %s",__LINE__,#x);failed++;goto cleanup;}}while(0)
+static int file_mapping(void)
+{
+    int failed=0;cm_file_t *f=NULL;cm_elf_image_t *a=NULL,*b=NULL;
+    uint64_t charge,limit,now,pages=cm_mm_free_pages()+cm_file_cache_pages();cm_commit_stats(&charge,&limit);
+    CHECK(cm_elf_load("/bin/linux-mmap.elf",&a)==0);
+    CHECK(cm_vfs_open("/data/mmap-private.bin",CM_O_RDONLY,&f)==0);
+    CHECK(cm_elf_mmap_file(a,0,4096,3,2,f,0)==-95);
+    CHECK(cm_elf_mmap_file(a,0,4096,1,1,f,0)==-95);
+    CHECK(cm_elf_mmap_file(a,0,4096,1,2,f,1)==-22);
+    CHECK(cm_elf_mmap_file(a,0,12288,1,2,f,0)==-22);
+    CHECK(cm_elf_mmap_file(a,0,4096,1,2,f,8192)==-22);
+    uint64_t before;cm_commit_stats(&before,&limit);
+    int64_t va=cm_elf_mmap_file(a,0,8192,1,2,f,0);CHECK(va>=0);
+    cm_commit_stats(&now,&limit);CHECK(now==before+2);
+    CHECK(cm_elf_user_range(a,va,8192,4) && !cm_elf_user_range(a,va,1,2));
+    CHECK(*(char *)cm_elf_pointer(a,va)=='A' && *(char *)cm_elf_pointer(a,va+4096)=='B');
+    CHECK(!*(char *)cm_elf_pointer(a,va+5000) && !*(char *)cm_elf_pointer(a,va+8191));
+    char x='X';CHECK(cm_copyout(a,va,&x,1)!=0);
+    uint64_t held=limit-now;CHECK(cm_commit_charge(held)==0);
+    int64_t rejected=cm_elf_mmap_file(a,0,4096,1,2,f,0);cm_commit_uncharge(held);CHECK(rejected==-12);
+    CHECK(cm_vfs_seek(f,0,1)==0);
+    int64_t off=cm_elf_mmap_file(a,0,904,1,2,f,4096);CHECK(off>=0);
+    CHECK(*(char *)cm_elf_pointer(a,off)=='B' && !*(char *)cm_elf_pointer(a,off+904));
+    CHECK(cm_elf_munmap(a,off,4096)==0);
+    /* Only writable anonymous/image pages reserve a fork copy, not file RO pages. */
+    unsigned writable=0;for(unsigned i=0;i<a->npages;i++)writable+=!!(cm_elf_page_at(a,i)->flags&2);
+    cm_commit_stats(&before,&limit);CHECK(cm_elf_clone_cow(a,&b)==0);
+    cm_commit_stats(&now,&limit);CHECK(now==before+writable);
+    CHECK(cm_elf_pointer(a,va)==cm_elf_pointer(b,va));
+    cm_vfs_close(f);f=NULL;
+    CHECK(cm_elf_munmap(a,va,8192)==0);
+    CHECK(*(char *)cm_elf_pointer(b,va+4096)=='B');
+    /* Even the dynamic protection helper cannot upgrade file snapshots. */
+    b->rtld=1;CHECK(cm_elf_mprotect(b,va,8192,3)==-95);b->rtld=0;
+    CHECK(cm_elf_munmap(b,va,8192)==0);
+    kinfo("linux file mmap mechanism: readonly snapshot offset/EOF/zero-tail fd-close fork-share write/shared denied commit-limit verified");
+cleanup:
+    if(f)cm_vfs_close(f);
+    cm_elf_destroy(a);cm_elf_destroy(b);
+    cm_commit_stats(&now,&limit);
+    if(now!=charge || cm_mm_free_pages()+cm_file_cache_pages()!=pages){kerr("linux file mmap reclaim mismatch");failed++;}
+    if(!failed)kinfo("linux file mmap reclaim: pages/commit baseline restored");
+    return failed;
+}
 static int mechanism(void)
 {
     int failed=0;cm_elf_image_t *a=NULL,*b=NULL,*c=NULL,*denied=NULL;
@@ -93,6 +137,13 @@ int cm_linux_l5_selftest(void)
     CHECK(cm_vfs_open("/bin/musl-mmap.elf",CM_O_CREAT|CM_O_TRUNC|CM_O_WRONLY,&f)==0);
     CHECK(cm_vfs_write(f,cm_linux_l5_musl,sizeof(cm_linux_l5_musl))==sizeof(cm_linux_l5_musl));
     CHECK(cm_vfs_fsync(f)==0);cm_vfs_close(f);f=NULL;
+    CHECK(cm_vfs_mkdir("/data")==0 || cm_vfs_stat("/data",&(cm_stat_t){0})==0);
+    CHECK(cm_vfs_open("/data/mmap-private.bin",CM_O_CREAT|CM_O_TRUNC|CM_O_WRONLY,&f)==0);
+    char buffer[1000];memset(buffer,'A',sizeof(buffer));
+    for(unsigned i=0;i<4;i++)CHECK(cm_vfs_write(f,buffer,1000)==1000);
+    CHECK(cm_vfs_write(f,buffer,96)==96);memset(buffer,'B',sizeof(buffer));
+    CHECK(cm_vfs_write(f,buffer,904)==904);CHECK(cm_vfs_fsync(f)==0);cm_vfs_close(f);f=NULL;
+    failed+=file_mapping();
     failed+=mechanism();
 #ifndef CAPMIX_HOSTED
     for(unsigned test=0;test<2;test++) {

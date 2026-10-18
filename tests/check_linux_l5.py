@@ -15,13 +15,16 @@ if a.disabled:
     assert 'linux L5 skipped: persona disabled; native ABI retained' in s
 else:
     for marker in ('linux L5 selftest: PASS (0 failures)',
+                   'linux file mmap mechanism: readonly snapshot offset/EOF/zero-tail fd-close fork-share write/shared denied commit-limit verified',
+                   'linux file mmap reclaim: pages/commit baseline restored',
                    'window=16MiB quota=8MiB touched=2048-image pages zero/limit/partial-unmap verified',
                    'linux L5 COW commit: reserve charged, split charge unchanged',
                    'linux L5 partial allocation failure: data/PT/descriptor/commit rollback=ok',
                    'linux L5 reclaim: pages/commit/backings/reserves baseline restored'):
         assert marker in s,marker
     if not a.hosted:
-        for marker in ('linux L5 user mmap: 1MiB touch + COW fork + unmap ok',
+        for marker in ('linux file mmap user: open/map/read offset/zero-tail close/fork/unmap write/shared/badfd rejected ok',
+                       'linux L5 user mmap: 1MiB touch + COW fork + unmap ok',
                        'linux L5 musl1.2.5: malloc=2MiB mmap=1MiB verified',
                        'linux L5 CPL3 mmap/fork/munmap + musl allocator verified: exit=0 ENOSYS=0'):
             assert marker in s,marker

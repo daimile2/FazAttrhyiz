@@ -21,6 +21,7 @@ else:
     assert hashlib.sha256(fixture.read_bytes()).hexdigest()==expected
     assert f'linux threads fixture: sha256={expected} bytes={fixture.stat().st_size}' in s
     assert 'linux threads selftest: PASS (0 failures)' in s
+    assert 'linux thread recycle mechanism: cycles=32 same-slot/TID-detach guarded-context/fd-owner clear-tid-reset shared-fd/mm retained cap=8 EAGAIN verified' in s
     assert 'fd-empty=1 file/pipe-handles=0 gate=idle' in s
     assert 'linux threads verified: mode=join exit=0 pages/commit/reap=ok' in s
     if a.hosted:
@@ -29,6 +30,9 @@ else:
     else:
         for mode,code in [('leader',0),('group',9),('ap',0)]:
             assert f'linux threads verified: mode={mode} exit={code} pages/commit/reap=ok' in s
+        assert s.count('linux threads reuse: rounds=32 joined=32 TID-monotonic TLS/stack/clear-tid verified; mutation/migration denied')==2
+        assert s.count('linux threads verified: mode=reuse exit=0 pages/commit/reap=ok')==2
+        assert 'linux thread recycle: tgid=' in s
         assert s.count('linux threads: shared-mm TLS futex join ok')==4
         assert s.count('linux thread fd: shared dup/close/offset/full/reject ok')==4
         assert 'recursive console writev ok' in s

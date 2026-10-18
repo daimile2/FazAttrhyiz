@@ -1,0 +1,4 @@
+cc -nostdlib -static -no-pie -Wl,--build-id=none,-z,max-page-size=0x1000,-T,tests/linux_hello.ld -o build/linux-mmap.elf tests/linux_l5.S
+/usr/bin/ld: section .data LMA [0000000000401000,0000000000401003] overlaps section .text LMA [00000000004000b0,0000000000401819]
+collect2: error: ld returned 1 exit status
+make: *** [Makefile:379: build/linux-mmap.elf] Error 1

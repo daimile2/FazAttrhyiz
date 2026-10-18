@@ -723,6 +723,7 @@ int cm_native_file_acquire(int fd,uint32_t need,cm_object_t **out)
 int64_t cm_native_dup2(int old,int target)
 {
     cm_proc_t *p=cm_proc_current();cm_object_t *obj=NULL;
+    if(!p || target<0 || target>=CM_FD_MAX)return CM_ERR_INVAL;
     int e=cm_native_file_acquire(old,CM_RIGHT_DUPLICATE,&obj);if(e)return e;
     cm_obj_release(obj);
     if(old==target)return target;

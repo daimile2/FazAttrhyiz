@@ -18,9 +18,15 @@ if a.disabled:
     assert 'linux migration skipped: persona disabled' in s
 else:
     assert 'linux migration selftest: PASS (0 failures) pages/commit/reap verified' in s
+    assert s.count('linux migration endpoint guards: dup=allowed in-flight/foreign-alias/nested=EAGAIN group=EOPNOTSUPP verified') == 2
     if a.hosted:
         assert 'linux migration hosted: validation/group-denied verified; hardware handoff skipped' in s
     else:
+        assert s.count('linux migration endpoints: pipe+UDP queued/dup cross-CPU read/write verified') == 2
+        if a.wire or 'linux migration TCP: connected endpoint cross-CPU payload verified' in s:
+            assert s.count('linux migration TCP: connected endpoint cross-CPU payload verified') == 2
+        else:
+            assert 'linux migration TCP wire skipped:' in s
         assert s.count('linux migration user: CPU0/1 roundtrip FS/TLS syscall COW ok') == 2
         for rollback in ('not-injected', 'ok'):
             assert ('rounds=4 migrations=8 rollback=' + rollback +

@@ -44,11 +44,12 @@ L4a 仍只是固定解释器交接，不是真 ld.so 重定位/符号解析。
 | 57 | fork() | 既有Linux-only fork，新增显式逐物理backing/reserve的commit所有权 |
 
 非FIXED hint落在arena内且有连续空间时采用；否则从arena首地址first-fit，绝不覆盖
-已有页。file mmap、MAP_SHARED、MAP_FIXED、其他flags或prot组合返回
+已有页。本节记录L5匿名接口；后续只读文件PRIVATE扩展见 [LINUX_FILE_MMAP](LINUX_FILE_MMAP.md)。
+MAP_SHARED、MAP_FIXED、其他未支持flags或prot组合返回
 `-EOPNOTSUPP=-95`（检查支持组合在先）。支持组合下零长度、长度大于arena或
 非零offset返回 `-EINVAL=-22`；额度/连续VA/commit/物理页/引用槽不足返回
 `-ENOMEM=-12`。非法munmap返回EINVAL。未实现的其他syscall仍 `-ENOSYS` 并计数。
-不支持mprotect、PROT_NONE guard page、file mmap、MAP_SHARED、mremap、munmap
+L5首版不支持mprotect、PROT_NONE guard page、file mmap、MAP_SHARED、mremap、munmap
 释放PT_LOAD/brk；没有新增按需缺页分配。NX状态不因本轮改变。
 
 修改在同一进程既有固定CPU/单线程纪律下完成；没有为多线程同地址空间设计锁。

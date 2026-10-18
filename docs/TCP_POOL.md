@@ -22,8 +22,8 @@
 多个监听器的 backlog 之和也不能越过全局池。backlog 约束的是未 accept 队列，
 accept 后该连接继续占全局槽，但从监听器队列摘除。
 
-原生 task 的句柄表仍为 256；Linux 每进程 fd 表仍为 32（包含标准 I/O、文件、UDP 等），
-没有为了填满全局池扩大 Linux ABI。仅有 stdio 时最多还能用 29 个 fd，其他资源限制可更早出现。
+原生 task 的句柄表仍为256。TCP32原验收轮Linux fd表为32，当时没有为了填满池扩大ABI。
+后续[FD64](FD_TABLE.md)统一扩至64（包括stdio/FILE/UDP等），仅保留stdio时还有61槽；其他共享资源仍可先耗尽。
 Linux L3 自测保留一个可用 fd，并用直接 capability 补足全局槽，分别验证 ENOBUFS 与 EMFILE。
 
 ## 内存与 no-overcommit

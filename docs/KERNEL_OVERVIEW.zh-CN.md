@@ -266,7 +266,7 @@ selftest 自动等价 PASS。无 VMX 路径与“整套 TCG 工作负载已验�
 | ELF 用户栈 | 4 页 = 16 KiB | 栈顶0x800000；初始RSP随argv/envp大小变化并保持16B对齐 |
 | argv/envp | 各最多32项，每项255B+NUL，总字符串4096B含NUL | argc≥1；缺argv时默认镜像路径；不自动继承任意环境 |
 | ELF 并发 | 全局 32 proc 槽，包含 PID1/退出记录 | shell 最多 8 后台 + 1 前台；受任务/页/commit 等约束 |
-| 每 proc fd | 32 槽 | FILE capability适配；标准fd保留，非完整POSIX描述符功能 |
+| 每 proc fd | 64 槽（0..63；见 [FD_TABLE](FD_TABLE.md)） | FILE capability适配；标准fd保留，非完整POSIX描述符功能 |
 | 文件单次read/write | 1 MiB含 | 完整用户范围先校验，再用4KiB临时页分块copyin/out；实际映射限制可更小 |
 | VFS mount 槽 | 16 | `fs/vfs.c` |
 | VFS open-file 槽 | 64 | 全局池 |
@@ -1146,7 +1146,8 @@ MSS、单待确认段、RTO、原生/Linux I/O 与 fd 上限不变。
 
 新增 Linux 203 `sched_setaffinity` 的单目标、自身迁移子集；syscall 完整退栈后，
 旧 CPU 调度器重建入口现场，目标 CPU 恢复用户寄存器与 FS/TLS。
-线程组、fork 子进程/未回收子进程、socket/pipe 持有者暂拒绝；没有自动负载均衡。
+线程组、fork 子进程/未回收子进程仍拒绝；单线程持socket/pipe可在返回安全点迁移，
+同任务dup允许，外部同端点别名或在途引用返回EAGAIN，见 [迁移限制与锁序](LINUX_MIGRATION.md)。没有自动负载均衡。
 跨 CPU 往返、失败回滚、迁移后真实 fork/COW 与页/commit 回收已在 QEMU 和 VBox
 本轮验证。范围、禁止点与仓库证据见 [LINUX_MIGRATION.md](LINUX_MIGRATION.md)。
 

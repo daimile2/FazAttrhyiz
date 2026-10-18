@@ -21,6 +21,7 @@ assert 1024<=a.port<=65535
 assert not list(lab.glob('journey-*.log')), 'logs already exist; choose a new prepared lab'
 # Do not replace someone's VM, medium or image.
 vm='CapMix-Journey-'+str(time.time_ns())
+sequence=1
 proc=None;monitor=None;created=False;running=False;medium=None;log=None
 
 def call(*args):
@@ -43,7 +44,7 @@ def wait(marker,offset=0,timeout=30):
     raise AssertionError('timeout waiting for '+marker+'; see '+str(log))
 
 def boot(stage):
-    global proc,monitor,running,log,medium
+    global proc,monitor,running,log,medium,sequence
     log=lab/('journey-'+stage+'.log')
     if a.backend=='qemu':
         sock=lab/'monitor.sock'
@@ -60,6 +61,8 @@ def boot(stage):
         call('VBoxManage','modifyvm',vm,'--uart-mode1','file',log)
         call('VBoxManage','startvm',vm,'--type','headless')
     running=True
+    sequence=1
+    wait('[SHELL v=1 event=ready seq=1 status=0]')
     wait('capmix> ')
     assert 'root=disk' in text() and 'boot mode: product' in text()
     if a.backend=='qemu':
@@ -83,8 +86,19 @@ def send(command):
             call('VBoxManage','controlvm',vm,'keyboardputscancode',*[f'{n:02x}' for n in seq])
             time.sleep(.025)
 
-def command(cmd,marker):
-    offset=len(text());send(cmd);return wait(marker,offset)
+def command(cmd,marker,status=0):
+    global sequence
+    offset=len(text());send(cmd)
+    begin=f'[SHELL v=1 event=begin seq={sequence} status=0]'
+    s=wait(begin,offset)
+    # Exclude every echoed input byte, even if it contains the expected result.
+    start=offset+s.index(begin)+len(begin)
+    wait(f'[SHELL v=1 event=end seq={sequence} status={status}]',start)
+    sequence+=1
+    wait(f'[SHELL v=1 event=ready seq={sequence} status=0]',start)
+    result=wait(marker,start)
+    print(f'shell protocol: seq={sequence-1} status={status} boundaries=verified',flush=True)
+    return result
 
 def wait_vbox_off():
     # A shutdown-time state query failed once here; retry reads with diagnostics.
@@ -103,7 +117,8 @@ def wait_vbox_off():
 
 def stop(stage):
     global running,monitor
-    send('poweroff')
+    offset=len(text());send('poweroff')
+    wait(f'[SHELL v=1 event=begin seq={sequence} status=0]',offset)
     if a.backend=='qemu':
         proc.wait(timeout=20);assert proc.returncode==0
         monitor.close();monitor=None
@@ -158,7 +173,7 @@ try:
     boot('disabled')
     assert 'journey-native' in command('run /bin/cat.elf /journey-native.txt','exit=0 reap=ok')
     assert 'micropython golden\n42\n' in command('run /bin/cat.elf /journey-python.txt','exit=0 reap=ok')
-    s=command('run /bin/micropython.elf /data/linux/micropython-demo.py','shell error=-7')
+    s=command('run /bin/micropython.elf /data/linux/micropython-demo.py','shell error=-7',status=-7)
     assert 'linux persona disabled' in s
     command('run /bin/hello.elf','exit=0 reap=ok')
     stop('disabled')

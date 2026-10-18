@@ -1,0 +1,3 @@
+PERF_SUMMARY date=2026-10-18T11:29:09+00:00 backend=vbox smp=1 nic=e1000 linux=1 samples=3 http_rps_median=8.604 hush_KiBps_median=30.89 verified=1
+PERF_SUMMARY date=2026-10-18T11:29:09+00:00 backend=vbox smp=4 nic=e1000 linux=1 samples=3 http_rps_median=8.494 hush_KiBps_median=41.19 verified=1
+performance evidence: PASS (read-only arithmetic/CPU/payload assertions, no VMs launched)

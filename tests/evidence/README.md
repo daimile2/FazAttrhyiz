@@ -213,3 +213,69 @@ QEMU 与 VBox 各两次无 ISO 冷启动，原生/Linux HTTP 按 hostname、alia
 [VBox UEFI四核全量](logs/sigchld-vbox-on.log)、[检查](logs/sigchld-vbox-on-check.log)、
 [hosted开](logs/sigchld-hosted-on.log)、[hosted关](logs/sigchld-hosted-off.log)。
 均有全量0 failures；无NIC的wire项明确skip。hush JOB/TRAP未开启。
+
+## 固定负载性能基线（2026-10-18）
+
+[USER_JOURNEY矩阵与复现](../../docs/USER_JOURNEY.md#产品路径性能基线2026-10-18固定负载不是性能上限)。
+同一固定负载、1/4 vCPU、512MiB、AHCI无ISO、e1000、Linux=1/interp=0：
+[QEMU数字](logs/perf-qemu-numbers.log)、[VBox数字](logs/perf-vbox-numbers.log)、
+[QEMU原始秒数/配置](logs/perf-qemu-results.log)、[VBox原始秒数/配置](logs/perf-vbox-results.log)、
+[QEMU检查](logs/perf-qemu-summary.log)、[VBox检查](logs/perf-vbox-summary.log)。
+HTTP每批20次、预热8次；hush每次32×6000B、预热一次，各测3次并校验全部输出。
+性能PASS不等于全量selftest；吞吐包括端到端开销，未关闭日志或调优内核。
+原型MicroPython文件校验失败、VBox测前carrier-down失败均保留并在矩阵解释，未计入数字。
+
+## FD64（2026-10-18）
+
+[容量/内存/错误码与矩阵](../../docs/FD_TABLE.md)。原生和Linux共用64槽，新增192B/proc记录、
+固定32记录池增加6144B静态元数据；不是扩大VFS/TCP后端或改变Linux默认开关。
+[hosted开](logs/fd64-hosted-on.log)、[关](logs/fd64-hosted-off.log)、
+[QEMU开](logs/fd64-qemu-on.log)、[关](logs/fd64-qemu-off.log)、
+[VBox UEFI四核](logs/fd64-vbox-on.log)均全量0 failures。
+[产品httpd/hush](logs/fd64-product-check.log)另验无ISO网络和管道正文。
+首轮旧线程ELF32边界导致3 failures、旧检查器挑错第一次fork的失败均保留，见矩阵关闭说明。
+
+## 线程组槽回收复用（2026-10-18）
+
+[生命周期与限制表](../../docs/LINUX_THREADS.md)。仍为含leader最多8个组内记录；
+调度上下文回收后，后续clone可移除退出成员旧TID并复用槽，不再累计耗尽。
+[hosted开](logs/threadreuse-hosted-on.log)、[关](logs/threadreuse-hosted-off.log)、
+[QEMU开](logs/threadreuse-qemu-on.log)、[关](logs/threadreuse-qemu-off.log)、
+[双NUMA](logs/threadreuse-numa.log)、[VBox UEFI四核](logs/threadreuse-vbox-on.log)均全量0 failures。
+真实guest BSP/AP各32轮clone/join；上下文/fd-owner未释放禁止复用、cap=8仍EAGAIN、页/commit回收均验证。
+无网卡wire测试明确skip；hosted不执行ring3。旧NUMA命令配置拒绝日志保留，改memdev后实际通过。
+
+## Linux只读PRIVATE文件映射（2026-10-18）
+
+[接口/commit/fork/矩阵](../../docs/LINUX_FILE_MMAP.md)。逐页预占的驻留快照，可写/shared明确拒绝，
+fork只读共享、不额外预占这些只读页的可写副本。
+[hosted开](logs/filemmap-hosted-on.log)、[关](logs/filemmap-hosted-off.log)、
+[QEMU开](logs/filemmap-qemu-on.log)、[关](logs/filemmap-qemu-off.log)、
+[VBox UEFI四核](logs/filemmap-vbox-on.log)均全量0 failures；guest实际open/map/read/close/fork/unmap。
+完整检查链含hush、静态/动态/TLS黄金；无网卡wire测试明确skip，hosted不执行ring3。
+首轮探针文本段超链接布局的构建失败保留；移入数据段后最终矩阵通过。
+
+## 持socket/pipe受控迁移（2026-10-18）
+
+[禁止点、所有权、锁序与矩阵](../../docs/LINUX_MIGRATION.md)。单线程同任务dup允许，
+外部同端点别名/在途额外引用/嵌套syscall拒绝；旧CPU离开后才允许目标CPU续跑，RX队列原位保持。
+[hosted开](logs/endpoint-migrate-hosted-on.log)、[关](logs/endpoint-migrate-hosted-off.log)、
+[QEMU无NIC开](logs/endpoint-migrate-qemu-on.log)、[关](logs/endpoint-migrate-qemu-off.log)、
+[e1000 wire](logs/endpoint-migrate-qemu-e1000.log)、[virtio-net wire](logs/endpoint-migrate-qemu-virtio.log)、
+[VBox四核](logs/endpoint-migrate-vbox-on.log)均全量0 failures。
+pipe/UDP排队后跨CPU读回；有网卡时真实TCP连接保持，CPU0/1收发payload，注入回滚与端点/页/commit回收通过。
+首轮无NIC仍连接echo导致失败、诊断与最外层检查器误传--wire拒绝均保留，未算作PASS。
+本轮未另测双NUMA或无ISO产品盘旅程；无NIC的TCP wire明确skip。
+
+## shell控制台前缀协议（2026-10-18）
+
+[协议/限制/矩阵](../../docs/SHELL.md)、[旅程更新](../../docs/USER_JOURNEY.md)。
+用户shell用单次console写输出ready/begin/end序号记录，内核日志仍用既有级别前缀；
+输入仍逐键回显，不改调度，不实现多tty。脚本排除begin之前的回显再校验结果。
+[QEMU旅程](logs/shellproto-qemu-check.log)、[VBox旅程](logs/shellproto-vbox-check.log)均完整三次无ISO冷启动PASS，
+含文件/重定向、MicroPython、宿主HTTP正文、禁用Linux保留原生、ACPI关机。
+每条返回命令有seq/status boundaries=verified；产品旅程PASS不等于全量selftest。
+[hosted](logs/shellproto-hosted.log)另为全量0 failures，PS/2/ring3路径由真实VM旅程覆盖。
+
+本轮另有[QEMU四核debug](logs/shellproto-debug.log)、[完整断言链](logs/shellproto-debug-check.log)全量0 failures；
+[默认产品ISO启动](logs/shellproto-product.log)仅到提示符，空闲timeout=124，不冒充全量PASS。

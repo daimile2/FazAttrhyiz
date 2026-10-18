@@ -60,8 +60,8 @@ static int unit(void)
     CHECK(cm_syscall(0,(uint64_t)fd,SCRATCH+768,1024,0)==sizeof(payload));
     CHECK(cm_syscall(54,(uint64_t)fd,1,2,0)==-38 && cm_syscall(55,(uint64_t)fd,1,2,0)==-38 && p->linux_enosys==2);
     int64_t handles[CM_TCP_CONNECTIONS];int native_fill[CM_TCP_CONNECTIONS];unsigned count=0,native_count=0,fd_room=0;
-    /* Global capacity now exceeds one Linux process's fd budget. Keep one fd
-     * free to distinguish backend ENOBUFS from per-process EMFILE. */
+    /* Leave an fd free so backend ENOBUFS is distinct from per-process
+     * EMFILE, regardless of the relative TCP and fd table capacities. */
     for(unsigned i=0;i<CM_FD_MAX;i++)fd_room+=p->fd[i]<0;
     CHECK(fd_room>2);
     unsigned linux_count=CM_MIN(CM_TCP_CONNECTIONS-tcp,fd_room-1);

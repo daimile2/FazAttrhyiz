@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "<repo>/scripts/perf-baseline.py", line 195, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 169, in main
+    g.boot();g.command(f'run /bin/httpd.elf 8080 {8+a.samples*a.requests} &','httpd accept=nonblocking')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 98, in command
+    start=time.perf_counter();self.send('\n');s=self.wait(marker,offset)
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 55, in wait
+    raise AssertionError('timeout '+marker+'; see '+str(self.log))
+AssertionError: timeout httpd accept=nonblocking; see <lab>/capmix-perf-vbox-20261018/smp1-serial.log

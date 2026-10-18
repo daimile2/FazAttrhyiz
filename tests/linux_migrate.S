@@ -3,6 +3,10 @@
 .section .text
 .global _start
 _start:
+    cmpq $1,(%rsp)
+    jbe 1f
+    movq $1,wire(%rip)
+1:
     mov $158,%eax
     mov $0x1002,%edi
     lea tls(%rip),%rsi
@@ -24,8 +28,10 @@ _start:
     call cpu
     cmpl $0,where(%rip)
     jne fail
+    call endpoints_open
     xor %r12d,%r12d
 again:
+    call endpoints_write
     movq $2,mask(%rip)
     call move
     cmp $-11,%rax
@@ -41,6 +47,7 @@ moved:
     call cpu
     cmpl $1,where(%rip)
     jne fail
+    call endpoints_read
     mov %fs:0,%rax
     cmp tls(%rip),%rax
     jne fail
@@ -86,6 +93,7 @@ moved:
 after_fork:
     mov $24,%eax /* schedule/preempt on destination, then another syscall */
     syscall
+    call endpoints_write
     movq $1,mask(%rip)
     call move
     test %rax,%rax
@@ -93,6 +101,7 @@ after_fork:
     call cpu
     cmpl $0,where(%rip)
     jne fail
+    call endpoints_read
     movq %fs:8,%rax
     lea 1(%r12),%rdx
     cmp %rdx,%rax
@@ -105,6 +114,19 @@ after_fork:
     inc %r12
     cmp $4,%r12
     jb again
+    mov $1,%eax
+    mov $1,%edi
+    lea endpoint_message(%rip),%rsi
+    mov $endpoint_message_end-endpoint_message,%edx
+    syscall
+    cmpq $0,wire(%rip)
+    je 2f
+    mov $1,%eax
+    mov $1,%edi
+    lea tcp_message(%rip),%rsi
+    mov $tcp_message_end-tcp_message,%edx
+    syscall
+2:
     movq $1,report(%rip)
     mov $1,%eax
     mov $1,%edi
@@ -117,7 +139,126 @@ after_fork:
     xor %edi,%edi
     syscall
     ud2
+endpoints_open:
+    movq $10,report(%rip)
+    mov $22,%eax
+    lea pipefds(%rip),%rdi
+    syscall
+    test %rax,%rax
+    jne fail
+    movq $11,report(%rip)
+    mov $41,%eax
+    mov $2,%edi
+    mov $2,%esi
+    xor %edx,%edx
+    syscall
+    test %rax,%rax
+    js fail
+    movq $12,report(%rip)
+    mov %rax,udpfd(%rip)
+    mov %rax,%rdi
+    mov $49,%eax
+    lea udp_address(%rip),%rsi
+    mov $16,%edx
+    syscall
+    test %rax,%rax
+    jne fail
+    movq $13,report(%rip)
+    mov $42,%eax
+    mov udpfd(%rip),%rdi
+    syscall
+    test %rax,%rax
+    jne fail
+    movq $14,report(%rip)
+    mov $33,%eax
+    mov udpfd(%rip),%rdi
+    mov $20,%esi
+    syscall
+    cmp $20,%rax
+    jne fail
+    movq $15,report(%rip)
+    mov $41,%eax
+    mov $2,%edi
+    mov $1,%esi
+    xor %edx,%edx
+    syscall
+    test %rax,%rax
+    js fail
+    mov %rax,tcpfd(%rip)
+    cmpq $0,wire(%rip)
+    je 1f
+    mov $42,%eax
+    mov tcpfd(%rip),%rdi
+    lea tcp_address(%rip),%rsi
+    mov $16,%edx
+    syscall
+    test %rax,%rax
+    jne fail
+1:  ret
+endpoints_write:
+    movq $20,report(%rip)
+    mov $1,%eax
+    mov pipefds+4(%rip),%edi
+    lea payload(%rip),%rsi
+    mov $8,%edx
+    syscall
+    cmp $8,%rax
+    jne fail
+    movq $21,report(%rip)
+    mov $1,%eax
+    mov $20,%edi
+    syscall
+    cmp $8,%rax
+    jne fail
+    cmpq $0,wire(%rip)
+    je 1f
+    mov $1,%eax
+    mov tcpfd(%rip),%rdi
+    syscall
+    cmp $8,%rax
+    jne fail
+1:  ret
+endpoints_read:
+    movq $30,report(%rip)
+    xor %eax,%eax
+    mov pipefds(%rip),%edi
+    lea received(%rip),%rsi
+    mov $8,%edx
+    syscall
+    cmp $8,%rax
+    jne fail
+    mov received(%rip),%rax
+    cmp payload(%rip),%rax
+    jne fail
+    xor %eax,%eax
+    mov udpfd(%rip),%rdi
+    syscall
+    cmp $8,%rax
+    jne fail
+    mov received(%rip),%rax
+    cmp payload(%rip),%rax
+    jne fail
+    cmpq $0,wire(%rip)
+    je 2f
+    xor %r14d,%r14d
+1:  xor %eax,%eax
+    mov tcpfd(%rip),%rdi
+    lea received(%rip),%rsi
+    add %r14,%rsi
+    mov $8,%edx
+    sub %r14,%rdx
+    syscall
+    test %rax,%rax
+    jle fail
+    add %rax,%r14
+    cmp $8,%r14
+    jb 1b
+    mov received(%rip),%rax
+    cmp payload(%rip),%rax
+    jne fail
+2:  ret
 move:
+    movq $40,report(%rip)
     mov $203,%eax
     xor %edi,%edi
     mov $8,%esi
@@ -150,6 +291,10 @@ fail:
     syscall
     ud2
 .section .rodata
+endpoint_message: .ascii "linux migration endpoints: pipe+UDP queued/dup cross-CPU read/write verified\n"
+endpoint_message_end:
+tcp_message: .ascii "linux migration TCP: connected endpoint cross-CPU payload verified\n"
+tcp_message_end:
 message: .ascii "linux migration user: CPU0/1 roundtrip FS/TLS syscall COW ok\n"
 message_end:
 .section .data
@@ -161,6 +306,14 @@ fs_report: .quad 0
 status: .quad 0
 .org 0x80
 tls: .quad 0x1122334455667788,0
+wire: .quad 0
+pipefds: .long -1,-1
+udpfd: .quad -1
+tcpfd: .quad -1
+payload: .quad 0x123456789abcdef
+received: .quad 0
+udp_address: .byte 2,0,0x4a,0x98,127,0,0,1,0,0,0,0,0,0,0,0
+tcp_address: .byte 2,0,0x27,0x0e,10,0,2,2,0,0,0,0,0,0,0,0
 /* Keep independent COW page: extra PT_LOAD data page within same segment. */
 .org 0x1000
 cow_word: .quad 0

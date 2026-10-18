@@ -21,6 +21,7 @@ static uint64_t *table(uint64_t p) { return (void *)(uintptr_t)(p + cm_hhdm()); 
  * Each used slot owns exactly one commit page, including reserved slots. */
 #define ELF_REFS 8193u
 #define PAGE_ANON 0x100u
+#define PAGE_FILE 0x200u /* eager read-only private snapshot; no mprotect upgrade */
 _Static_assert(CM_ELF_MAX_PAGES*sizeof(cm_elf_page_t)<=CM_PAGE_SIZE,"page descriptor chunk");
 typedef struct {void *page;unsigned refs,writable,reserve,next;} elf_ref_t;
 static elf_ref_t refs[ELF_REFS];
@@ -550,14 +551,23 @@ uint64_t cm_elf_brk(cm_elf_image_t *im,uint64_t wanted)
     trim_descriptors(im);im->brk_end=wanted;return wanted;
 }
 
-/* Linux anonymous PRIVATE only: eagerly zero and reserve every payload page.
+/* Linux PRIVATE anonymous or read-only file snapshot: reserve every payload page.
  * No fixed replacement, file sharing, lazy faults or overcommit. */
-int64_t cm_elf_mmap(cm_elf_image_t *im,uint64_t hint,uint64_t len,uint64_t prot,
-                    uint64_t flags,uint64_t fd,uint64_t offset)
+static int64_t mmap_private(cm_elf_image_t *im,uint64_t hint,uint64_t len,uint64_t prot,
+                    uint64_t flags,cm_file_t *file,uint64_t offset)
 {
-    (void)fd; /* Linux ignores fd for MAP_ANONYMOUS. */
-    if(!im || im->abi!=CM_ABI_LINUX || flags!=0x22 || prot!=3)return -95;
-    if(!len || len>CM_LINUX_USER_MAX-CM_LINUX_MMAP_MIN || offset)return -22;
+    if(!im || im->abi!=CM_ABI_LINUX)return -95;
+    if(file ? (flags!=2 || prot!=1) : (flags!=0x22 || prot!=3))return -95;
+    if(!len || len>CM_LINUX_USER_MAX-CM_LINUX_MMAP_MIN ||
+       (file ? (offset&CM_PAGE_MASK)!=0 : offset!=0))return -22;
+    uint64_t bytes=len;
+    if(file) {
+        cm_stat_t st;if(cm_vfs_fstat(file,&st))return -5;
+        if(st.kind!=CM_INO_FILE)return -19;
+        /* No SIGBUS framework: reject ranges wholly beyond EOF pages. */
+        if(offset>=st.size || (len-1)/CM_PAGE_SIZE>(st.size-offset-1)/CM_PAGE_SIZE)return -22;
+        bytes=CM_MIN(CM_ALIGN_UP(len,CM_PAGE_SIZE),st.size-offset);
+    }
     len=CM_ALIGN_UP(len,CM_PAGE_SIZE);uint64_t n=len/CM_PAGE_SIZE;
     if(n>cm_elf_page_limit(im)-im->npages)return -12;
     uint64_t start=hint&~CM_PAGE_MASK;
@@ -577,12 +587,31 @@ int64_t cm_elf_mmap(cm_elf_image_t *im,uint64_t hint,uint64_t len,uint64_t prot,
 found:
     if(cm_commit_charge(n))return -12;
     im->pending+=n;unsigned before=im->npages;uint64_t va;
-    for(va=start;va<start+len;va+=CM_PAGE_SIZE)if(add_page(im,va,6|PAGE_ANON)) {
-        unmap_page(im,va);
-        while(im->npages>before){cm_elf_page_t *p=cm_elf_page_at(im,--im->npages);unmap_page(im,p->virt);page_drop(p);}
-        cm_commit_uncharge(im->pending);im->pending=0;trim_descriptors(im);return -12;
+    int64_t error=-12;
+    for(va=start;va<start+len;va+=CM_PAGE_SIZE) {
+        if(add_page(im,va,(file?4u:6u)|PAGE_ANON|(file?PAGE_FILE:0)))goto rollback;
+        if(file) {
+            cm_elf_page_t *p=cm_elf_page_at(im,im->npages-1);
+            uint64_t pos=va-start,chunk=pos<bytes?CM_MIN(bytes-pos,CM_PAGE_SIZE):0;
+            if(chunk && cm_vfs_pread(file,p->backing,chunk,offset+pos)!=(int64_t)chunk){error=-5;goto rollback;}
+            finalize_write(im,va,0);invalidate(va);
+        }
     }
     im->charged+=n;return (int64_t)start;
+rollback: {
+        unmap_page(im,va);
+        while(im->npages>before){cm_elf_page_t *p=cm_elf_page_at(im,--im->npages);unmap_page(im,p->virt);page_drop(p);}
+        cm_commit_uncharge(im->pending);im->pending=0;trim_descriptors(im);return error;
+    }
+}
+int64_t cm_elf_mmap(cm_elf_image_t *im,uint64_t hint,uint64_t len,uint64_t prot,uint64_t flags,uint64_t fd,uint64_t offset)
+{
+    (void)fd;return mmap_private(im,hint,len,prot,flags,NULL,offset);
+}
+int64_t cm_elf_mmap_file(cm_elf_image_t *im,uint64_t hint,uint64_t len,uint64_t prot,uint64_t flags,cm_file_t *file,uint64_t offset)
+{
+    if(!file)return -9;
+    cm_vfs_lock();int64_t r=mmap_private(im,hint,len,prot,flags,file,offset);cm_vfs_unlock();return r;
 }
 int64_t cm_elf_munmap(cm_elf_image_t *im,uint64_t start,uint64_t len)
 {
@@ -613,6 +642,7 @@ int64_t cm_elf_mprotect(cm_elf_image_t *im,uint64_t start,uint64_t len,uint64_t 
         cm_elf_page_t *p=NULL;
         for(unsigned i=0;i<im->npages;i++)if(cm_elf_page_at(im,i)->virt==va){p=cm_elf_page_at(im,i);break;}
         if(!p || !leaf(im,va) || !(*leaf(im,va)&PT_P)){refs_unlock(f);return -12;}
+        if((p->flags&PAGE_FILE) && prot!=1){refs_unlock(f);return -95;}
         if(!p->shared || refs[p->shared].refs!=1){refs_unlock(f);return -95;}
     }
     uint32_t flags=4|((prot&2)?2:0)|((prot&4)?1:0);

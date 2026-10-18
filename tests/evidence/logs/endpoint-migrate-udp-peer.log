@@ -1,0 +1,20 @@
+CapMix UDP echo listening 127.0.0.1:9999
+udp echo bytes=1 peer=('127.0.0.1', 50347)
+udp echo bytes=257 peer=('127.0.0.1', 50347)
+udp echo bytes=1472 peer=('127.0.0.1', 50347)
+udp echo bytes=1 peer=('127.0.0.1', 45940)
+udp echo bytes=257 peer=('127.0.0.1', 45940)
+udp echo bytes=1472 peer=('127.0.0.1', 45940)
+udp echo bytes=22 peer=('127.0.0.1', 48668)
+udp echo bytes=1 peer=('127.0.0.1', 37546)
+udp echo bytes=257 peer=('127.0.0.1', 37546)
+udp echo bytes=1472 peer=('127.0.0.1', 37546)
+udp echo bytes=1 peer=('127.0.0.1', 36705)
+udp echo bytes=257 peer=('127.0.0.1', 36705)
+udp echo bytes=1472 peer=('127.0.0.1', 36705)
+udp echo bytes=22 peer=('127.0.0.1', 53563)
+Traceback (most recent call last):
+  File "<repo>/scripts/udp-echo.py", line 8, in <module>
+    payload, peer = s.recvfrom(65535)
+                    ^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

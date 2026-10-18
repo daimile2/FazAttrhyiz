@@ -1,0 +1,25 @@
+make: Nothing to be done for 'kernel'.
+make: 'build/linux-package' is up to date.
+mkfs.fat 4.2 (2021-01-31)
+ Volume in drive : is CAPMIXBOOT 
+ Volume Serial Number is 02E0-8FAE
+Directory for ::/boot
+
+.            <DIR>     2026-10-18  21:57 
+..           <DIR>     2026-10-18  21:57 
+limine       <DIR>     2026-10-18  21:57 
+capmix   elf   4652584 2026-10-18  21:57 
+        4 files           4 652 584 bytes
+                         60 945 408 bytes free
+
+Physical block size of 512 bytes.
+Installing to MBR.
+Stage 2 to be located at 0x200 and 0x2800.
+Reminder: Remember to copy the limine-bios.sys file in either
+          the root, /boot, /limine, or /boot/limine directories of
+          one of the partitions on the device, or boot will fail!
+Limine BIOS stages installed successfully!
+install boot staged: <lab>/capmix-shell-protocol-vbox/system.img size=134217728 root_lba=2048 esp_lba=18432
+First boot from this disk (no ISO) initializes the blank COW root and fsyncs system ELF files.
+Second cold boot mounts that persisted root; existing data images and installed images are refused by this tool.
+prepared: <lab>/capmix-shell-protocol-vbox/system.img; Linux OFF; boot without ISO

@@ -1,0 +1,2 @@
+usage: check_fd_table.py [-h] [--hosted] [--disabled] [--interp-off] log
+check_fd_table.py: error: unrecognized arguments: --wire

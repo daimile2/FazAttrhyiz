@@ -1,0 +1,2 @@
+qemu-system-x86_64: -numa node,mem=256M: Parameter -numa node,mem is not supported by this machine type
+Use -numa node,memdev instead

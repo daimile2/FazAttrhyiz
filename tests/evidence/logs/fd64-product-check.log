@@ -1,0 +1,2 @@
+PERF date=2026-10-18T11:51:05+00:00 backend=qemu smp=4 nic=e1000 linux=1 sample=1 http_n=2 http_s=0.230206 http_rps=8.688 hush_bytes=6000 hush_s=0.125898 hush_Bps=47657.509 verified=1
+performance baseline: PASS (payload/status/EOF/exit/reap verified; no speedup assertion)

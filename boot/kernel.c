@@ -531,6 +531,8 @@ int capmix_selftest(void)
     fails += cm_argv_selftest();
     fails += cm_sched_claim_selftest();
     fails += cm_linux_selftest();
+    extern int cm_fd_table_selftest(void);
+    fails += cm_fd_table_selftest();
     fails += cm_linux_l1_selftest();
     fails += cm_linux_l2_selftest();
     fails += cm_linux_smp_selftest();

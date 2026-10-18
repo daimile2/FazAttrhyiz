@@ -64,7 +64,7 @@ Linux 返回成功值或负 Linux errno，不向用户泄露 CapMix 错误号。
 所有路径与数据通过 copyin/copyout/ELF 权限验证；禁止写只读镜像页和访问内核地址。
 单次 I/O 最多 **1 MiB**，超限或不可访问区间返回 EFAULT；不把超限请求偷偷拆成
 绕过限制的调用。路径含 NUL 最多 128 字节；组件沿用 COWFS 上限。
-每进程 **32 个 fd（含 stdio）**，满则 EMFILE。openat 不引入任意内核对象访问：
+初版每进程32个fd；当前 **64 个 fd（含 stdio）**，满则 EMFILE（[FD64](FD_TABLE.md)）。openat 不引入任意内核对象访问：
 必须从本进程目录 FILE cap 取路径；dup 不增加 rights。
 
 cwd 固定 `/`，没有 chdir；`.`/`..` 做词法规范化，无 symlink。

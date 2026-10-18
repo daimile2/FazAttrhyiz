@@ -1,0 +1,7 @@
+PERF date=2026-10-18T11:29:09+00:00 backend=vbox smp=1 nic=e1000 linux=1 sample=1 http_n=20 http_s=2.369247 http_rps=8.441 hush_bytes=192000 hush_s=6.230667 hush_Bps=30815.319 verified=1
+PERF date=2026-10-18T11:29:09+00:00 backend=vbox smp=1 nic=e1000 linux=1 sample=2 http_n=20 http_s=2.303591 http_rps=8.682 hush_bytes=192000 hush_s=6.001970 hush_Bps=31989.495 verified=1
+PERF date=2026-10-18T11:29:09+00:00 backend=vbox smp=1 nic=e1000 linux=1 sample=3 http_n=20 http_s=2.324530 http_rps=8.604 hush_bytes=192000 hush_s=6.069149 hush_Bps=31635.408 verified=1
+PERF date=2026-10-18T11:29:09+00:00 backend=vbox smp=4 nic=e1000 linux=1 sample=1 http_n=20 http_s=2.354617 http_rps=8.494 hush_bytes=192000 hush_s=4.552469 hush_Bps=42174.919 verified=1
+PERF date=2026-10-18T11:29:09+00:00 backend=vbox smp=4 nic=e1000 linux=1 sample=2 http_n=20 http_s=2.325808 http_rps=8.599 hush_bytes=192000 hush_s=4.523814 hush_Bps=42442.066 verified=1
+PERF date=2026-10-18T11:29:09+00:00 backend=vbox smp=4 nic=e1000 linux=1 sample=3 http_n=20 http_s=2.362675 http_rps=8.465 hush_bytes=192000 hush_s=4.709040 hush_Bps=40772.641 verified=1
+performance baseline: PASS (payload/status/EOF/exit/reap verified; no speedup assertion)

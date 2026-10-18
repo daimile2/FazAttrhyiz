@@ -1,0 +1,8 @@
+archive_date=2026-10-18
+kernel_revision=82e0f2c41827566d27027091f245fee0b4c4f94a
+cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+host_cpu=13th Gen Intel Core i5-13500H; online logical CPUs=16; host affinity/frequency not fixed
+cf2bd56eb3834d8cc0fd80e677a72acec3b036b6ddb7bb91adade2b363791ec9  capmix.elf
+c08b2fb08f7ac726bbf22e44bbcd0aa21a66608c81e4ba406819bbf66b2506db  build/perf-verify.cmx
+83576b81f0972e75676b1e595d6e0bd403ce5ef71bbd08fbeefdf283a528e050  tests/fixtures/busybox-sh.elf
+kernel_behavior_changes=none; optional verifier is native userspace, not embedded in default image

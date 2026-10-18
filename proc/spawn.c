@@ -587,6 +587,26 @@ void cm_linux_group_kill(cm_proc_t *p,int64_t code)
         __atomic_store_n(&g_procs[i].kill_pending,1,__ATOMIC_RELEASE);
     cm_linux_futex_poll();
 }
+/* Lifecycle gate held. Scheduler owns stack/context teardown: a clear-child-tid
+ * store is NOT permission to recycle a still-active continuation. Never free
+ * the leader (other members retain it as their mm/task/fd owner). */
+static unsigned linux_recycle_threads(cm_proc_t *g,cm_proc_t *caller)
+{
+    unsigned count=0;
+    for(unsigned i=0;i<CM_MAX_PROCS;i++) {
+        cm_proc_t *t=&g_procs[i];
+        if(!t->used || t==g || t==caller || t->linux_group!=g ||
+           !__atomic_load_n(&t->exited,__ATOMIC_ACQUIRE) || !t->linux_thread_dead)continue;
+        if(t->main && __atomic_load_n(&t->main->id,__ATOMIC_ACQUIRE)==t->elf_thread_id)continue;
+        if(__atomic_load_n(&g->linux_fd_owner,__ATOMIC_ACQUIRE)==t->pid)continue;
+        cm_id_t tid=t->pid;int slot=t->elf_entry_slot;
+        cm_linux_futex_cancel(t); /* remove all TID/VA waiter references before reuse */
+        memset(t,0,sizeof(*t));count++;
+        kinfo("linux thread recycle: tgid=%llu old_tid=%llu slot=%d off-cpu=1 futex-detached=1 shared-resources=retained",
+            (unsigned long)g->pid,(unsigned long)tid,slot);
+    }
+    return count;
+}
 /* Same-mm threads stay on their leader CPU: no new TLB-shootdown policy. */
 int64_t cm_linux_clone(uint64_t flags,uint64_t stack,uint64_t ptid,uint64_t ctid,uint64_t tls)
 {
@@ -602,6 +622,7 @@ int64_t cm_linux_clone(uint64_t flags,uint64_t stack,uint64_t ptid,uint64_t ctid
     if(((flags&0x100000) && !cm_user_access(g->elf,ptid,4,1)) ||
        ((flags&(0x200000|0x1000000)) && !cm_user_access(g->elf,ctid,4,1)))return -14;
     uint64_t f;if(!lifecycle_enter(&f))return -11;
+    (void)linux_recycle_threads(g,parent);
     unsigned n=0;for(unsigned i=0;i<CM_MAX_PROCS;i++)if(g_procs[i].used && cm_linux_group(&g_procs[i])==g)n++;
     if(n>=8 || g->linux_group_exit || parent->linux_thread_dead){lifecycle_leave(f);return -11;}
     cm_proc_t *t=alloc_proc();if(!t){lifecycle_leave(f);return -11;}
@@ -650,6 +671,22 @@ int cm_linux_thread_finish(cm_proc_t *p,int64_t code)
 
 /* No live kernel continuation migrates. Only cm_syscall_frame may park this
  * request, once dispatch has released all resource references and gates. */
+/* Cap lock only: no endpoint/network/pipe/rq locks, waits or callbacks.
+ * An endpoint's refs must all be handles in this single-thread task. Extra
+ * refs mean foreign aliases or an in-flight operation; both are conservative
+ * EAGAIN. RX owns transport objects, never this Linux wrapper reference. */
+static int migrate_endpoints(cm_proc_t *p)
+{
+    uint64_t f=cm_cap_lock();int error=0;
+    for(int i=0;i<CM_HANDLES_PER_TASK;i++) {
+        cm_object_t *o=p->task->handles[i].obj;
+        if(!o || (o->type!=CM_OBJ_LINUX_SOCKET && o->type!=CM_OBJ_LINUX_PIPE))continue;
+        unsigned own=0;
+        for(int j=0;j<CM_HANDLES_PER_TASK;j++)own+=p->task->handles[j].obj==o;
+        if(o->refs!=own){error=-11;break;}
+    }
+    cm_cap_unlock(f);return error;
+}
 int64_t cm_linux_setaffinity(uint64_t pid,uint64_t size,uint64_t address)
 {
     cm_proc_t *p=cm_proc_current();uint64_t mask;
@@ -662,9 +699,10 @@ int64_t cm_linux_setaffinity(uint64_t pid,uint64_t size,uint64_t address)
     if(target>=(unsigned)cm_cpu_count())return -22;
     if(p->linux_grouped || p->linux_group || p->linux_fork_child || cm_proc_children_pending(p->pid))return -95;
     if(p->exited || p->kill_pending || p->linux_fd_owner || p->linux_migrate)return -11;
-    /* Shared socket/pipe backend ownership is deliberately outside this MVP. */
-    for(unsigned fd=0;fd<CM_FD_MAX;fd++)
-        if(cm_linux_socket_is(p,fd) || cm_linux_pipe_is(p,fd))return -95;
+    /* Syscall dispatch must unwind every endpoint ref before the handoff.
+     * Same-task dup is safe; peer pipe ends are separate locked objects. */
+    if(p->syscall_depth>1)return -11;
+    int endpoints=migrate_endpoints(p);if(endpoints)return endpoints;
     if((int)target==p->elf_cpu)return 0;
     if(!p->linux_frame || !p->main || !p->main->kstack)return -95;
 #ifdef CAPMIX_HOSTED

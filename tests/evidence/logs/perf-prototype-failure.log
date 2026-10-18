@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "<repo>/scripts/perf-baseline.py", line 191, in <module>
+    
+  File "<repo>/scripts/perf-baseline.py", line 172, in main
+    assert 'exit=0 reap=ok' in text
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 98, in command
+    start=time.perf_counter();self.send('\n');s=self.wait(marker,offset)
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 50, in wait
+    s=self.text()
+      ^^^^^^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 46, in text
+    def text(self):return self.log.read_text(errors='replace') if self.log.exists() else ''
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1030, in read_text
+    return f.read()
+           ^^^^^^^^
+  File "<frozen codecs>", line 319, in decode
+KeyboardInterrupt

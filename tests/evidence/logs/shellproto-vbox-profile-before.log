@@ -1,0 +1,2 @@
+linux package data: root uninitialized; no formatting; data created only when booting with Linux enabled
+linux package configured=disabled (not live status; kernel support checked at boot)

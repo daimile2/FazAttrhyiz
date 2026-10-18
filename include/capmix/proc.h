@@ -4,6 +4,7 @@
 #include "types.h"
 #include "abi.h"
 #include "linux_process.h"
+#include "fd_limits.h"
 #include "sched.h"
 
 /* User process + posix_spawn.
@@ -11,7 +12,6 @@
  */
 
 #define CM_MAX_PROCS     32
-#define CM_FD_MAX        32
 #define CM_USER_STACK_PAGES  4
 #define CM_USER_IMAGE_PAGES  8
 

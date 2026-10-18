@@ -18,11 +18,17 @@ else:
     assert 'linux L2 fork denied FILE DUPLICATE: rollback=ok' in text
     if not a.hosted:
         import re
-        m=re.search(r'linux L2 fork: parent=(\d+) child=(\d+)',text);assert m
-        parent,child=m.groups()
-        assert f'linux L2 execve replace: pid={child} path=/bin/linux-l2-next.elf' in text
-        assert f'linux L2 wait4 reap: parent={parent} child={child} status=2a00' in text
-        assert 'linux L2 COW fault:' in text
+        # Other mechanism tests may fork before the L2 golden. Correlate its
+        # actual launch PID -> fork child -> same-child exec and wait status.
+        parents=re.findall(r'exec spawn: pid=(\d+) path=/bin/linux-l2\.elf ELF',text)
+        matched=False
+        for parent in parents:
+            for child in re.findall(r'linux L2 fork: parent='+parent+r' child=(\d+)\b',text):
+                if (f'linux L2 execve replace: pid={child} path=/bin/linux-l2-next.elf' in text and
+                    f'linux L2 wait4 reap: parent={parent} child={child} status=2a00' in text and
+                    re.search(r'linux L2 COW fault: pid=(?:'+parent+'|'+child+r')\b',text)):
+                    matched=True
+        assert matched, 'L2 golden launch/fork/COW/exec/wait42 chain missing'
         assert '\nlinux L2 exec target argv FS CLOEXEC verified\n' in text
         assert '\nlinux L2 fork COW brk exec wait verified\n' in text
         assert 'linux L2 CPL3 verified:' in text

@@ -56,7 +56,7 @@ SRC = \
 	security/gate.c \
 	virt/job.c \
 	virt/kvm.c virt/hardware.c virt/vmcs.c virt/ept.c arch/x86_64/virt_probe.S arch/x86_64/vmcs.S \
-	boot/kernel.c boot/linux_sigchld_test.c boot/hosts_test.c boot/linux_micropython_test.c boot/linux_migrate_test.c boot/linux_threads_test.c boot/linux_smp_test.c boot/linux_compat_test.c boot/linux_ldso_test.c boot/linux_sh_test.c boot/linux_l5_test.c boot/linux_l4_test.c boot/linux_l3_test.c boot/linux_l2_test.c boot/linux_l1_test.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
+	boot/kernel.c boot/fd_table_test.c boot/linux_sigchld_test.c boot/hosts_test.c boot/linux_micropython_test.c boot/linux_migrate_test.c boot/linux_threads_test.c boot/linux_smp_test.c boot/linux_compat_test.c boot/linux_ldso_test.c boot/linux_sh_test.c boot/linux_l5_test.c boot/linux_l4_test.c boot/linux_l3_test.c boot/linux_l2_test.c boot/linux_l1_test.c boot/linux_test.c boot/control_test.c boot/concurrent_test.c boot/argv_test.c boot/tcp_elf_test.c boot/p1d_test.c boot/p1c_test.c boot/p1b_test.c boot/p1a_test.c boot/buddy_smp_test.c boot/m3_test.c boot/m4_test.c boot/m8_test.c \
 	boot/phase9_test.c boot/phase8_test.c boot/numa_test.c boot/phase0_test.c boot/phase1_test.c boot/phase2_test.c boot/phase4_test.c boot/phase5_test.c boot/phase6_test.c boot/phase7_test.c \
 	boot/phase3_test.c \
  
@@ -478,3 +478,8 @@ build/linux-sigchld.elf: tests/linux_sigchld.c tests/linux_l3_start.S tests/linu
 build/linux_sigchld.inc: build/linux-sigchld.elf scripts/embed-elf.py
 	python3 scripts/embed-elf.py $< $@ cm_linux_sigchld_elf
 $(HOST_BIN) $(FREE_BIN): build/linux_sigchld.inc
+
+# Optional userspace-only verifier, imported by scripts/perf-baseline.py.
+build/perf-verify.cmx: tests/perf_verify.c sdk/crt0.S sdk/capmix.ld sdk/include/capmix.h
+	@mkdir -p build
+	$(CC) -std=c11 -Wall -Wextra -O2 -static -nostdlib -no-pie -ffreestanding -fno-builtin -fno-pie -fno-stack-protector -mno-red-zone -mgeneral-regs-only -fno-asynchronous-unwind-tables -Isdk/include -Wl,--build-id=none,-z,max-page-size=0x1000,-T,sdk/capmix.ld -o $@ sdk/crt0.S $<

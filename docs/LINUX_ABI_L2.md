@@ -84,7 +84,7 @@ L2 页也不计入现有 anon-owner RSS/jetsam 候选统计，不能宣称已实
 包括 PT_LOAD、四页栈和 brk，地址窗口仍为 **0x400000–0x800000**，栈从顶部占16KiB。
 brk 从最高 PT_LOAD 末端向上增长，不能撞栈；超过页数/地址/commit/可用物理页限制返回旧 break。
 收缩释放完整 heap 页，重新分配的完整页清零；不保证同一保留页内收缩再增长的字节被清零。
-文件 fd 上限仍32。没有为了 L2 上调 buddy MAX、进程数或 ELF 页数。
+L2初版文件fd上限32；后续已统一扩至64（[FD64](FD_TABLE.md)）。没有为了 L2 上调 buddy MAX、进程数或 ELF 页数。
 
 ## FILE 继承、退出和 exec 事务
 

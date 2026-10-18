@@ -5,6 +5,7 @@
 #include "capmix/boot.h"
 #include "capmix/proc.h"
 #include "capmix/elf.h"
+#include "capmix/fs.h"
 #include "capmix/uaccess.h"
 #include "capmix/arch.h"
 #include "capmix/sha256.h"
@@ -139,7 +140,16 @@ static int64_t dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d)
     if(nr==61)return cm_linux_wait4((int64_t)a,b,c,d);
     if(nr==59)return cm_linux_execve(a,b,c);
     if(nr==12)return (int64_t)cm_elf_brk(active->elf,a);
-    if(nr==9)return cm_elf_mmap(active->elf,a,b,c,d,active->linux_regs.r8,active->linux_regs.r9);
+    if(nr==9) {
+        uint64_t fd=active->linux_regs.r8,offset=active->linux_regs.r9;
+        if(d&0x20)return cm_elf_mmap(active->elf,a,b,c,d,fd,offset);
+        if(d!=2 || c!=1)return -95;
+        if(fd>=CM_FD_MAX || active->fd[fd]<0 || active->linux_console[fd])return -9;
+        cm_object_t *o=NULL;
+        if(cm_native_file_acquire((int)fd,CM_RIGHT_READ,&o))return -9;
+        int64_t r=cm_elf_mmap_file(active->elf,a,b,c,d,o->payload,offset);
+        cm_obj_release(o);return r;
+    }
     if(nr==10 && active && active->elf && active->elf->rtld)return cm_elf_mprotect(active->elf,a,b,c);
     if(nr==11)return cm_elf_munmap(active->elf,a,b);
     int64_t result;if(cm_linux_socket_call(nr,a,b,c,d,&result))return result;

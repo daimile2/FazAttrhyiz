@@ -1,3 +1,4 @@
+#include "../include/capmix/fd_limits.h"
 /* Handwritten Linux x86-64 clone/futex probe. No libc/pthread dependency. */
 .file "linux_threads.S"
 .global _start
@@ -9,7 +10,10 @@ _start:
     cmpb $108,(%rax)
     jne 1f
     movq $1,scenario(%rip)
-1:  cmpb $103,(%rax)
+1:  cmpb $114,(%rax)
+    jne 2f
+    movq $3,scenario(%rip)
+2:  cmpb $103,(%rax)
     jne basic
     movq $2,scenario(%rip)
 basic:
@@ -67,6 +71,8 @@ basic:
     jne fail
     cmpq $2,scenario(%rip)
     je capacity
+    cmpq $3,scenario(%rip)
+    je reuse
     call prepare_files
     xor %r12d,%r12d
 clone_retry:
@@ -147,6 +153,104 @@ leader_exit:
     xor %edi,%edi
     syscall
     ud2
+/* More than the lifetime cap: reuse the same stack/TLS/clear-tid address. */
+reuse:
+    xor %r13d,%r13d
+    mov $1,%r14d
+reuse_round:
+    movq $0,result(%rip)
+    xor %r12d,%r12d
+reuse_retry:
+    mov $56,%eax
+    mov $0x1390f00,%edi
+    lea stacks+8192(%rip),%rsi
+    lea parent_tid(%rip),%rdx
+    lea child_tid(%rip),%r10
+    lea child_tls(%rip),%r8
+    syscall
+    test %rax,%rax
+    jz reuse_child
+    cmp $-11,%rax
+    jne reuse_created
+    inc %r12d
+    cmp $100000,%r12d
+    jae fail
+    mov $24,%eax
+    syscall
+    jmp reuse_retry
+reuse_created:
+    test %rax,%rax
+    js fail
+    cmp %r13,%rax
+    jbe fail
+    mov %rax,%r13
+    cmp parent_tid(%rip),%eax
+    jne fail
+reuse_join:
+    mov child_tid(%rip),%edx
+    test %edx,%edx
+    jz reuse_joined
+    mov $202,%eax
+    lea child_tid(%rip),%rdi
+    mov $128,%esi
+    lea long_time(%rip),%r10
+    syscall
+    test %rax,%rax
+    jz reuse_join
+    cmp $-11,%rax
+    je reuse_join
+    jmp fail
+reuse_joined:
+    cmp %r14,result(%rip)
+    jne fail
+    cmpq $0x1122,%fs:0
+    jne fail
+    inc %r14
+    cmp $33,%r14
+    jb reuse_round
+    /* Reuse never unfreezes the group's mutation/migration restrictions. */
+    mov $57,%eax
+    syscall
+    cmp $-95,%rax
+    jne fail
+    mov $59,%eax
+    syscall
+    cmp $-95,%rax
+    jne fail
+    mov $9,%eax
+    syscall
+    cmp $-95,%rax
+    jne fail
+    mov $203,%eax
+    xor %edi,%edi
+    mov $8,%esi
+    lea reuse_mask(%rip),%rdx
+    syscall
+    cmp $-95,%rax
+    jne fail
+    mov $1,%eax
+    mov $1,%edi
+    lea reuse_ok(%rip),%rsi
+    mov $(reuse_ok_end-reuse_ok),%edx
+    syscall
+    jmp leader_exit
+reuse_child:
+    lea stacks+8192(%rip),%rax
+    cmp %rax,%rsp
+    jne fail
+    cmpq $0x3344,%fs:0
+    jne fail
+    mov $186,%eax
+    syscall
+    cmp child_tid(%rip),%eax
+    jne fail
+    mov $218,%eax
+    lea child_tid(%rip),%rdi
+    syscall
+    cmp parent_tid(%rip),%eax
+    jne fail
+    mov %r14,result(%rip)
+    jmp child_exit
 capacity:
     xor %r12d,%r12d
     lea stacks(%rip),%r13
@@ -530,13 +634,13 @@ fill_more:
     je fill_done
     cmp $3,%rax
     jl fail
-    cmp $32,%r14
+    cmp $CM_FD_MAX,%r14
     jae fail
     mov %rax,(%r15,%r14,8)
     inc %r14
     jmp fill_more
 fill_done:
-    cmp $20,%r14
+    cmp $(CM_FD_MAX-12),%r14
     jb fail
 empty_more:
     dec %r14
@@ -636,7 +740,7 @@ file_bytes: .short 0
 pipe_byte: .byte 0
 .balign 8
 vector: .quad fd_msg,fd_msg_mid-fd_msg,fd_msg_mid,fd_msg_end-fd_msg_mid
-fill_fds: .skip 256
+fill_fds: .skip CM_FD_MAX*8
 main_tls: .quad 0x1122
 child_tls: .quad 0x3344
 scenario: .quad 0
@@ -651,6 +755,9 @@ child_tid: .long 0
 zero_time: .quad 0,0
 short_time: .quad 0,2000000
 long_time: .quad 2,0
+reuse_mask: .quad 1
+reuse_ok: .ascii "linux threads reuse: rounds=32 joined=32 TID-monotonic TLS/stack/clear-tid verified; mutation/migration denied\n"
+reuse_ok_end:
 .section .bss
 .balign 16
 stacks: .skip 65536

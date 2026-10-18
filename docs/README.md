@@ -23,6 +23,8 @@
 | NIC UDP 与后台入队 | [P1B_UDP_NIC](P1B_UDP_NIC.md) |
 | DHCP 与静态回退 | [P1C_DHCP](P1C_DHCP.md) |
 | 最小主动 TCP | [P1D_TCP](P1D_TCP.md) |
+| Linux只读PRIVATE文件快照映射与commit/fork边界 | [LINUX_FILE_MMAP](LINUX_FILE_MMAP.md) |
+| 原生/Linux fd64、内存与满表复用 | [FD_TABLE](FD_TABLE.md) |
 | SIGCHLD最小pending/自动回收与hush边界 | [LINUX_SIGCHLD](LINUX_SIGCHLD.md) |
 | hosts-only 名称解析（原生/Linux共享，非DNS客户端） | [HOSTS_RESOLVER](HOSTS_RESOLVER.md) |
 | 用户 TCP/UDP ABI | [USER_NETWORK_ABI](USER_NETWORK_ABI.md) |

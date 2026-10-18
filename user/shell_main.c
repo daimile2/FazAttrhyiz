@@ -3,6 +3,25 @@
 static cm_user_child_t jobs[JOBS];
 static char line[256];static unsigned length;static int overflow;
 static int input_fd=-1,output_fd=-1;
+/* v1 console records: one bounded capability write per complete record.
+ * Immediate input echo stays unchanged; scripts synchronize on sequence IDs. */
+static uint64_t sequence=1;
+static char *append_text(char *p,const char *s){while(*s)*p++=*s++;return p;}
+static char *append_number(char *p,int64_t n)
+{
+    char digits[24];unsigned used=0;uint64_t v=(uint64_t)n;
+    if(n<0){*p++='-';v=0-v;}
+    do{digits[used++]=(char)('0'+v%10);v/=10;}while(v);
+    while(used)*p++=digits[--used];
+    return p;
+}
+static void record(const char *event,long status)
+{
+    char b[112],*p=append_text(b,"\n[SHELL v=1 event=");p=append_text(p,event);
+    p=append_text(p," seq=");p=append_number(p,(int64_t)sequence);
+    p=append_text(p," status=");p=append_number(p,status);p=append_text(p,"]\n");*p=0;uputs(b);
+}
+static void prompt(void){record("ready",0);uputs("capmix> ");}
 static long out_bytes(const char *s,unsigned n)
 {
     if(output_fd<0){uputs(s);return 0;}
@@ -13,9 +32,9 @@ static long out_bytes(const char *s,unsigned n)
     return 0;
 }
 static long out(const char *s){return out_bytes(s,ulen(s));}
-static void error(long e){uputs("shell error=");unum(e);uputs("\n");}
+static void error(long e){char b[64],*p=append_text(b,"shell error=");p=append_number(p,e);*p++='\n';*p=0;uputs(b);}
 static void finished(const cm_user_wait_t *r)
-{uputs("shell child done: pid=");unum(r->pid);uputs(" exit=");unum(r->exit_code);uputs(" reap=ok\n");}
+{char b[112],*p=append_text(b,"shell child done: pid=");p=append_number(p,r->pid);p=append_text(p," exit=");p=append_number(p,r->exit_code);p=append_text(p," reap=ok\n");*p=0;uputs(b);}
 static void reap(void)
 {
     for(unsigned i=0;i<JOBS;i++)if(jobs[i].handle>0){cm_user_wait_t r;long e=uwait(jobs[i].handle,&r,CM_WAIT_NONBLOCK);
@@ -171,13 +190,14 @@ int main(int argc,char **argv,char **envp)
     (void)argc;(void)argv;(void)envp;
     /* A plain run of this management ELF receives no console bundle. */
     if(ucall(CM_SYS_CONSOLE_WRITE,uconsole,0,0,0)<0)return 1;
-    uputs("shell ELF ready: CPL=");unum(ucpl());uputs(" PS/2 -> user shell -> FB+serial\ncapmix> ");
+    uputs("shell ELF ready: CPL=");unum(ucpl());uputs(" PS/2 -> user shell -> FB+serial\n");prompt();
     for(;;){reap();char ch;long e=ucall(31,uconsole,(uintptr_t)&ch,1,0);
         if(e==CM_ERR_AGAIN){uyield();continue;}if(e){error(e);uyield();continue;}
         if(ch=='\r')ch='\n';
         if(ch=='\b'){if(length && !overflow){length--;uputs("\b \b");}continue;}
-        if(ch=='\n'){uputs("\n");line[length]=0;e=overflow?CM_ERR_NOSPC:dispatch(line);length=0;overflow=0;
-            if(e==1){uputs("shell user exit: background drained\n");return 0;}if(e<0)error(e);uputs("capmix> ");continue;}
+        if(ch=='\n'){record("begin",0);line[length]=0;e=overflow?CM_ERR_NOSPC:dispatch(line);length=0;overflow=0;
+            record("end",e);
+            if(e==1){uputs("shell user exit: background drained\n");return 0;}if(e<0)error(e);sequence++;prompt();continue;}
         if(ch=='\t')ch=' ';
         if((unsigned char)ch<32 || (unsigned char)ch>126)continue;
         if(length+1>=sizeof(line))overflow=1;

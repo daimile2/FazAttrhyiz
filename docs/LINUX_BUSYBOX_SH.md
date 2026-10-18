@@ -87,7 +87,7 @@ Pipe首版语义：
 ## 诚实限制
 
 - hush验收使用AP固定执行位置、单线程路径（见 [Linux SMP](LINUX_SMP.md)）；16MiB VA窗口、8MiB合计映射额度、8192个全局物理backing/reserve槽。
-  栈仍4页，argv≤32、单参数≤256字节、总参数4KiB；受32个proc槽和32个fd等更小资源限制。
+  栈仍4页，argv≤32、单参数≤256字节、总参数4KiB；受32个proc槽和当前64个fd等资源限制（[FD64](FD_TABLE.md)）。
 - COW页/reserve仍驻留，不参与压缩/swap，no-overcommit纪律完全沿用L5。
 - 13/14现有有限元数据支持，详见 [ENOSYS兼容范围](LINUX_ENOSYS.md)。
   不提供SIGCHLD处理器执行、信号投递、trap、Ctrl-C、作业控制或futex/线程。

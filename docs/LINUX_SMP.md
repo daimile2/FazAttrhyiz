@@ -41,7 +41,7 @@ Linux父PID在发布前确定；创建门释放后才发布Linux线程，避免A
 仍使用published release/acquire排除未初始化线程；退出后须确认线程已离开
 入口栈才能销毁页表与record。不强制释放仍在AP执行的现场。
 父子权限检查、失败回滚、驻留COW副本预占及销毁uncharge沿用现有路径。
-COW页仍不压缩/换出。容量仍受32个proc槽、32fd/进程等既有限额限制。
+COW页仍不压缩/换出。容量受32个proc槽、当前64fd/进程等既有限额限制（[FD64](FD_TABLE.md)）。
 
 pipe已使用IRQ安全锁；FILE经既有VFS同步；独立socket有独立对象，fork共享socket
 仍在同一固定CPU。UDP临时端口候选序列改为原子分配，最终绑定冲突仍由后端裁决。

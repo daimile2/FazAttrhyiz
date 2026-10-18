@@ -1,0 +1,7 @@
+PERF date=2026-10-18T11:25:44+00:00 backend=qemu smp=1 nic=e1000 linux=1 sample=1 http_n=20 http_s=2.470291 http_rps=8.096 hush_bytes=192000 hush_s=7.073350 hush_Bps=27144.139 verified=1
+PERF date=2026-10-18T11:25:44+00:00 backend=qemu smp=1 nic=e1000 linux=1 sample=2 http_n=20 http_s=2.495912 http_rps=8.013 hush_bytes=192000 hush_s=7.065995 hush_Bps=27172.395 verified=1
+PERF date=2026-10-18T11:25:44+00:00 backend=qemu smp=1 nic=e1000 linux=1 sample=3 http_n=20 http_s=2.521124 http_rps=7.933 hush_bytes=192000 hush_s=7.208303 hush_Bps=26635.949 verified=1
+PERF date=2026-10-18T11:25:44+00:00 backend=qemu smp=4 nic=e1000 linux=1 sample=1 http_n=20 http_s=2.372183 http_rps=8.431 hush_bytes=192000 hush_s=2.553029 hush_Bps=75204.783 verified=1
+PERF date=2026-10-18T11:25:44+00:00 backend=qemu smp=4 nic=e1000 linux=1 sample=2 http_n=20 http_s=2.469131 http_rps=8.100 hush_bytes=192000 hush_s=2.597495 hush_Bps=73917.383 verified=1
+PERF date=2026-10-18T11:25:44+00:00 backend=qemu smp=4 nic=e1000 linux=1 sample=3 http_n=20 http_s=2.546232 http_rps=7.855 hush_bytes=192000 hush_s=2.474189 hush_Bps=77601.194 verified=1
+performance baseline: PASS (payload/status/EOF/exit/reap verified; no speedup assertion)

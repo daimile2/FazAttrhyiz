@@ -270,3 +270,104 @@ GTK/gui手工命令与headless旅程使用相同盘/网卡配置，**本轮自�
   与解释器两次write之间穿插，子进程仍退出0。检查器改用已有重定向+原生cat验证完整
   输出，最终通过；没有改控制台/调度核心，也不要求混合串口流保持进程级事务性。
 
+
+## 产品路径性能基线（2026-10-18，固定负载，不是性能上限）
+
+新增 [perf-baseline.py](../scripts/perf-baseline.py)，不修改内核行为、调度、TCP/RTO 或 IRQ。
+只额外构建一个不进默认镜像的原生 [字节校验器](../tests/perf_verify.c)；经现有文件 capability 读输出，
+校验不计入时间。Linux 默认关闭不变，脚本仅给自己新建的测试盘开启 Linux。
+
+### 复现
+
+从仓库根目录运行；目录必须不存在，不能传入现有数据盘：
+
+```sh
+python3 scripts/perf-baseline.py --lab /tmp/capmix-perf-new-qemu
+python3 tests/check_perf_baseline.py /tmp/capmix-perf-new-qemu
+# 上一步的虚拟机退出后再运行 VBox；不要与 KVM 同时运行。
+python3 scripts/perf-baseline.py --backend vbox --lab /tmp/capmix-perf-new-vbox
+python3 tests/check_perf_baseline.py /tmp/capmix-perf-new-vbox
+```
+
+需要前文安装工具链/mtools、QEMU/KVM，VBox另需VBoxManage。脚本自动安装新盘、首次引导补建文件、
+关机后导入固定负载，再为每个CPU配置复制同一seed盘；被测产品启动均无ISO。
+不需要额外宿主echo/HTTP服务。宿主TCP 18086需空闲（可用 `--port` 改），只绑定127.0.0.1。
+输出 `PERF date=... smp=... http_rps=... hush_Bps=... verified=1`，
+只读检查器输出每配置一行 `PERF_SUMMARY ...` 中位数。失败返回非零；不跳过失败请求或补测选优。
+`config.json`、`results.json`、`numbers.log`、`workload-sha256.txt` 和串口日志保留在lab。
+
+固定默认参数：`--cpus 1,4 --samples 3 --requests 20 --pipes 32`。
+每个HTTP批次40秒deadline，每次hush完成等待60秒、启动等待60秒；超限失败并清理测试VM。
+启动/安装/宿主命令另有有界等待，不把超时当成0 req/s或PASS。
+
+### 负载与口径
+
+- **HTTP**：原生 `/bin/httpd.elf 8080 68 &`，单工作者、backlog=4；8次预热后3批×20次请求。
+  并发度1，每次新建TCP连接，HTTP/1.0 GET `/`，验证200、精确25B正文和EOF。
+  从宿主连接开始到读完EOF计时，包含握手、NAT转发、网络/应用调度及关闭；不含启动、键盘输入和预热。
+  这是这一短连接请求/秒，不是最大网络带宽或多工作者HTTP性能。
+- **hush**：仓库固定musl静态BusyBox子集，生成32行
+  `/bin/busybox-sh.elf cat /perf-input.txt | /bin/busybox-sh.elf cat || exit 91`。
+  输入是6000个`x`，共192000B，经原生shell `> /perf-output.txt` 输出COW文件。
+  先预热一整次，再测三次；每次都要求exit=0、reap和重定向提交成功，并在计时外逐字节验证全部输出。
+  吞吐为192000/耗时，**包含hush启动、fork/exec、pipe、COW文件输出、fsync和回收**，不是裸pipe memcpy带宽。
+- 两项均用宿主Python `perf_counter` 单调墙钟。hush先输入命令文本，再从提交Return前到
+  `shell redirect committed: status=0` 可见为止；包含Return注入（QEMU monitor或VBoxManage调用）与名义5ms轮询误差，
+  不保证亚毫秒精度。验证器与下一条命令输入不在计时区间。
+- 每个CPU配置单独冷启动，顺序1→4；原有INFO/COW/exec串口日志保持开启。
+  Linux fork子进程仍继承父进程亲和；没有为了测试启用负载均衡、迁移或调参。
+  不将4 vCPU结果当作“hush管道线程已跨核并行”的证明。
+
+配置：512MiB；QEMU 8.2.2 `-enable-kvm -cpu host -smp 1/4`、AHCI盘、e1000+usernet端口转发，display=none；
+VBox 7.2.20 UEFI、1/4 CPU、AHCI盘、82540EM+NAT端口转发、headless。
+两者都是产品模式、`capmix.linux=1`、`linux_interp=0`；非默认Linux关闭配置的性能验收。
+VBox额外在测前固定等6秒载波，再开始相同预热；不在测量中重试失败请求。
+宿主为i5-13500H、16在线逻辑CPU、Linux 7.0.0-38；未固定宿主亲和/频率或隔离后台负载。
+这是本机带日志的端到端基线；NAT实现、虚拟化、宿主调度和频率会影响数字，不能外推为内核上限或跨平台胜负。
+
+### 数字与证据
+
+下表为三次样本的中位数，1KiB=1024B；原始秒数和每次样本在链接日志中，不以功能PASS代替数字。
+
+| 环境（2026-10-18） | vCPU | HTTP req/s：中位数 [最小,最大] | hush端到端 KiB/s：中位数 [最小,最大] | 证据 |
+|---|---:|---:|---:|---|
+| QEMU KVM/e1000 | 1 | 8.013 [7.933,8.096] | 26.51 [26.01,26.54] | [数字](../tests/evidence/logs/perf-qemu-numbers.log)、[串口](../tests/evidence/logs/perf-qemu-smp1.log) |
+| QEMU KVM/e1000 | 4 | 8.100 [7.855,8.431] | 73.44 [72.18,75.78] | [数字](../tests/evidence/logs/perf-qemu-numbers.log)、[串口](../tests/evidence/logs/perf-qemu-smp4.log) |
+| VBox UEFI/e1000 | 1 | 8.604 [8.441,8.682] | 30.89 [30.09,31.24] | [数字](../tests/evidence/logs/perf-vbox-numbers.log)、[串口](../tests/evidence/logs/perf-vbox-smp1.log) |
+| VBox UEFI/e1000 | 4 | 8.494 [8.465,8.599] | 41.19 [39.82,41.45] | [数字](../tests/evidence/logs/perf-vbox-numbers.log)、[串口](../tests/evidence/logs/perf-vbox-smp4.log) |
+
+两项依次运行，不同时施压；同sample编号只是独立批次的并列展示。
+[QEMU原始秒数/配置](../tests/evidence/logs/perf-qemu-results.log)、
+[VBox原始秒数/配置](../tests/evidence/logs/perf-vbox-results.log)、
+[QEMU算术/CPU/字节检查](../tests/evidence/logs/perf-qemu-summary.log)、
+[VBox检查](../tests/evidence/logs/perf-vbox-summary.log)、
+[固定负载哈希](../tests/evidence/logs/perf-workload-sha256.log)、
+[构建/黄金ELF标识](../tests/evidence/logs/perf-build-id.log)。
+短连接串行HTTP未显示明显多核收益；hush端到端差异不证明裸管道或调度器线性扩展。
+
+保留未计入数字的初版失败：
+[原型校验失败](../tests/evidence/logs/perf-prototype-failure.log)、
+[guest NameError](../tests/evidence/logs/perf-prototype-guest.log)，固定MicroPython不提供文件open，
+随后改用独立原生字节校验器；原型运行被中断，未当作通过或样本。
+[VBox首轮](../tests/evidence/logs/perf-vbox-carrier-failure.log)、
+[guest](../tests/evidence/logs/perf-vbox-carrier-guest.log)在carrier down时listen=-12，
+未产生性能样本；现脚本增加固定测前6秒等待，重新完整通过1/4 CPU，未改网卡核心。
+
+本轮性能PASS指正文/EOF/退出/回收/字节和数字算术检查通过，**不是全量freestanding selftest**。
+[hosted回归](../tests/evidence/logs/perf-hosted.log)另行保留；
+[默认产品ISO](../tests/evidence/logs/perf-iso-boot.log)为shell提示符闲置超时烟测，不充作0 failures。
+
+## 控制台同步更新（2026-10-18）
+
+用户shell新增带seq/status的 `[SHELL v=1 event=ready|begin|end ...]` 前缀行。
+旅程检查不再依赖可被内核日志打断的整条命令回显：等待对应命令序号完成，再在begin之后验证结果，
+避免输入路径本身冒充cat正文。仍验证真实文件内容、MicroPython输出、HTTP200/正文和关机。
+协议不是VT、完整正文行缓冲或安全认证；`poweroff`只承诺begin和实际关机，详见
+[SHELL：行协议、人工显示与本轮矩阵](SHELL.md#控制台前缀行协议-v12026-10-18)。
+新的自动旅程需要包含新shell ELF的安装盘；建议按prepare创建新lab，旧盘不被静默覆盖。
+
+[本轮QEMU旅程](../tests/evidence/logs/shellproto-qemu-check.log)：三次无ISO冷启动PASS，
+每条返回命令均有 `shell protocol: seq=... status=... boundaries=verified`。
+
+[本轮VBox旅程](../tests/evidence/logs/shellproto-vbox-check.log)同样三次无ISO冷启动PASS；
+UEFI/AHCI/e1000 NAT，PS/2输入、串口核对，完整矩阵见SHELL文档。
