@@ -1,5 +1,6 @@
 #include "capmix/e1000.h"
 #include "capmix/net.h"
+#include "capmix/boot.h"
 #include "capmix/mm.h"
 #include "capmix/arch.h"
 #include "capmix/sched.h"
@@ -80,6 +81,27 @@ static int discover(void)
     }
     return 0;
 }
+/* VBox ICH9 root-bus INTx: DevPciIch9::ich9pciSlot2ApicIrq.
+ * Tight platform whitelist; firmware Interrupt Line is NOT this APIC GSI.
+ * No guessed swizzling through PCI bridges or generic ACPI _PRT support. */
+static int intx_route(unsigned line,unsigned pin,uint32_t bridge,unsigned *gsi)
+{
+    if(cm_boot_has_option("capmix.e1000_irq=0"))return 0;
+    if(bridge==0x12378086u){*gsi=line;return 1;}
+    /* VBox intentionally hides its 29e0 host bridge; LPC remains visible. */
+    uint32_t lpc=config(0x8000f800u,0);
+    /* VBox ICH9's LPC defaults to ICHVersion=7 (27b9), also supports 2918. */
+    if((bridge!=0xffffffffu && bridge!=0x29e08086u) ||
+       (lpc!=0x29188086u && lpc!=0x27b98086u) || (pci&0xff0000u) || device!=0x100e || pin<1 || pin>4)return 0;
+    int vbox=0;
+    for(unsigned slot=0;slot<32;slot++)
+        if(config(0x80000000u|(slot<<11),0)==0xcafe80eeu)vbox=1;
+    if(!vbox)return 0;
+    *gsi=16+(((pci>>11)+(pin-1))&7u);
+    kinfo("e1000 INTx probe: VBox/ICH9 root-slot=%u pin=%u firmware_line=%u verified_gsi=%u LPC=%x",
+          (pci>>11)&31,pin,line,*gsi,lpc);
+    return 1;
+}
 static uint64_t guard(void)
 {uint64_t flags=cm_irq_save();while(__sync_lock_test_and_set(&busy,1u))__asm__ volatile("pause");return flags;}
 static void unguard(uint64_t flags) {__sync_lock_release(&busy);cm_irq_restore(flags);}
@@ -128,16 +150,15 @@ cm_error_t cm_e1000_init(void)
     cm_iface_t *iface=cm_if_get(iface_id);memcpy(iface->mac,mac,6);
     iface->netmask=0xffffff00u;iface->gateway=0x0a000202u;iface->up=link();available=1;
     extern void cm_irq_stub_e1000(void);
-    unsigned line=config(pci,0x3c)&255;
+    uint32_t interrupt=config(pci,0x3c);
+    unsigned line=interrupt&255,pin=(interrupt>>8)&255,gsi=line;
     uint32_t host_bridge=config(0x80000000u,0);
-    /* i440FX routes firmware PCI Interrupt Line to the matching ISA GSI.
-     * Other root complexes require ACPI _PRT/MSI; do not guess their GSI. */
-    if(host_bridge==0x12378086u && cm_ioapic_pci_route(line,0x42,cm_irq_stub_e1000)==CM_OK) {
+    if(intx_route(line,pin,host_bridge,&gsi) && cm_ioapic_pci_route(gsi,0x42,cm_irq_stub_e1000)==CM_OK) {
         irq_enabled=1;(void)reg(0xc0);
         command((uint16_t)((saved_command|6)&~0x400u));
         put(0xd0,(1u<<4)|(1u<<6)|(1u<<7));(void)reg(8);
-        kinfo("e1000 irq rx enabled: INTx line=%u RXDMT0/RXO/RXT0; top=ack+notify",line);
-    } else kinfo("e1000 irq rx skipped: unverified firmware route bridge=%x line=%u fallback=poll-10ms",host_bridge,line);
+        kinfo("e1000 irq rx enabled: INTx line=%u gsi=%u RXDMT0/RXO/RXT0; top=ack+notify",line,gsi);
+    } else kinfo("e1000 irq rx skipped: bridge=%x line=%u pin=%u forced_poll=%u unverified-or-unavailable-route fallback=poll-10ms",host_bridge,line,pin,cm_boot_has_option("capmix.e1000_irq=0"));
     kinfo("e1000 ready: link=%s RX/TX=%u legacy DMA=2048 MAC=%x:%x:%x:%x:%x:%x irq=%u",iface->up?"up":"down",N,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],irq_enabled);
     kinfo("e1000 ip: enet0=10.0.2.15/24 gateway=10.0.2.2");unguard(flags);return CM_OK;
 #endif

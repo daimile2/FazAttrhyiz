@@ -1,5 +1,5 @@
 {
-  "archive_date": "2026-10-18",
+  "archive_date": "2026-10-19",
   "kind": "sanitized historical logs and dated regression evidence; see per-file evidence_round and documents",
   "files": [
     {
@@ -6515,6 +6515,1818 @@
         "docs/USER_JOURNEY.md"
       ],
       "evidence_round": "shell-console-protocol-2026-10-18"
+    },
+    {
+      "source_name": "capmix-ich9-kernel.log",
+      "source_sha256": "fb858e579f0766a91e89f4490be8a571cb22ab15889ea5b182768bcc692c6a8a",
+      "archive": "logs/ich9-kernel.log",
+      "archive_sha256": "fb858e579f0766a91e89f4490be8a571cb22ab15889ea5b182768bcc692c6a8a",
+      "source_bytes": 2365,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-hosted.log",
+      "source_sha256": "a4649b290b6989421aecd5b0a076058d230e766cb4f5457785a051bef6d80de3",
+      "archive": "logs/ich9-hosted.log",
+      "archive_sha256": "a4649b290b6989421aecd5b0a076058d230e766cb4f5457785a051bef6d80de3",
+      "source_bytes": 84865,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-comparison.log",
+      "source_sha256": "0535788f6c1615d34b6bd66105303335a253f4467a4053ca385ec9864e4ccae5",
+      "archive": "logs/ich9-comparison.log",
+      "archive_sha256": "0535788f6c1615d34b6bd66105303335a253f4467a4053ca385ec9864e4ccae5",
+      "source_bytes": 1399,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-source-ids.log",
+      "source_sha256": "04453d47c527a37077ce1e9fa806b8c8c21147022168227da5a2cf34ff59a794",
+      "archive": "logs/ich9-source-ids.log",
+      "archive_sha256": "04453d47c527a37077ce1e9fa806b8c8c21147022168227da5a2cf34ff59a794",
+      "source_bytes": 260,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-legacy-check.log",
+      "source_sha256": "b958183b55dc4d056f1c47660e950bf02f6d91de7639465ab6c0c62a84e13e82",
+      "archive": "logs/ich9-legacy-check.log",
+      "archive_sha256": "b958183b55dc4d056f1c47660e950bf02f6d91de7639465ab6c0c62a84e13e82",
+      "source_bytes": 386,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-debug-final-check.log",
+      "source_sha256": "eef53c5056858c46c19a2329728c34ac88ee049d0a913e0a4d47fd455d612a3d",
+      "archive": "logs/ich9-vbox-debug-check.log",
+      "archive_sha256": "eef53c5056858c46c19a2329728c34ac88ee049d0a913e0a4d47fd455d612a3d",
+      "source_bytes": 849,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-debug-first-failure.log",
+      "source_sha256": "5dca2dfb968f6b7ba268aaa544e429ae61b4757a3ad857d17419a609982405b2",
+      "archive": "logs/ich9-vbox-first-failure.log",
+      "archive_sha256": "74cef272fe6c52927b7e4ee51b5f774f3349783fb5096f3989f5be32bd7015ea",
+      "source_bytes": 73705,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-auto-run.log",
+      "source_sha256": "739d87b671406304b32b283df29e86f526b27df9a06ec4a9150945985c3eedb0",
+      "archive": "logs/ich9-preliminary-auto.log",
+      "archive_sha256": "739d87b671406304b32b283df29e86f526b27df9a06ec4a9150945985c3eedb0",
+      "source_bytes": 1355,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-qemu-e1000.log",
+      "source_sha256": "950e31fea498068e307ea3380241393bd4b43137c26447687f1405d5dfb36824",
+      "archive": "logs/ich9-qemu-e1000.log",
+      "archive_sha256": "950e31fea498068e307ea3380241393bd4b43137c26447687f1405d5dfb36824",
+      "source_bytes": 77526,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-qemu-e1000-check.log",
+      "source_sha256": "2bafd0c29057f66620f1cd1ac8e2896a9013269664d67f8b8fe07aefcfb68791",
+      "archive": "logs/ich9-qemu-e1000-check.log",
+      "archive_sha256": "2bafd0c29057f66620f1cd1ac8e2896a9013269664d67f8b8fe07aefcfb68791",
+      "source_bytes": 788,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-qemu-fallback.log",
+      "source_sha256": "26b0aec52b92b88da6608213f13d43c230e166459cc3e8e176b95e412b6376f1",
+      "archive": "logs/ich9-qemu-fallback.log",
+      "archive_sha256": "26b0aec52b92b88da6608213f13d43c230e166459cc3e8e176b95e412b6376f1",
+      "source_bytes": 77481,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-qemu-fallback-check.log",
+      "source_sha256": "2bafd0c29057f66620f1cd1ac8e2896a9013269664d67f8b8fe07aefcfb68791",
+      "archive": "logs/ich9-qemu-fallback-check.log",
+      "archive_sha256": "2bafd0c29057f66620f1cd1ac8e2896a9013269664d67f8b8fe07aefcfb68791",
+      "source_bytes": 788,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-qemu-virtio.log",
+      "source_sha256": "04ec3206f603cb8afd44ef5feebe11dd1d62622042fe2a982798e50119cd9929",
+      "archive": "logs/ich9-qemu-virtio.log",
+      "archive_sha256": "04ec3206f603cb8afd44ef5feebe11dd1d62622042fe2a982798e50119cd9929",
+      "source_bytes": 220179,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-qemu-virtio-check.log",
+      "source_sha256": "4a1a9ec23449d09ae8ecf6d181765eaa2ad2ab05d0760d5a75bd8bda5037d2ea",
+      "archive": "logs/ich9-qemu-virtio-check.log",
+      "archive_sha256": "4a1a9ec23449d09ae8ecf6d181765eaa2ad2ab05d0760d5a75bd8bda5037d2ea",
+      "source_bytes": 794,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-debug-iso.log",
+      "source_sha256": "147ee9b491742f4376fc3e1a7440adf5907bf01d6b25e51d12c4cdf1320af75c",
+      "archive": "logs/ich9-debug-iso.log",
+      "archive_sha256": "3717fdbc888624fdc913278ba087cdaf14c24cfe7d00f500c9c4ad391de4d537",
+      "source_bytes": 1962,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-linux-on-iso.log",
+      "source_sha256": "d37d4c05cdda1327ef3c5a2c9bf87b550cb7efbf03d646187844172a7e0aaff1",
+      "archive": "logs/ich9-linux-on-iso.log",
+      "archive_sha256": "51bdedd879ae23ac8b19c38b3b7e26f6009d832e85f7b6994e9411f12fc9307a",
+      "source_bytes": 1961,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-product.log",
+      "source_sha256": "82137977ff6a7cde20e1cd920d2f966d42d600446a740c45c1192bc91bfaec2e",
+      "archive": "logs/ich9-product.log",
+      "archive_sha256": "82137977ff6a7cde20e1cd920d2f966d42d600446a740c45c1192bc91bfaec2e",
+      "source_bytes": 21606,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-product-iso.log",
+      "source_sha256": "2b5e575c92343cd5725537550e1289a623c92fa8b3627e3ac1ac42bdadd80a52",
+      "archive": "logs/ich9-product-iso.log",
+      "archive_sha256": "a4ffba957cffd6feca170fdd2c95b3633a45abaf6f82782a02cede8db76beabf",
+      "source_bytes": 1943,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-tcp-peer.log",
+      "source_sha256": "2754fc76c9f37b9576d742bf0f3df556d78350b40bc7cca3e60bdb2690ccb069",
+      "archive": "logs/ich9-tcp-peer.log",
+      "archive_sha256": "fa56742d1e986a5bc9b61d41e0dc045f5ba8cd0d684ab73a2d9b7da820ba4433",
+      "source_bytes": 11033,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-udp-peer.log",
+      "source_sha256": "f5dbd6ca36ee482c7b1397c40ef55d152467816d9824518f5ef9e4c406b5f15a",
+      "archive": "logs/ich9-udp-peer.log",
+      "archive_sha256": "908848ab5241ff83dd14d478c832a5c54e16c653397934286e43c1a84a64fd0b",
+      "source_bytes": 1504,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "serial.log",
+      "source_sha256": "df5b019194275c18d3f2410d7cd95ed7a0973372d9c6caf2393eb213051d8f80",
+      "archive": "logs/ich9-vbox-debug.log",
+      "archive_sha256": "0cfba8eb3990521e6bb9587d6036f414449f25c917552ad30c108c434b2a0cb7",
+      "source_bytes": 76619,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "results.json",
+      "source_sha256": "16edf0ed090289b64a405a17a4c3c619d3b5c950643937199ead633a7813e4c4",
+      "archive": "logs/ich9-irq-results.log",
+      "archive_sha256": "16edf0ed090289b64a405a17a4c3c619d3b5c950643937199ead633a7813e4c4",
+      "source_bytes": 6982,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "config.json",
+      "source_sha256": "60a4c0bb1848b33fc735e2fc05b8414f1d7df4d8b5aa51e4f5a99987f7af2343",
+      "archive": "logs/ich9-irq-config.log",
+      "archive_sha256": "60a4c0bb1848b33fc735e2fc05b8414f1d7df4d8b5aa51e4f5a99987f7af2343",
+      "source_bytes": 827,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "numbers.log",
+      "source_sha256": "c49582ef184547d8f8cbac64e34b73f6be465a4742caebaf6a0f036d0e75d1a1",
+      "archive": "logs/ich9-irq-numbers.log",
+      "archive_sha256": "c49582ef184547d8f8cbac64e34b73f6be465a4742caebaf6a0f036d0e75d1a1",
+      "source_bytes": 1266,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "smp1-serial.log",
+      "source_sha256": "63eece3efba976c7b3a0e2b0f3e85b1e017552bf9f10628e79763150c10e5614",
+      "archive": "logs/ich9-irq-smp1.log",
+      "archive_sha256": "b922afc7b8f510ae2ba219e2ce38abbcce14e528efe0bcdcebf55b1c51b5fe1b",
+      "source_bytes": 32856,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "c72ac37710dc2eb1942188ec0c164d9e38cc62378fb7ee508edc9a1259f624fb",
+      "archive": "logs/ich9-irq-smp4.log",
+      "archive_sha256": "94601614cbf70c319747a39f5743809e1aeeecc9ae590a0fe4870d45f2681d35",
+      "source_bytes": 34088,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "provision-serial.log",
+      "source_sha256": "9676f9d1305182202f5ac7c250e88e2001973381713ad93dccb83184435b686e",
+      "archive": "logs/ich9-irq-provision.log",
+      "archive_sha256": "811b9d384db55bca9ee665a1cbd9ba90977d7999b3cb2e7a2dc476807fb96e38",
+      "source_bytes": 10213,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "install.log",
+      "source_sha256": "a9ed134198448643b98be2b00ba67c33eba86f58109bf7dab888ecf1cde6ad5d",
+      "archive": "logs/ich9-irq-install.log",
+      "archive_sha256": "765457d87d853b5b7ad68b3d2592f8d54784e034a5389e1942b5013c29968fef",
+      "source_bytes": 1015,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "build.log",
+      "source_sha256": "2a165051d700090d70560a08f744f889647e5b8285c9bae45e533aaa988b799e",
+      "archive": "logs/ich9-irq-build.log",
+      "archive_sha256": "2a165051d700090d70560a08f744f889647e5b8285c9bae45e533aaa988b799e",
+      "source_bytes": 170,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-irq-v2-check.log",
+      "source_sha256": "a6084c45cdad0afc7bfcda48f7a457436c39f7241153804cdd886c69f04bda3b",
+      "archive": "logs/ich9-irq-check.log",
+      "archive_sha256": "a6084c45cdad0afc7bfcda48f7a457436c39f7241153804cdd886c69f04bda3b",
+      "source_bytes": 472,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-irq-v2-run.log",
+      "source_sha256": "52cb91e860a06de79e82a872918db8430edb38ced8b8438ca3e94ac8355c2930",
+      "archive": "logs/ich9-irq-run.log",
+      "archive_sha256": "52cb91e860a06de79e82a872918db8430edb38ced8b8438ca3e94ac8355c2930",
+      "source_bytes": 1355,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "results.json",
+      "source_sha256": "1b4b7e685e6b0cbb150ca682f83c57ef44187a4a6b98b01ee2d9e17066c19996",
+      "archive": "logs/ich9-poll-results.log",
+      "archive_sha256": "1b4b7e685e6b0cbb150ca682f83c57ef44187a4a6b98b01ee2d9e17066c19996",
+      "source_bytes": 6960,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "config.json",
+      "source_sha256": "a480558e87d07b0789ad3f25fc0283be9eeaa2ebc792ad3b2730bcb97969b94a",
+      "archive": "logs/ich9-poll-config.log",
+      "archive_sha256": "a480558e87d07b0789ad3f25fc0283be9eeaa2ebc792ad3b2730bcb97969b94a",
+      "source_bytes": 827,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "numbers.log",
+      "source_sha256": "58e67313481e915cdbee49b7f37e46929480a97f70740c25756168f59c86a5bb",
+      "archive": "logs/ich9-poll-numbers.log",
+      "archive_sha256": "58e67313481e915cdbee49b7f37e46929480a97f70740c25756168f59c86a5bb",
+      "source_bytes": 1266,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "smp1-serial.log",
+      "source_sha256": "f3de21028c9fee77680e262afc2f50e9e1458c41b10a813fb713b8ae61fc4d45",
+      "archive": "logs/ich9-poll-smp1.log",
+      "archive_sha256": "fc0fa3ea1d88d0978d7bfac2172af1cd6cafa1eb82da977c1ecadb49f2304e0a",
+      "source_bytes": 32665,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "acc432d93966938f33775486f56ea83df87f075e8216dfe40efad44e3e32c1d2",
+      "archive": "logs/ich9-poll-smp4.log",
+      "archive_sha256": "082fbdfc5989d3286d1f7061038c2ae03e6cb00248719f083db89991eeb01c7a",
+      "source_bytes": 33897,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "provision-serial.log",
+      "source_sha256": "af858d3b56500ffa89bc1a8f4aa3861cdb290621bd81336e9032012b17a0ff30",
+      "archive": "logs/ich9-poll-provision.log",
+      "archive_sha256": "4cf5e1f305460ff10078c4cbfbccffcb55a4398e8e4ae9b9f64c0494ce2c445c",
+      "source_bytes": 10085,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "install.log",
+      "source_sha256": "b8ba9c88b529d790ec2fbeebb651637b87c00c9dbed6572ce97cf35f9f4d7431",
+      "archive": "logs/ich9-poll-install.log",
+      "archive_sha256": "9281b7029a0f23c7d99f5b2f692dc9b1495eeee05943db89bd9120ff41e335f0",
+      "source_bytes": 1016,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "build.log",
+      "source_sha256": "2a165051d700090d70560a08f744f889647e5b8285c9bae45e533aaa988b799e",
+      "archive": "logs/ich9-poll-build.log",
+      "archive_sha256": "2a165051d700090d70560a08f744f889647e5b8285c9bae45e533aaa988b799e",
+      "source_bytes": 170,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-poll-v2-check.log",
+      "source_sha256": "74d572971a68f223aa8d197a66c73b50e542ee00561efcdc580e84b31d1e267a",
+      "archive": "logs/ich9-poll-check.log",
+      "archive_sha256": "74d572971a68f223aa8d197a66c73b50e542ee00561efcdc580e84b31d1e267a",
+      "source_bytes": 472,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-ich9-poll-v2-run.log",
+      "source_sha256": "6d7225d594f6fc38d93fc9cc791217f3e3980448c9cb6205693063659dd0f8b0",
+      "archive": "logs/ich9-poll-run.log",
+      "archive_sha256": "6d7225d594f6fc38d93fc9cc791217f3e3980448c9cb6205693063659dd0f8b0",
+      "source_bytes": 1355,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/VBOX_ICH9_INTX.md"
+      ],
+      "evidence_round": "vbox-ich9-intx-perf-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-kernel.log",
+      "source_sha256": "6e652157bbb92ae782582d17d50ef64c0ee528cb98466ee02919fdcd33c750a6",
+      "archive": "logs/httpworkers-kernel.log",
+      "archive_sha256": "6e652157bbb92ae782582d17d50ef64c0ee528cb98466ee02919fdcd33c750a6",
+      "source_bytes": 2773,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-hosted.log",
+      "source_sha256": "4ec28f5bb7eabdb52664d937c450cd73927daf8942e722ec954c81da7205db36",
+      "archive": "logs/httpworkers-hosted.log",
+      "archive_sha256": "4ec28f5bb7eabdb52664d937c450cd73927daf8942e722ec954c81da7205db36",
+      "source_bytes": 84865,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-debug.log",
+      "source_sha256": "56cdab96e4f65f3e248d1f26f7fb99fa7af30ddb6c23d712dbdaeca600860bfe",
+      "archive": "logs/httpworkers-debug.log",
+      "archive_sha256": "56cdab96e4f65f3e248d1f26f7fb99fa7af30ddb6c23d712dbdaeca600860bfe",
+      "source_bytes": 219126,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-debug-check.log",
+      "source_sha256": "4a1a9ec23449d09ae8ecf6d181765eaa2ad2ab05d0760d5a75bd8bda5037d2ea",
+      "archive": "logs/httpworkers-debug-check.log",
+      "archive_sha256": "4a1a9ec23449d09ae8ecf6d181765eaa2ad2ab05d0760d5a75bd8bda5037d2ea",
+      "source_bytes": 794,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-debug-iso.log",
+      "source_sha256": "e037043cc3d84c5df39489f42b41d4145a7a54b8ff238b033edf54926d08fd56",
+      "archive": "logs/httpworkers-debug-iso.log",
+      "archive_sha256": "400740be8429d520c57ae45cb3b2444350a31191670204dcec6fd20ae1b98b05",
+      "source_bytes": 1961,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-product.log",
+      "source_sha256": "4c63fcc6ecbe98cd3eb5537da4dab5bff99c323e53d4cad19e38515ef28a0f36",
+      "archive": "logs/httpworkers-product.log",
+      "archive_sha256": "4c63fcc6ecbe98cd3eb5537da4dab5bff99c323e53d4cad19e38515ef28a0f36",
+      "source_bytes": 21606,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-product-iso.log",
+      "source_sha256": "67aabeb621d108665ce8b645e6402a2dba51583d2b634e26ee5544b6854da038",
+      "archive": "logs/httpworkers-product-iso.log",
+      "archive_sha256": "2be79bee644e8f00385ef5f836ab19a7b5630023ba2e2a12c4f4969deff8cabc",
+      "source_bytes": 2016,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-qemu-compare.log",
+      "source_sha256": "e04825eefc3549f16d69a4b2fedbd6603d48b166420bd5967016d7732e355d69",
+      "archive": "logs/httpworkers-qemu-compare.log",
+      "archive_sha256": "e04825eefc3549f16d69a4b2fedbd6603d48b166420bd5967016d7732e355d69",
+      "source_bytes": 1722,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-vbox-compare.log",
+      "source_sha256": "adf2e9b79b5b8d09fb564c425eaf9aea5ce94667a8f65b22ce5f8d18c38c716e",
+      "archive": "logs/httpworkers-vbox-compare.log",
+      "archive_sha256": "adf2e9b79b5b8d09fb564c425eaf9aea5ce94667a8f65b22ce5f8d18c38c716e",
+      "source_bytes": 1722,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-legacy-check.log",
+      "source_sha256": "57b6ec3d5a9a53941098919bd5f93c82af3df2b03854d7b65c72fb642f573ff3",
+      "archive": "logs/httpworkers-legacy-check.log",
+      "archive_sha256": "57b6ec3d5a9a53941098919bd5f93c82af3df2b03854d7b65c72fb642f573ff3",
+      "source_bytes": 1495,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-journey-check.log",
+      "source_sha256": "6d3069915d8acdf0d1e276f7a1f12293a0751f36b182bd72f9933e888d1789e9",
+      "archive": "logs/httpworkers-journey-check.log",
+      "archive_sha256": "6d3069915d8acdf0d1e276f7a1f12293a0751f36b182bd72f9933e888d1789e9",
+      "source_bytes": 948,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-journey-prepare.log",
+      "source_sha256": "7ac34fa8bd57b0857816d513f06da33171205f095b85e56a128446e3ec2e7391",
+      "archive": "logs/httpworkers-journey-prepare.log",
+      "archive_sha256": "b60cc6773d0dfb4cb7bd8613f2ca2c77d3e4a072cd1289ed42e4a2b4d92e2e7c",
+      "source_bytes": 1191,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "config.json",
+      "source_sha256": "5303be19a09c74e45822af1fbaadefc248f133a0608048ad14435a2a3bbbfd85",
+      "archive": "logs/httpworkers-qemu-w1-config.log",
+      "archive_sha256": "5303be19a09c74e45822af1fbaadefc248f133a0608048ad14435a2a3bbbfd85",
+      "source_bytes": 859,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "results.json",
+      "source_sha256": "41f55f265a656068cbbdf6328014982c88098035c33d82cdb5e50d016e0f0329",
+      "archive": "logs/httpworkers-qemu-w1-results.log",
+      "archive_sha256": "41f55f265a656068cbbdf6328014982c88098035c33d82cdb5e50d016e0f0329",
+      "source_bytes": 8012,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "numbers.log",
+      "source_sha256": "b15b68fbae45103f17ca946db183ce47380068efb4c024edf7fecd877d24d09a",
+      "archive": "logs/httpworkers-qemu-w1-numbers.log",
+      "archive_sha256": "b15b68fbae45103f17ca946db183ce47380068efb4c024edf7fecd877d24d09a",
+      "source_bytes": 1500,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "install.log",
+      "source_sha256": "c9ddb93cb245a22b360f8bca48704417548c120ec00a09d4789b065c48dd18ce",
+      "archive": "logs/httpworkers-qemu-w1-install.log",
+      "archive_sha256": "9ad1b512b76edb9ec569d69e78332b91ea8ab61e73ed3f2224fac4a17003a6a1",
+      "source_bytes": 1024,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "provision-serial.log",
+      "source_sha256": "0d0758fb91dcf3fff14f773f97f55c5350362325b1800c4b3a3aa77a1db5cb75",
+      "archive": "logs/httpworkers-qemu-w1-provision.log",
+      "archive_sha256": "0d0758fb91dcf3fff14f773f97f55c5350362325b1800c4b3a3aa77a1db5cb75",
+      "source_bytes": 9759,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp1-serial.log",
+      "source_sha256": "19be4483a441946829ae56a0afd9e731c7ee4667d2e9ce29e347e9b7d006ae69",
+      "archive": "logs/httpworkers-qemu-w1-smp1.log",
+      "archive_sha256": "19be4483a441946829ae56a0afd9e731c7ee4667d2e9ce29e347e9b7d006ae69",
+      "source_bytes": 32650,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp1-workers.json",
+      "source_sha256": "86a9736fcc4e3124cfd093c193472e84b870c26335708ba75b8f2b0a5850c397",
+      "archive": "logs/httpworkers-qemu-w1-placements1.log",
+      "archive_sha256": "86a9736fcc4e3124cfd093c193472e84b870c26335708ba75b8f2b0a5850c397",
+      "source_bytes": 74,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "3ba4e03affaa237d5aa36464e0bb612dffa50cd9cc49d7785695abda094a997b",
+      "archive": "logs/httpworkers-qemu-w1-smp4.log",
+      "archive_sha256": "3ba4e03affaa237d5aa36464e0bb612dffa50cd9cc49d7785695abda094a997b",
+      "source_bytes": 33876,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp4-workers.json",
+      "source_sha256": "86a9736fcc4e3124cfd093c193472e84b870c26335708ba75b8f2b0a5850c397",
+      "archive": "logs/httpworkers-qemu-w1-placements4.log",
+      "archive_sha256": "86a9736fcc4e3124cfd093c193472e84b870c26335708ba75b8f2b0a5850c397",
+      "source_bytes": 74,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-qemu-w1-run.log",
+      "source_sha256": "6fc184f165418f5bcb0676433d39b662f5a68cf8894028ff9dbecd9be3895a18",
+      "archive": "logs/httpworkers-qemu-w1-run.log",
+      "archive_sha256": "6fc184f165418f5bcb0676433d39b662f5a68cf8894028ff9dbecd9be3895a18",
+      "source_bytes": 1589,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-qemu-w1-check.log",
+      "source_sha256": "634c77b0ee4240fcfee8b1e9e490a2f2967e98cd5f07470bfb3be3280856c56a",
+      "archive": "logs/httpworkers-qemu-w1-check.log",
+      "archive_sha256": "634c77b0ee4240fcfee8b1e9e490a2f2967e98cd5f07470bfb3be3280856c56a",
+      "source_bytes": 522,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "config.json",
+      "source_sha256": "1381a5ae3b02e672b5b7452b4e3925a3b672401dc7da2e2c4ee6e00f8cf2db84",
+      "archive": "logs/httpworkers-qemu-w4-config.log",
+      "archive_sha256": "1381a5ae3b02e672b5b7452b4e3925a3b672401dc7da2e2c4ee6e00f8cf2db84",
+      "source_bytes": 859,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "results.json",
+      "source_sha256": "5c69289b3969eae906dd306474e882b062d5006eac885b82d596c83768d1ee13",
+      "archive": "logs/httpworkers-qemu-w4-results.log",
+      "archive_sha256": "5c69289b3969eae906dd306474e882b062d5006eac885b82d596c83768d1ee13",
+      "source_bytes": 9889,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "numbers.log",
+      "source_sha256": "77a8827b9f80d2b5bf7a2f62e024b3454bd070f7c43a7805fd4977da96f16a0f",
+      "archive": "logs/httpworkers-qemu-w4-numbers.log",
+      "archive_sha256": "77a8827b9f80d2b5bf7a2f62e024b3454bd070f7c43a7805fd4977da96f16a0f",
+      "source_bytes": 1498,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "install.log",
+      "source_sha256": "391c6b9599c4565fa8dc4c6f38ad7d1daf3caf9939ae142a2a5aa68b7f9e3d60",
+      "archive": "logs/httpworkers-qemu-w4-install.log",
+      "archive_sha256": "61b87e5b92f31776b6a4a423548212ca725d5241480f67ab0263a3bca2a0dbce",
+      "source_bytes": 1024,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "provision-serial.log",
+      "source_sha256": "a9d4ea6d28a2c752cb2bc5a5f780c2a773574ae4bf52f5373df0c05a0888d7c7",
+      "archive": "logs/httpworkers-qemu-w4-provision.log",
+      "archive_sha256": "a9d4ea6d28a2c752cb2bc5a5f780c2a773574ae4bf52f5373df0c05a0888d7c7",
+      "source_bytes": 9759,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp1-serial.log",
+      "source_sha256": "2eb46af97c306226ace4383d05a5a08cfcea92580ce7f6cc1e7e5f03d4b6a919",
+      "archive": "logs/httpworkers-qemu-w4-smp1.log",
+      "archive_sha256": "2eb46af97c306226ace4383d05a5a08cfcea92580ce7f6cc1e7e5f03d4b6a919",
+      "source_bytes": 36334,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp1-workers.json",
+      "source_sha256": "2e20ffc64f619d5170d81a52bfbf522ad1da15b4c6f5250f75d63340072c8398",
+      "archive": "logs/httpworkers-qemu-w4-placements1.log",
+      "archive_sha256": "2e20ffc64f619d5170d81a52bfbf522ad1da15b4c6f5250f75d63340072c8398",
+      "source_bytes": 287,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "4285fef31c6c46e9870ff541d3779f9a1f69fb1247456f44cb4d06bfb3331f01",
+      "archive": "logs/httpworkers-qemu-w4-smp4.log",
+      "archive_sha256": "4285fef31c6c46e9870ff541d3779f9a1f69fb1247456f44cb4d06bfb3331f01",
+      "source_bytes": 37809,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp4-workers.json",
+      "source_sha256": "26bd6cd564770074f376c97e36eeb3388eebe8a6f891edfe8cb811072ccf534f",
+      "archive": "logs/httpworkers-qemu-w4-placements4.log",
+      "archive_sha256": "26bd6cd564770074f376c97e36eeb3388eebe8a6f891edfe8cb811072ccf534f",
+      "source_bytes": 287,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-qemu-w4-run.log",
+      "source_sha256": "b7f85bef7b6f6c08bc05a3b3586a2306ea2acbbb7da1f9c641aad3e491178feb",
+      "archive": "logs/httpworkers-qemu-w4-run.log",
+      "archive_sha256": "b7f85bef7b6f6c08bc05a3b3586a2306ea2acbbb7da1f9c641aad3e491178feb",
+      "source_bytes": 1587,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-qemu-w4-check.log",
+      "source_sha256": "6079140889323509133d39daf8edc348b994c0d95e8d1a74d788a3132a8c6de9",
+      "archive": "logs/httpworkers-qemu-w4-check.log",
+      "archive_sha256": "6079140889323509133d39daf8edc348b994c0d95e8d1a74d788a3132a8c6de9",
+      "source_bytes": 521,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "config.json",
+      "source_sha256": "80eb8ff98c64d3ff7ffb4067bedea15ef3886fb3280dc0ab4a354efb7e5dab8d",
+      "archive": "logs/httpworkers-vbox-w1-config.log",
+      "archive_sha256": "80eb8ff98c64d3ff7ffb4067bedea15ef3886fb3280dc0ab4a354efb7e5dab8d",
+      "source_bytes": 863,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "results.json",
+      "source_sha256": "ddaff3e54f09ae5563856996574fa0b061b0c5b0435d353dbc6c9a44e766654c",
+      "archive": "logs/httpworkers-vbox-w1-results.log",
+      "archive_sha256": "ddaff3e54f09ae5563856996574fa0b061b0c5b0435d353dbc6c9a44e766654c",
+      "source_bytes": 8016,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "numbers.log",
+      "source_sha256": "a1e32d9aa4655bb3b49e23eefbf24eab785250272d3979d64a7cc3e1a3378f6a",
+      "archive": "logs/httpworkers-vbox-w1-numbers.log",
+      "archive_sha256": "a1e32d9aa4655bb3b49e23eefbf24eab785250272d3979d64a7cc3e1a3378f6a",
+      "source_bytes": 1500,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "install.log",
+      "source_sha256": "1fb02c5f9299cf527aa2a6119e5670d39e6e7a4af8c16951079ffedb8916d58c",
+      "archive": "logs/httpworkers-vbox-w1-install.log",
+      "archive_sha256": "c9c530ccd7d813352c249411d5a3b823288a1d250c0f8fce91944cce6760f1cf",
+      "source_bytes": 1024,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "provision-serial.log",
+      "source_sha256": "45f8e1a8e618f91b7dbcb7e45f557a4ceaece4aaefef496cf31bd394a58e9cf6",
+      "archive": "logs/httpworkers-vbox-w1-provision.log",
+      "archive_sha256": "06676e056d2769cd562c85d223cb40ced273355ca7b6437a4d7f14712df94444",
+      "source_bytes": 10215,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp1-serial.log",
+      "source_sha256": "dfcff2efa28af08485f546bdccfa20a41cdcbdbc792de9cdf6a0331bc8c70435",
+      "archive": "logs/httpworkers-vbox-w1-smp1.log",
+      "archive_sha256": "93b147a15c0282e829baaa46e850467bfe1373b72e67827e537f9bb7be0316f0",
+      "source_bytes": 33175,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp1-workers.json",
+      "source_sha256": "86a9736fcc4e3124cfd093c193472e84b870c26335708ba75b8f2b0a5850c397",
+      "archive": "logs/httpworkers-vbox-w1-placements1.log",
+      "archive_sha256": "86a9736fcc4e3124cfd093c193472e84b870c26335708ba75b8f2b0a5850c397",
+      "source_bytes": 74,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "c123714c0ed08391b16e217020572182627318d923a66b973bc5f7fff2b34b42",
+      "archive": "logs/httpworkers-vbox-w1-smp4.log",
+      "archive_sha256": "a30ff717c77f67ffd6d4d6d7687e51a0578340ae1e59d83f3015f866c64328bd",
+      "source_bytes": 34398,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp4-workers.json",
+      "source_sha256": "86a9736fcc4e3124cfd093c193472e84b870c26335708ba75b8f2b0a5850c397",
+      "archive": "logs/httpworkers-vbox-w1-placements4.log",
+      "archive_sha256": "86a9736fcc4e3124cfd093c193472e84b870c26335708ba75b8f2b0a5850c397",
+      "source_bytes": 74,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-vbox-w1-run.log",
+      "source_sha256": "b65a388b4fec890a93a093c756cd39bcb5bf3b44052be450b410b726c9fc96b7",
+      "archive": "logs/httpworkers-vbox-w1-run.log",
+      "archive_sha256": "b65a388b4fec890a93a093c756cd39bcb5bf3b44052be450b410b726c9fc96b7",
+      "source_bytes": 1589,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-vbox-w1-check.log",
+      "source_sha256": "f96302c3bc3d0c1b6cc85b29a7601140d3c1c878f0098be376dd34e3f8ea6447",
+      "archive": "logs/httpworkers-vbox-w1-check.log",
+      "archive_sha256": "f96302c3bc3d0c1b6cc85b29a7601140d3c1c878f0098be376dd34e3f8ea6447",
+      "source_bytes": 522,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "config.json",
+      "source_sha256": "82ff5d7bcb206e923792fd0fd50ad336ca9e3206b597cfa11905f0d12e37ec62",
+      "archive": "logs/httpworkers-vbox-w4-config.log",
+      "archive_sha256": "82ff5d7bcb206e923792fd0fd50ad336ca9e3206b597cfa11905f0d12e37ec62",
+      "source_bytes": 863,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "results.json",
+      "source_sha256": "260f9b1d6232da28ed3655da3937598c28d94c555888ece97989e2174adaf0e3",
+      "archive": "logs/httpworkers-vbox-w4-results.log",
+      "archive_sha256": "260f9b1d6232da28ed3655da3937598c28d94c555888ece97989e2174adaf0e3",
+      "source_bytes": 9914,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "numbers.log",
+      "source_sha256": "1a917ce0c25d8d68a3587929109a807265f9bbadd46548d4c1859d9b232d6e2d",
+      "archive": "logs/httpworkers-vbox-w4-numbers.log",
+      "archive_sha256": "1a917ce0c25d8d68a3587929109a807265f9bbadd46548d4c1859d9b232d6e2d",
+      "source_bytes": 1497,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "install.log",
+      "source_sha256": "e06a1cf494483d6e577d534b94803dbf34cafb5be0b8ccffa63ba9783e5c9471",
+      "archive": "logs/httpworkers-vbox-w4-install.log",
+      "archive_sha256": "5416e8d5c5c0bd7840fa8078a5489f864598609ef13233ea9a8a703383bc6ad0",
+      "source_bytes": 1024,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "provision-serial.log",
+      "source_sha256": "78b7176f06b11f789d54c8432d959fc685b28571a44d2cb39977dd4fc8dda649",
+      "archive": "logs/httpworkers-vbox-w4-provision.log",
+      "archive_sha256": "5ceec30d3640df57afc5b56a2c21d982c0e3214dec68326d7d6a4024f5f20796",
+      "source_bytes": 10214,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp1-serial.log",
+      "source_sha256": "9962e1d341a187a9a773ee5fe9c10daa86d7df2017da61f9d4386965059dc71f",
+      "archive": "logs/httpworkers-vbox-w4-smp1.log",
+      "archive_sha256": "6b86f248788dddf3c6ac6e050f7de730089f995e97bf0c3af14dae64cf180e90",
+      "source_bytes": 36854,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp1-workers.json",
+      "source_sha256": "2e20ffc64f619d5170d81a52bfbf522ad1da15b4c6f5250f75d63340072c8398",
+      "archive": "logs/httpworkers-vbox-w4-placements1.log",
+      "archive_sha256": "2e20ffc64f619d5170d81a52bfbf522ad1da15b4c6f5250f75d63340072c8398",
+      "source_bytes": 287,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "237fb9303546d5968966c54449967d235c2427af0bb5e3843b5afd4d5f9296a7",
+      "archive": "logs/httpworkers-vbox-w4-smp4.log",
+      "archive_sha256": "c6b0353507e2e232f1aa664c41afb05ce5950afce26228fb6de1744344d7a597",
+      "source_bytes": 38331,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp4-workers.json",
+      "source_sha256": "26bd6cd564770074f376c97e36eeb3388eebe8a6f891edfe8cb811072ccf534f",
+      "archive": "logs/httpworkers-vbox-w4-placements4.log",
+      "archive_sha256": "26bd6cd564770074f376c97e36eeb3388eebe8a6f891edfe8cb811072ccf534f",
+      "source_bytes": 287,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-vbox-w4-run.log",
+      "source_sha256": "182707a15b2711500b258abf223d5470aaf4523da58f5df68c66983e8cb83a2d",
+      "archive": "logs/httpworkers-vbox-w4-run.log",
+      "archive_sha256": "182707a15b2711500b258abf223d5470aaf4523da58f5df68c66983e8cb83a2d",
+      "source_bytes": 1586,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-vbox-w4-check.log",
+      "source_sha256": "52a6dc7e2222384a5622e2899a43d179f8cc5a62c7294f60221b03a52fbd3ac5",
+      "archive": "logs/httpworkers-vbox-w4-check.log",
+      "archive_sha256": "52a6dc7e2222384a5622e2899a43d179f8cc5a62c7294f60221b03a52fbd3ac5",
+      "source_bytes": 521,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "config.json",
+      "source_sha256": "b895162ddd94c6089ee0c9bfc4dde0eba237bfbb0ef0092228cfae3590ef9e1a",
+      "archive": "logs/httpworkers-qemu-w2-config.log",
+      "archive_sha256": "b895162ddd94c6089ee0c9bfc4dde0eba237bfbb0ef0092228cfae3590ef9e1a",
+      "source_bytes": 851,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "results.json",
+      "source_sha256": "9ccbb2218a978375d53979916844d8bf4229f9de3b025bb9a6ce9de719bff203",
+      "archive": "logs/httpworkers-qemu-w2-results.log",
+      "archive_sha256": "9ccbb2218a978375d53979916844d8bf4229f9de3b025bb9a6ce9de719bff203",
+      "source_bytes": 1786,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "numbers.log",
+      "source_sha256": "411ebc25d19b402bbdb464f4c306ff1eefccada56b3f267b115be63abd6c05f9",
+      "archive": "logs/httpworkers-qemu-w2-numbers.log",
+      "archive_sha256": "411ebc25d19b402bbdb464f4c306ff1eefccada56b3f267b115be63abd6c05f9",
+      "source_bytes": 248,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "install.log",
+      "source_sha256": "4768bf9639efcd87dc03be1eb45531fd659b47f43d5fe571f86e27b87117ced3",
+      "archive": "logs/httpworkers-qemu-w2-install.log",
+      "archive_sha256": "e0721b03d4aa4f8ece664f3b499e3cee4482b112fa7d3b1088cbe743f1fa3531",
+      "source_bytes": 1024,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "provision-serial.log",
+      "source_sha256": "c542c422669a3b3253e487953efb68b35030fe9f77c0347dc82eb06fa88a5f06",
+      "archive": "logs/httpworkers-qemu-w2-provision.log",
+      "archive_sha256": "c542c422669a3b3253e487953efb68b35030fe9f77c0347dc82eb06fa88a5f06",
+      "source_bytes": 9759,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "309734c47a93c9a535e89e9a59cb9597e1943ff842c7cffbf08523b98237128b",
+      "archive": "logs/httpworkers-qemu-w2-smp4.log",
+      "archive_sha256": "309734c47a93c9a535e89e9a59cb9597e1943ff842c7cffbf08523b98237128b",
+      "source_bytes": 16589,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "smp4-workers.json",
+      "source_sha256": "c289f35dfdb6b0249f9524ab18d4cf9771ab71f2341f4860041fc2b48628e7bc",
+      "archive": "logs/httpworkers-qemu-w2-placements4.log",
+      "archive_sha256": "c289f35dfdb6b0249f9524ab18d4cf9771ab71f2341f4860041fc2b48628e7bc",
+      "source_bytes": 145,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-qemu-w2-run.log",
+      "source_sha256": "2a3360fc7f4ff65553c62bc01d63568437d3d3c2b99e9175cfdb1aab792fb487",
+      "archive": "logs/httpworkers-qemu-w2-run.log",
+      "archive_sha256": "2a3360fc7f4ff65553c62bc01d63568437d3d3c2b99e9175cfdb1aab792fb487",
+      "source_bytes": 337,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-http-workers-qemu-w2-check.log",
+      "source_sha256": "1bf2e6ce5bc869607dac8d06c220531a212c4c35f530e8069d5b803d415a9919",
+      "archive": "logs/httpworkers-qemu-w2-check.log",
+      "archive_sha256": "1bf2e6ce5bc869607dac8d06c220531a212c4c35f530e8069d5b803d415a9919",
+      "source_bytes": 305,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "journey-native.log",
+      "source_sha256": "b019b80efcdd047d6d6be19a6f9b852b7c5081d5ce431ce000e3860ab5bb702a",
+      "archive": "logs/httpworkers-journey-native.log",
+      "archive_sha256": "b019b80efcdd047d6d6be19a6f9b852b7c5081d5ce431ce000e3860ab5bb702a",
+      "source_bytes": 12275,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "journey-linux.log",
+      "source_sha256": "4900c2fdb00a8d5dbbb1dbfc89e548d72143e9708385620992fc709aa99cd36a",
+      "archive": "logs/httpworkers-journey-linux.log",
+      "archive_sha256": "4900c2fdb00a8d5dbbb1dbfc89e548d72143e9708385620992fc709aa99cd36a",
+      "source_bytes": 17252,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "journey-disabled.log",
+      "source_sha256": "eca926c1355edff3c0fe3fa215abc5ae55a2951f67b901f462e8cebceb4dcf13",
+      "archive": "logs/httpworkers-journey-disabled.log",
+      "archive_sha256": "eca926c1355edff3c0fe3fa215abc5ae55a2951f67b901f462e8cebceb4dcf13",
+      "source_bytes": 12890,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "journey-http-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/httpworkers-journey-http-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "journey-result.log",
+      "source_sha256": "c9da08d1a4fe5dbf9f824402e02a8b2c065bdd249a6b1402c8503c5a51fdc564",
+      "archive": "logs/httpworkers-journey-result.log",
+      "archive_sha256": "c9da08d1a4fe5dbf9f824402e02a8b2c065bdd249a6b1402c8503c5a51fdc564",
+      "source_bytes": 133,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/HTTP_WORKERS.md"
+      ],
+      "evidence_round": "httpd-bounded-process-workers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-lowercase-kernel.log",
+      "source_sha256": "fb858e579f0766a91e89f4490be8a571cb22ab15889ea5b182768bcc692c6a8a",
+      "archive": "logs/console-case-kernel.log",
+      "archive_sha256": "fb858e579f0766a91e89f4490be8a571cb22ab15889ea5b182768bcc692c6a8a",
+      "source_bytes": 2365,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "capmix-lowercase-hosted.log",
+      "source_sha256": "8e95ef332e02270a5fd44a8146bf680157b5352752149a7f93c23d2bbbc2e5b9",
+      "archive": "logs/console-case-hosted.log",
+      "archive_sha256": "8e95ef332e02270a5fd44a8146bf680157b5352752149a7f93c23d2bbbc2e5b9",
+      "source_bytes": 84998,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "capmix-case-qemu-check.log",
+      "source_sha256": "0bea91b74be7a4152fd62f98f3805797b714e25e87b0a9bf0ac3cb92e11b8704",
+      "archive": "logs/console-case-qemu-check.log",
+      "archive_sha256": "0bea91b74be7a4152fd62f98f3805797b714e25e87b0a9bf0ac3cb92e11b8704",
+      "source_bytes": 947,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "capmix-case-vbox-check.log",
+      "source_sha256": "5171e4a6e3a67c443f1e3b4a8f44526605ae6f87cd7a546fe7512df2833df350",
+      "archive": "logs/console-case-vbox-check.log",
+      "archive_sha256": "5171e4a6e3a67c443f1e3b4a8f44526605ae6f87cd7a546fe7512df2833df350",
+      "source_bytes": 947,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "capmix-case-debug.log",
+      "source_sha256": "44866eef04374d12624d29321f9cf3ebf2ac66b15fa3eed3b5ebe1bab46ee95b",
+      "archive": "logs/console-case-debug-missing-peers.log",
+      "archive_sha256": "44866eef04374d12624d29321f9cf3ebf2ac66b15fa3eed3b5ebe1bab46ee95b",
+      "source_bytes": 221376,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "capmix-case-debug-clean.log",
+      "source_sha256": "2c56ffac2fd5f1c9f42eda1108ba757586b1c2c02b273d75e856496f19bf1ec4",
+      "archive": "logs/console-case-debug.log",
+      "archive_sha256": "2c56ffac2fd5f1c9f42eda1108ba757586b1c2c02b273d75e856496f19bf1ec4",
+      "source_bytes": 219407,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "capmix-case-debug-clean-iso.log",
+      "source_sha256": "e0105b6b1908087f83cab04bb9b0e48067ac28ec2d1206ec207f078bb7552cb5",
+      "archive": "logs/console-case-debug-iso.log",
+      "archive_sha256": "e54703798317b4436e5a004b046308e0ea027bfa1bf1f26d978638331e2e6cfa",
+      "source_bytes": 1957,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-first.log",
+      "source_sha256": "4840c8bfb827fb2e6edb576824de8c04459defc052bd01649259ca873db3d0ab",
+      "archive": "logs/console-case-qemu-case-first.log",
+      "archive_sha256": "4840c8bfb827fb2e6edb576824de8c04459defc052bd01649259ca873db3d0ab",
+      "source_bytes": 12488,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-second.log",
+      "source_sha256": "9725bca5896550f6c12d8022dfb5be4b1438d2d1d30d63980184e74d225f2abf",
+      "archive": "logs/console-case-qemu-case-second.log",
+      "archive_sha256": "9725bca5896550f6c12d8022dfb5be4b1438d2d1d30d63980184e74d225f2abf",
+      "source_bytes": 11012,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-first.log",
+      "source_sha256": "ee84a3ac69d5707bc8d2c17e00d0e857169a7d107a3c7504e6e7618a77294250",
+      "archive": "logs/console-case-vbox-case-first.log",
+      "archive_sha256": "c46486270c6400b497a899d9def519adb883d51a91075b362b30754f8ea83c9b",
+      "source_bytes": 12715,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-second.log",
+      "source_sha256": "6f162d6748a26a8034b6862a6edbbc2a6c0d6238f70bb03768819465f350ba77",
+      "archive": "logs/console-case-vbox-case-second.log",
+      "archive_sha256": "c5270a1bdf9802412de82ee25955c4817f1dfcc759fbe2698569bb67d2232936",
+      "source_bytes": 11239,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "capmix-case-screenshots.log",
+      "source_sha256": "123a840a43e6485cdfb35e7cbfbe6fe68bb58e7b109a885647bbb18dc2996c43",
+      "archive": "logs/console-case-screenshots.log",
+      "archive_sha256": "123a840a43e6485cdfb35e7cbfbe6fe68bb58e7b109a885647bbb18dc2996c43",
+      "source_bytes": 650,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "capmix-case-product.log",
+      "source_sha256": "703070720531b041c30c1c96b223cdeb26fedd436b36fbdab9aee1eed6cd4000",
+      "archive": "logs/console-case-product.log",
+      "archive_sha256": "703070720531b041c30c1c96b223cdeb26fedd436b36fbdab9aee1eed6cd4000",
+      "source_bytes": 21549,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "capmix-case-product-iso.log",
+      "source_sha256": "4a6ce8e1e1979bb69f9bd8464a0f3fea7c0b054d4c892ee470044dce1f13de81",
+      "archive": "logs/console-case-product-iso.log",
+      "archive_sha256": "2de2514e0ea259481f7f272f774c0dc6239f65a6613b2c3fd62089ce591dd56c",
+      "source_bytes": 1943,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "console-case-2026-10-19"
+    },
+    {
+      "source_name": "capmix-shift-kernel.log",
+      "source_sha256": "fb858e579f0766a91e89f4490be8a571cb22ab15889ea5b182768bcc692c6a8a",
+      "archive": "logs/keyboard-modifiers-kernel.log",
+      "archive_sha256": "fb858e579f0766a91e89f4490be8a571cb22ab15889ea5b182768bcc692c6a8a",
+      "source_bytes": 2365,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "keyboard-modifiers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-shift-hosted.log",
+      "source_sha256": "aebc7817b09371c2afba4ac349d87cf783c1a82696d5dde0baa2c356617728a8",
+      "archive": "logs/keyboard-modifiers-hosted.log",
+      "archive_sha256": "aebc7817b09371c2afba4ac349d87cf783c1a82696d5dde0baa2c356617728a8",
+      "source_bytes": 85093,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "keyboard-modifiers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-shift-debug.log",
+      "source_sha256": "92d9f0d4ee04578d563402e473b911958b099034a41b0c21935ba6b29ba9e59b",
+      "archive": "logs/keyboard-modifiers-debug.log",
+      "archive_sha256": "92d9f0d4ee04578d563402e473b911958b099034a41b0c21935ba6b29ba9e59b",
+      "source_bytes": 194402,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "keyboard-modifiers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-shift-iso.log",
+      "source_sha256": "bd59d4787643deff3bede8680ad918c2150c695bb0a1f44744dc9ac5aec9ecb0",
+      "archive": "logs/keyboard-modifiers-iso.log",
+      "archive_sha256": "dfa923d56c7350b994829d28e4a1d5a2db8100e8b7ee4aa569d5f10bc5293612",
+      "source_bytes": 1952,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "keyboard-modifiers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-shift-qemu-check.log",
+      "source_sha256": "783784eed9473de759dba7a50f2e4c5ae7c794aea5e24f45013f45458f49d007",
+      "archive": "logs/keyboard-modifiers-qemu-check.log",
+      "archive_sha256": "783784eed9473de759dba7a50f2e4c5ae7c794aea5e24f45013f45458f49d007",
+      "source_bytes": 1049,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "keyboard-modifiers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-shift-product-iso.log",
+      "source_sha256": "1b358c283375b005a29f662ef070bfa251346f76730c754559178400056b7d35",
+      "archive": "logs/keyboard-modifiers-product-iso.log",
+      "archive_sha256": "c630126d49d12bcb6b3790aff3e18c6e543ae672c5335fea0828cae811a9c0b6",
+      "source_bytes": 1943,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "keyboard-modifiers-2026-10-19"
+    },
+    {
+      "source_name": "capmix-shift-vbox-check.log",
+      "source_sha256": "4cd2b791be09c63120ca010ef175328630ce56f839451be967895b257ede1714",
+      "archive": "logs/keyboard-modifiers-vbox-check.log",
+      "archive_sha256": "4cd2b791be09c63120ca010ef175328630ce56f839451be967895b257ede1714",
+      "source_bytes": 1049,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "keyboard-modifiers-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-first.log",
+      "source_sha256": "974ceb28d395eee5b6c48410cdc755f7747f75305b33875930871fc98444a8aa",
+      "archive": "logs/keyboard-modifiers-qemu-case-first.log",
+      "archive_sha256": "974ceb28d395eee5b6c48410cdc755f7747f75305b33875930871fc98444a8aa",
+      "source_bytes": 12643,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "keyboard-modifiers-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-second.log",
+      "source_sha256": "ca2add81ba4a30a18fafe56fb14ddaee8bd637455d0089d511cfcbb944555cda",
+      "archive": "logs/keyboard-modifiers-qemu-case-second.log",
+      "archive_sha256": "ca2add81ba4a30a18fafe56fb14ddaee8bd637455d0089d511cfcbb944555cda",
+      "source_bytes": 11244,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "keyboard-modifiers-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-first.log",
+      "source_sha256": "9d2ae903cb97770d84bc0513d5ca8e1e3aa199c51eeeb7334b3826e8f3484732",
+      "archive": "logs/keyboard-modifiers-vbox-case-first.log",
+      "archive_sha256": "bfa130914b4aca268369d16f10798f7b52a353ccab60bf2e5d7ac6e533a69fc8",
+      "source_bytes": 12870,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "keyboard-modifiers-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-second.log",
+      "source_sha256": "21f13044d12fc5f91ffc0d2481ad74b6186ceca05f0894caa30f894477f1aacd",
+      "archive": "logs/keyboard-modifiers-vbox-case-second.log",
+      "archive_sha256": "5df5cb2f908ab87a68011379a36389266d9f8db61ddec49a70cc5c0328dca20a",
+      "source_bytes": 11391,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/CONSOLE_READABILITY.md"
+      ],
+      "evidence_round": "keyboard-modifiers-2026-10-19"
+    },
+    {
+      "source_name": "faz-final-build.log",
+      "source_sha256": "47a3b2b9122624e055c14c8e3c76ac22bb757bec36290eb3b103dda43ce02139",
+      "archive": "logs/fazattrhyiz-build.log",
+      "archive_sha256": "47a3b2b9122624e055c14c8e3c76ac22bb757bec36290eb3b103dda43ce02139",
+      "source_bytes": 2406,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "faz-final-test.log",
+      "source_sha256": "f55762bba64ae28a3df06b3825a4eba88a32bc453900e15ffa4e3568fa1981b8",
+      "archive": "logs/fazattrhyiz-hosted.log",
+      "archive_sha256": "f55762bba64ae28a3df06b3825a4eba88a32bc453900e15ffa4e3568fa1981b8",
+      "source_bytes": 85091,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "faz-final-linux-debug.log",
+      "source_sha256": "b95353ca19e1ef33568acd490dd19c1000d3e0a03665264bf636fbe936b9b51c",
+      "archive": "logs/fazattrhyiz-linux-debug.log",
+      "archive_sha256": "b95353ca19e1ef33568acd490dd19c1000d3e0a03665264bf636fbe936b9b51c",
+      "source_bytes": 218389,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "faz-final-linux-iso.log",
+      "source_sha256": "0406fd37815f8548ec52fdfea142227af9ca71a6e01c86eacdc11d5bfb90826d",
+      "archive": "logs/fazattrhyiz-linux-iso.log",
+      "archive_sha256": "f4c7d178f9f853e248af2697167c46f5b8abbc380ab42a233fab32e3fac6d767",
+      "source_bytes": 2012,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "faz-final-product-iso.log",
+      "source_sha256": "e969e9fd544cfa9dc31dba54a89e4ccf551ba08c88324bf9d62d4ffaacf64349",
+      "archive": "logs/fazattrhyiz-product-iso.log",
+      "archive_sha256": "c26784f79cb99f0be97dbb2668ff4f81a284a26e7adc45bd9833e84db353a749",
+      "source_bytes": 2006,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "faz-product-qemu-check.log",
+      "source_sha256": "e8feaabd265a5c2ab825c0dc695a2d0bf78b33f64bcd18a76ba84df30d0f9812",
+      "archive": "logs/fazattrhyiz-qemu-check.log",
+      "archive_sha256": "e8feaabd265a5c2ab825c0dc695a2d0bf78b33f64bcd18a76ba84df30d0f9812",
+      "source_bytes": 1463,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "faz-product-vbox-check.log",
+      "source_sha256": "8504b58136872a7788305d99bea2b22db74f3904f45ff46d23673441c04082e7",
+      "archive": "logs/fazattrhyiz-vbox-check.log",
+      "archive_sha256": "8504b58136872a7788305d99bea2b22db74f3904f45ff46d23673441c04082e7",
+      "source_bytes": 1463,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-first.log",
+      "source_sha256": "853ce08e594d64c6f9e4487a99bec25f7a023ed6bebeb8c5723ccebc7ca723c9",
+      "archive": "logs/fazattrhyiz-qemu-case-first.log",
+      "archive_sha256": "853ce08e594d64c6f9e4487a99bec25f7a023ed6bebeb8c5723ccebc7ca723c9",
+      "source_bytes": 17840,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "case-first-http-client.log",
+      "source_sha256": "1ef84d621bb9b126fe020c38583d90b9860915f151f03c670554eeb0091e15f3",
+      "archive": "logs/fazattrhyiz-qemu-case-first-http-client.log",
+      "archive_sha256": "1ef84d621bb9b126fe020c38583d90b9860915f151f03c670554eeb0091e15f3",
+      "source_bytes": 80,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-second.log",
+      "source_sha256": "d327e404102b57169c45656a0bf1c362fa14d97c926c188ae9c1e1a26d848e01",
+      "archive": "logs/fazattrhyiz-qemu-case-second.log",
+      "archive_sha256": "d327e404102b57169c45656a0bf1c362fa14d97c926c188ae9c1e1a26d848e01",
+      "source_bytes": 15497,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "case-second-http-client.log",
+      "source_sha256": "1ef84d621bb9b126fe020c38583d90b9860915f151f03c670554eeb0091e15f3",
+      "archive": "logs/fazattrhyiz-qemu-case-second-http-client.log",
+      "archive_sha256": "1ef84d621bb9b126fe020c38583d90b9860915f151f03c670554eeb0091e15f3",
+      "source_bytes": 80,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-first.log",
+      "source_sha256": "f8501d75d76c0dd363ab93115a80941344ac6d7e0100c7fb5ab8b7c2e7b3cb11",
+      "archive": "logs/fazattrhyiz-vbox-case-first.log",
+      "archive_sha256": "adab968cb574395ed5c51b86791221f44f6df64e0dee3c70a9084de61666da30",
+      "source_bytes": 18136,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "case-first-http-client.log",
+      "source_sha256": "1ef84d621bb9b126fe020c38583d90b9860915f151f03c670554eeb0091e15f3",
+      "archive": "logs/fazattrhyiz-vbox-case-first-http-client.log",
+      "archive_sha256": "1ef84d621bb9b126fe020c38583d90b9860915f151f03c670554eeb0091e15f3",
+      "source_bytes": 80,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "journey-case-second.log",
+      "source_sha256": "26447ae1a8a665b8446f6309aeed0e96984766dde83a7661625eb60d3fa3a057",
+      "archive": "logs/fazattrhyiz-vbox-case-second.log",
+      "archive_sha256": "97fa11fa365858deb48975f49e373e090c510c7052b7928d6e16b11a5d591d77",
+      "source_bytes": 15714,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "case-second-http-client.log",
+      "source_sha256": "1ef84d621bb9b126fe020c38583d90b9860915f151f03c670554eeb0091e15f3",
+      "archive": "logs/fazattrhyiz-vbox-case-second-http-client.log",
+      "archive_sha256": "1ef84d621bb9b126fe020c38583d90b9860915f151f03c670554eeb0091e15f3",
+      "source_bytes": 80,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/FAZATTRHYIZ.md"
+      ],
+      "evidence_round": "fazattrhyiz-rename-2026-10-19"
     }
   ]
 }

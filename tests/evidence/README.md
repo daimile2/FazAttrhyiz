@@ -216,7 +216,7 @@ QEMU 与 VBox 各两次无 ISO 冷启动，原生/Linux HTTP 按 hostname、alia
 
 ## 固定负载性能基线（2026-10-18）
 
-[USER_JOURNEY矩阵与复现](../../docs/USER_JOURNEY.md#产品路径性能基线2026-10-18固定负载不是性能上限)。
+[USER_JOURNEY历史性能记录](../../docs/USER_JOURNEY.md#历史性能记录)。
 同一固定负载、1/4 vCPU、512MiB、AHCI无ISO、e1000、Linux=1/interp=0：
 [QEMU数字](logs/perf-qemu-numbers.log)、[VBox数字](logs/perf-vbox-numbers.log)、
 [QEMU原始秒数/配置](logs/perf-qemu-results.log)、[VBox原始秒数/配置](logs/perf-vbox-results.log)、
@@ -279,3 +279,38 @@ pipe/UDP排队后跨CPU读回；有网卡时真实TCP连接保持，CPU0/1收发
 
 本轮另有[QEMU四核debug](logs/shellproto-debug.log)、[完整断言链](logs/shellproto-debug-check.log)全量0 failures；
 [默认产品ISO启动](logs/shellproto-product.log)仅到提示符，空闲timeout=124，不冒充全量PASS。
+
+## VBox ICH9 e1000 INTx与原生HTTP量化（2026-10-19）
+
+[路由探测/源码/回退/矩阵](../../docs/VBOX_ICH9_INTX.md)。root slot3/INTA的实际GSI19，firmware line11不直接用作IOAPIC GSI。
+未知/冲突路由仍poll-10ms，强制capmix.e1000_irq=0可做同内核对照；RTO和周期推进未改。
+[同内核对照](logs/ich9-comparison.log)：Linux关、1/4CPU各3×20HTTP，预热8次，
+吞吐中位7.301→8.068及7.517→8.537 req/s；p95为146.743→128.814及136.082→120.229ms。
+[IRQ原始JSON](logs/ich9-irq-results.log)、[poll原始JSON](logs/ich9-poll-results.log)保留每请求延迟和内核hash，
+性能PASS不代表全量selftest，也不保证任何配置必然提速。
+[VBox ICH9 debug](logs/ich9-vbox-debug.log)、[QEMU i440FX](logs/ich9-qemu-e1000.log)、
+[Q35 fallback](logs/ich9-qemu-fallback.log)、[virtio/Linux开](logs/ich9-qemu-virtio.log)、
+[hosted](logs/ich9-hosted.log)均全量0 failures。
+初版平台ID不足导致auto实际fallback的试跑、缺少NAT localhostreachable导致3 failures的debug首轮均保留，未计作成功。
+默认产品ISO到shell仅为启动检查，timeout=124不是全量PASS。
+
+## httpd有界独立端口多进程（2026-10-19）
+
+[模型/命令/限制/矩阵](../../docs/HTTP_WORKERS.md)。同一原生httpd由shell启动1/2/4实例，各自listen/accept，
+客户端显式按端口分片；不是单端口共享accept，也不新增spawn授权/accepted socket交接ABI。
+相同4并发客户端、相同内核/请求数、Linux关，三批×20：
+[QEMU对照](logs/httpworkers-qemu-compare.log)四进程1→4CPU中位26.245→31.429 req/s（+19.76%）；
+[VBox ICH9对照](logs/httpworkers-vbox-compare.log)26.505→29.974（+13.09%）。
+两端四进程p95均变差，未称全部延迟改善；单进程对照/每请求数组/PID-CPU-port均保留。
+所有实例配额、HTTP正文/EOF及exit=0/reap核验通过，性能PASS不等于全量selftest。
+[旧CLI三次无ISO旅程](logs/httpworkers-journey-check.log)通过；
+[hosted](logs/httpworkers-hosted.log)、[QEMU debug](logs/httpworkers-debug.log)另为全量0 failures。
+默认产品ISO到shell仅启动检查，timeout=124不冒充全量PASS。
+
+## 屏幕小写与大小写路径（2026-10-19）
+
+[范围/环境矩阵](../../docs/CONSOLE_READABILITY.md)；[hosted 全量](logs/console-case-hosted.log)、[QEMU 全量无 NIC](logs/console-case-debug.log)、[QEMU 产品](logs/console-case-qemu-check.log)、[VBox 产品](logs/console-case-vbox-check.log)。实际屏幕：[QEMU](screenshots/console-case-qemu-case-first.png)、[VBox](screenshots/console-case-vbox-case-first.png)。PNG 保留原始捕获，哈希见[截图记录](logs/console-case-screenshots.log)，不作为 UTF-8 日志条目。
+
+## FazAttrhyiz 更名与 .faz（2026-10-19）
+
+[范围与矩阵](../../docs/FAZATTRHYIZ.md)：[hosted](logs/fazattrhyiz-hosted.log)、[QEMU Linux 全量](logs/fazattrhyiz-linux-debug.log)、[QEMU 产品](logs/fazattrhyiz-qemu-check.log)、[VBox 产品](logs/fazattrhyiz-vbox-check.log)。产品验证 `.faz` 与兼容 `.elf`、HTTP、新提示符及无 ISO 冷启动。历史记录不改名。

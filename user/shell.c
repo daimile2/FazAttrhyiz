@@ -150,7 +150,7 @@ static int feed(char c)
         length=0;overflow=0;
         if(e==1)return 1;
         if(e<0)kinfo("shell error: %d (help lists commands)",e);
-        cm_puts("capmix> ");return 0;
+        cm_puts("fazattrhyiz> ");return 0;
     }
     if(c=='\t')c=' ';
     if((unsigned char)c<32 || (unsigned char)c>126)return 0;
@@ -162,7 +162,7 @@ void cm_shell_run(void)
 {
     length=0;overflow=0;memset(jobs,0,sizeof(jobs));next_cpu=0;
     kinfo("shell ready: PID1 native controller, PS/2 input, FB + serial; run enters CPL=3");
-    cm_puts("CapMix shell (help for commands)\ncapmix> ");
+    cm_puts("FazAttrhyiz shell (help for commands)\nfazattrhyiz> ");
     for(;;) {
         reap_background();
         char c;cm_error_t e=cm_ps2_read_char(&c);

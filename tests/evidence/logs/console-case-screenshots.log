@@ -1,0 +1,5 @@
+tests/evidence/screenshots/console-case-qemu-case-first.png sha256=e45dd5c8a7a8841c124f18631432173dc49aeb453c81bbf45635eb27088686bf
+tests/evidence/screenshots/console-case-qemu-case-second.png sha256=b25798730ce2ea7905de187db480c37d2988763c1b23b7adeb6b088febb276fd
+tests/evidence/screenshots/console-case-vbox-case-first.png sha256=76e873bf4a022f1b70d35690f67ab2f2c4d0be6822fc2c4db905e66fcc8eab13
+tests/evidence/screenshots/console-case-vbox-case-second.png sha256=8a3930439b1a2c78fb52babca5cc2b3e778f7a10ba2bd36df50a9c64d0ef16ab
+Visual inspection: QEMU and VBox show distinct lowercase/uppercase alphabets and /bin /Bin /BIN; original PNG retained.

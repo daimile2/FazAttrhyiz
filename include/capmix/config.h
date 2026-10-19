@@ -6,9 +6,9 @@
  * + user-mode drivers. Layers independently pick Linux / NT / XNU.
  */
 
-#define CAPMIX_NAME        "CapMix"
+#define CAPMIX_NAME        "FazAttrhyiz"
 #define CAPMIX_VERSION     "0.8.0-phase8"
-#define CAPMIX_BANNER      "CapMix " CAPMIX_VERSION " — capability hybrid kernel"
+#define CAPMIX_BANNER      "FazAttrhyiz " CAPMIX_VERSION " — capability hybrid kernel"
 
 /* Translation code is optional; product runtime additionally requires capmix.linux=1. */
 #ifndef CM_LINUX_ABI

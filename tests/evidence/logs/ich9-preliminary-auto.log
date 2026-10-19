@@ -1,0 +1,7 @@
+PERF date=2026-10-19T07:18:43+00:00 backend=vbox smp=1 nic=e1000 linux=0 sample=1 http_n=20 http_s=2.734974 http_rps=7.313 http_p50_ms=135.889 http_p95_ms=145.084 irq_mode=auto hush=skipped-linux-off verified=1
+PERF date=2026-10-19T07:18:43+00:00 backend=vbox smp=1 nic=e1000 linux=0 sample=2 http_n=20 http_s=2.716435 http_rps=7.363 http_p50_ms=134.899 http_p95_ms=142.563 irq_mode=auto hush=skipped-linux-off verified=1
+PERF date=2026-10-19T07:18:43+00:00 backend=vbox smp=1 nic=e1000 linux=0 sample=3 http_n=20 http_s=2.705604 http_rps=7.392 http_p50_ms=134.313 http_p95_ms=144.807 irq_mode=auto hush=skipped-linux-off verified=1
+PERF date=2026-10-19T07:18:43+00:00 backend=vbox smp=4 nic=e1000 linux=0 sample=1 http_n=20 http_s=2.640722 http_rps=7.574 http_p50_ms=132.968 http_p95_ms=135.841 irq_mode=auto hush=skipped-linux-off verified=1
+PERF date=2026-10-19T07:18:43+00:00 backend=vbox smp=4 nic=e1000 linux=0 sample=2 http_n=20 http_s=2.658637 http_rps=7.523 http_p50_ms=133.109 http_p95_ms=136.044 irq_mode=auto hush=skipped-linux-off verified=1
+PERF date=2026-10-19T07:18:43+00:00 backend=vbox smp=4 nic=e1000 linux=0 sample=3 http_n=20 http_s=2.690650 http_rps=7.433 http_p50_ms=134.075 http_p95_ms=138.301 irq_mode=auto hush=skipped-linux-off verified=1
+performance baseline: PASS (payload/status/EOF/exit/reap verified; no speedup assertion)

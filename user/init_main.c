@@ -7,9 +7,9 @@ int main(int argc,char **argv,char **envp)
     if(e){uputs("init root mount failed=");unum(e);uputs("\n");return 1;}
     e=ucall(36,uboot,1,(uintptr_t)&info,0);
     if(e){uputs("init network config failed=");unum(e);uputs(" (continuing)\n");}
-    uputs("init: CapMix product root=");uputs(info.disk?"disk":"ram");uputs(" backend=");uputs(info.backend);
+    uputs("init: FazAttrhyiz product root=");uputs(info.disk?"disk":"ram");uputs(" backend=");uputs(info.backend);
     uputs(" nic=");uputs(info.nic[0]?info.nic:"none");uputs(info.nic_up?"/up\n":"/down\n");
-    const char *args[]={"/bin/shell.elf",NULL};
+    const char *args[]={"/bin/shell.faz",NULL};
     const char *env[]={"PATH=/bin","CAPMIX=product",NULL};
     cm_user_child_t shell;e=uspawn(args[0],args,env,CM_SPAWN_SHELL,&shell);
     if(e){uputs("init shell spawn failed=");unum(e);uputs("\n");return 1;}

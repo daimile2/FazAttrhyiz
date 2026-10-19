@@ -21,7 +21,7 @@ static void record(const char *event,long status)
     p=append_text(p," seq=");p=append_number(p,(int64_t)sequence);
     p=append_text(p," status=");p=append_number(p,status);p=append_text(p,"]\n");*p=0;uputs(b);
 }
-static void prompt(void){record("ready",0);uputs("capmix> ");}
+static void prompt(void){record("ready",0);uputs("fazattrhyiz> ");}
 static long out_bytes(const char *s,unsigned n)
 {
     if(output_fd<0){uputs(s);return 0;}

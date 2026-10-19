@@ -1,5 +1,5 @@
 LIMINE_CONFIG ?= boot/limine.conf
-# CapMix — capability hybrid kernel
+# FazAttrhyiz — capability hybrid kernel
 #   make test     hosted selftest (recommended)
 #   make kernel   freestanding ELF
 #   make iso      bootable ISO (needs third_party/limine)
@@ -140,10 +140,11 @@ iso: $(FREE_BIN)
 		iso -o capmix.iso
 	@if [ -x third_party/limine/limine ]; then \
 		third_party/limine/limine bios-install capmix.iso; fi
-	@echo "built capmix.iso — run ./scripts/qemu.sh"
+	cp capmix.iso fazattrhyiz.iso
+	@echo "built fazattrhyiz.iso (compatibility: capmix.iso) — run ./scripts/qemu.sh"
 
 clean:
-	rm -f $(HOST_BIN) $(FREE_BIN) capmix.iso
+	rm -f $(HOST_BIN) $(FREE_BIN) capmix.iso fazattrhyiz.iso
 	rm -rf iso build
 	find . -name '*.o' -delete
 
@@ -261,16 +262,16 @@ build/external-hello.elf: examples/hello.c sdk/crt0.S sdk/capmix.ld sdk/include/
 build/cow-put: tools/cow-put.c fs/cowfs.c fs/vfs.c io/disk_layout.c $(wildcard include/capmix/*.h)
 	@mkdir -p build
 	$(CC) -std=c11 -Wall -Wextra -Wshadow -O2 -DCAPMIX_HOSTED -DCM_TP_BUILD_MASK=0 -Iinclude -o $@ tools/cow-put.c fs/cowfs.c fs/vfs.c io/disk_layout.c
-external-hello: build/external-hello.elf build/cow-put
+external-hello: build/external-hello.faz build/cow-put
 	@test -n "$(DISK_IMAGE)" || { echo 'usage: make external-hello DISK_IMAGE=/path/initialized-offline.img'; exit 1; }
-	python3 scripts/copy-to-disk.py "$(DISK_IMAGE)" build/external-hello.elf /bin/external-hello.elf
+	python3 scripts/copy-to-disk.py "$(DISK_IMAGE)" build/external-hello.faz /bin/external-hello.faz
 
 # Product examples use the same standalone SDK as external host-built ELFs.
 EXAMPLE_NAMES = hello nc cat ls http-get httpd
 EXAMPLE_ELFS = $(addprefix build/example-,$(addsuffix .elf,$(EXAMPLE_NAMES)))
 EXAMPLE_INCS = $(addprefix build/example_,$(addsuffix .inc,$(EXAMPLE_NAMES)))
 .PHONY: examples
-examples: $(EXAMPLE_ELFS)
+examples: $(EXAMPLE_ELFS) $(EXAMPLE_ELFS:.elf=.faz)
 build/example-%.elf: examples/%.c sdk/crt0.S sdk/capmix.ld sdk/include/capmix.h sdk/include/cm_hosts.h sdk/include/cm_resolve.h
 	@mkdir -p build
 	$(CC) -std=c11 -Wall -Wextra -O2 -static -nostdlib -no-pie -ffreestanding -fno-builtin -fno-pie -fno-stack-protector -mno-red-zone -mgeneral-regs-only -fno-asynchronous-unwind-tables -Isdk/include -Wl,--build-id=none,-z,max-page-size=0x1000,-T,sdk/capmix.ld -o $@ sdk/crt0.S $<
@@ -480,6 +481,10 @@ build/linux_sigchld.inc: build/linux-sigchld.elf scripts/embed-elf.py
 $(HOST_BIN) $(FREE_BIN): build/linux_sigchld.inc
 
 # Optional userspace-only verifier, imported by scripts/perf-baseline.py.
-build/perf-verify.cmx: tests/perf_verify.c sdk/crt0.S sdk/capmix.ld sdk/include/capmix.h
+build/perf-verify.faz: tests/perf_verify.c sdk/crt0.S sdk/capmix.ld sdk/include/capmix.h
 	@mkdir -p build
 	$(CC) -std=c11 -Wall -Wextra -O2 -static -nostdlib -no-pie -ffreestanding -fno-builtin -fno-pie -fno-stack-protector -mno-red-zone -mgeneral-regs-only -fno-asynchronous-unwind-tables -Isdk/include -Wl,--build-id=none,-z,max-page-size=0x1000,-T,sdk/capmix.ld -o $@ sdk/crt0.S $<
+
+# Native release suffix; payload remains the native ELF ABI.
+build/%.faz: build/%.elf
+	cp $< $@

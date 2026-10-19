@@ -156,3 +156,11 @@ IRQ stub/IDT 路由仍属 AGENTS.md 人审关键路径；新 stub 沿用 e1000 �
 - `/tmp/vnetirq-e1000.log`：e1000 单独使用仍保留硬件 IRQ，全量 PASS。
 - `/tmp/vnetirq-fallback.log`：q35 virtio-net 明确 skip IRQ，UDP/TCP/DHCP fallback 全量 PASS。
 - `/tmp/vnetirq-product.log`：无 ISO virtio 磁盘启动，DHCP ACK、nc tx/rx各16B、exit=0/reap=ok，cat与poweroff成功。
+
+## VBox ICH9受限INTx路由与量化（2026-10-19）
+
+新增可识别VBox ICH9 root-bus 82540EM的GSI推导：实测00:03.0/INTA的firmware line=11，实际GSI=19。
+未知平台/桥后设备/路由不可用仍poll-10ms；`capmix.e1000_irq=0`可强制回退。
+IRQ帧由worker记录 `net irq rx active`，不是ISR打印；10ms RTO唤醒与100ms watchdog保留。
+默认Linux关，同内核native HTTP的1/4CPU A/B、原始数字、源码依据和环境矩阵见
+[VBOX_ICH9_INTX](VBOX_ICH9_INTX.md)。不改TCP RTO或virtio-net路由语义。

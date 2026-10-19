@@ -78,7 +78,7 @@ static int descriptor_test(void)
     CHECK(!memcmp(cm_elf_pointer(p->elf,SCRATCH+256),payload,sizeof(payload)-1));
     CHECK(cm_syscall(79,SCRATCH,2,0,0)==2 && equal(cm_elf_pointer(p->elf,SCRATCH),"/"));
     CHECK(cm_syscall(63,SCRATCH+1024,0,0,0)==0);
-    cm_linux_utsname_t *u=cm_elf_pointer(p->elf,SCRATCH+1024);CHECK(equal(u->sysname,"CapMix") && equal(u->machine,"x86_64"));
+    cm_linux_utsname_t *u=cm_elf_pointer(p->elf,SCRATCH+1024);CHECK(equal(u->sysname,"FazAttrhyiz") && equal(u->machine,"x86_64"));
     CHECK(cm_syscall(39,0,0,0,0)==(int64_t)pid);
     CHECK(cm_syscall(9,0,0,0,0)==-95 && cm_syscall(0x40000001,0,0,0,0)==-38 && p->linux_enosys==1);
     kinfo("linux L1 fd verified: copy/errno/stat144/dirent64/openat/seek dup-shared-offset close/console-alias mmap=EOPNOTSUPP unknown=ENOSYS");

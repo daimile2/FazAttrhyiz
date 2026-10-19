@@ -15,9 +15,10 @@ def check(platform, path):
         if text.count(marker) != 1:
             raise ValueError(f'expected exactly one command: {command}')
         tail = text.split(marker, 1)[1]
-        if 'capmix>' not in tail:
+        prompts=[tail.find(p) for p in ('capmix>', 'fazattrhyiz>') if p in tail]
+        if not prompts:
             raise ValueError(f'no returned prompt: {command}')
-        return tail.split('capmix>', 1)[0]
+        return tail[:min(prompts)]
 
     paths = ('/redirect.txt', '/elf-copy.txt', '/listing.txt') if platform == 'qemu' else (
         '/vbox.txt', '/vbox-elf.txt', '/vbox-list.txt')

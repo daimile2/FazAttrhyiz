@@ -61,7 +61,7 @@ def boot(stage):
         call('VBoxManage','modifyvm',vm,'--uart-mode1','file',log)
         call('VBoxManage','startvm',vm,'--type','headless')
     running=True
-    wait('capmix> ')
+    wait('fazattrhyiz> ')
     assert 'root=disk' in text() and 'boot mode: product' in text()
     if a.backend=='qemu':
         monitor=socket.socket(socket.AF_UNIX);monitor.connect(str(sock));monitor.settimeout(.002)

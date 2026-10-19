@@ -1,0 +1,43 @@
+rm -rf iso
+mkdir -p iso/boot/limine iso/EFI/BOOT
+cp capmix.elf iso/boot/capmix.elf
+cp boot/limine-selftest.conf iso/boot/limine/limine.conf
+cp third_party/limine/limine-bios.sys iso/boot/limine/ 2>/dev/null || true
+cp third_party/limine/limine-bios-cd.bin iso/boot/limine/
+cp third_party/limine/limine-uefi-cd.bin iso/EFI/BOOT/ 2>/dev/null || true
+cp third_party/limine/BOOTX64.EFI iso/EFI/BOOT/ 2>/dev/null || true
+xorriso -as mkisofs -R -r -J \
+	-b boot/limine/limine-bios-cd.bin -no-emul-boot \
+	-boot-load-size 4 -boot-info-table \
+	-eltorito-alt-boot -e EFI/BOOT/limine-uefi-cd.bin -no-emul-boot \
+	-efi-boot-part --efi-boot-image --protective-msdos-label \
+	iso -o capmix.iso
+xorriso 1.5.6 : RockRidge filesystem manipulator, libburnia project.
+
+Drive current: -outdev 'stdio:capmix.iso'
+Media current: stdio file, overwriteable
+Media status : is blank
+Media summary: 0 sessions, 0 data blocks, 0 data, 18.6g free
+Added to ISO image: directory '/'='<repo>/iso'
+xorriso : UPDATE :      10 files added in 1 seconds
+xorriso : UPDATE :      10 files added in 1 seconds
+ISO image produced: 4156 sectors
+Written to medium : 4156 sectors at LBA 0
+Writing to 'stdio:capmix.iso' completed successfully.
+
+Physical block size of 512 bytes.
+Installing to GPT. Logical block size of 512 bytes.
+Secondary header at LBA 0x40ef.
+Secondary header valid.
+Detected ISOHYBRID with a GUID partition table (GPT).
+Converting to MBR for improved compatibility...
+Conversion successful.
+No active partition found, some systems may not boot.
+Setting partition 1 as active to work around the issue...
+Installing to MBR.
+Stage 2 to be located at 0x200 and 0x2800.
+Reminder: Remember to copy the limine-bios.sys file in either
+          the root, /boot, /limine, or /boot/limine directories of
+          one of the partitions on the device, or boot will fail!
+Limine BIOS stages installed successfully!
+built capmix.iso — run ./scripts/qemu.sh

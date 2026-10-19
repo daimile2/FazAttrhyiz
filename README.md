@@ -1,4 +1,4 @@
-# CapMix
+# FazAttrhyiz
 
 从零写的 **capability 混合内核**，选型严格对齐《从 0 写操作系统内核：混合选型清单》。
 
@@ -93,3 +93,5 @@ Rust 安全边界（Asterinas 路线）可以在 `cap/` 与 `mm/` 稳定后以 f
 默认产品已使用 CPL=3 的 `/sbin/init.elf` 与 `/bin/shell.elf`；启动 capability、用户控制 ABI 与限制见 [USER_INIT_SHELL.md](docs/USER_INIT_SHELL.md)。
 
 磁盘安装：`make install-disk DISK_IMAGE=/tmp/new-system.img`；新建或全零镜像，首次从盘启动完成 COW provisioning，之后无 ISO 冷启动。布局、拒绝覆盖和 AHCI/virtio 两次启动步骤见 [INSTALL_DISK.md](docs/INSTALL_DISK.md)。
+
+系统现名 **FazAttrhyiz**（原 CapMix），原生发布后缀为 **`.faz`**。旧路径、SDK/ABI 标识和安装布局的兼容策略见 [更名说明](docs/FAZATTRHYIZ.md)。

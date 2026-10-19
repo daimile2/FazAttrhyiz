@@ -27,7 +27,7 @@ Linux persona 和解释器开关仍默认关闭；一旦启用真实 ld.so，没
 **明确兼容例外**：原生 CapMix ELF、嵌入 ring3、Linux 静态 L0–L5/hush、L4a 交接探针
 保持原有权限语义，数据页可能仍可执行；本轮不宣称全系统所有用户进程都已实现 W^X。
 这些路径 syscall 10 仍走原有 ENOSYS 计数行为，未修改原生 ABI 或静态内存约定。
-原生后续软件仍约定 `.cmx` 或 `/bin/cm/`，不是 Linux persona 的别名。
+原生后续软件仍约定 `.faz` 或 `/bin/cm/`，不是 Linux persona 的别名。
 
 NX 由 CPUID.80000001H:EDX[20] 检测。已有每 CPU usermode 初始化在保留 EFER 其他位的
 基础上启用 NXE（bit 11）；未修改 CR3/KPTI 策略、入口汇编、buddy、时钟或 TCP/RTO。

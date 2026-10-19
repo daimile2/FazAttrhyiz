@@ -1,0 +1,27 @@
+shell protocol: seq=1 status=0 boundaries=verified
+shell protocol: seq=2 status=0 boundaries=verified
+shell protocol: seq=3 status=0 boundaries=verified
+shell protocol: seq=4 status=0 boundaries=verified
+shell protocol: seq=5 status=0 boundaries=verified
+shell protocol: seq=6 status=0 boundaries=verified
+shell protocol: seq=7 status=0 boundaries=verified
+shell protocol: seq=8 status=0 boundaries=verified
+shell protocol: seq=9 status=-12 boundaries=verified
+shell protocol: seq=10 status=0 boundaries=verified
+shell protocol: seq=11 status=0 boundaries=verified
+shell protocol: seq=12 status=0 boundaries=verified
+shell protocol: seq=13 status=0 boundaries=verified
+journey qemu case-first: poweroff=ok no-ISO root=disk
+shell protocol: seq=1 status=0 boundaries=verified
+shell protocol: seq=2 status=0 boundaries=verified
+shell protocol: seq=3 status=0 boundaries=verified
+shell protocol: seq=4 status=0 boundaries=verified
+shell protocol: seq=5 status=0 boundaries=verified
+shell protocol: seq=6 status=0 boundaries=verified
+shell protocol: seq=7 status=-12 boundaries=verified
+shell protocol: seq=8 status=0 boundaries=verified
+shell protocol: seq=9 status=0 boundaries=verified
+shell protocol: seq=10 status=0 boundaries=verified
+shell protocol: seq=11 status=0 boundaries=verified
+journey qemu case-second: poweroff=ok no-ISO root=disk
+console case qemu: PASS lowercase PS/2, mixed-case paths distinct, cold-boot persistence, framebuffer screenshots saved

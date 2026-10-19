@@ -1,0 +1,6 @@
+PERF date=2026-10-19T07:20:06+00:00 backend=vbox smp=1 nic=e1000 linux=0 sample=1 http_n=20 http_s=2.532716 http_rps=7.897 http_p50_ms=125.154 http_p95_ms=134.923 irq_mode=auto hush=skipped-linux-off verified=1
+PERF date=2026-10-19T07:20:06+00:00 backend=vbox smp=1 nic=e1000 linux=0 sample=2 http_n=20 http_s=2.455322 http_rps=8.146 http_p50_ms=123.768 http_p95_ms=127.867 irq_mode=auto hush=skipped-linux-off verified=1
+PERF date=2026-10-19T07:20:06+00:00 backend=vbox smp=1 nic=e1000 linux=0 sample=3 http_n=20 http_s=2.479006 http_rps=8.068 http_p50_ms=123.187 http_p95_ms=128.814 irq_mode=auto hush=skipped-linux-off verified=1
+PERF date=2026-10-19T07:20:06+00:00 backend=vbox smp=4 nic=e1000 linux=0 sample=1 http_n=20 http_s=2.342838 http_rps=8.537 http_p50_ms=116.942 http_p95_ms=120.229 irq_mode=auto hush=skipped-linux-off verified=1
+PERF date=2026-10-19T07:20:06+00:00 backend=vbox smp=4 nic=e1000 linux=0 sample=2 http_n=20 http_s=2.331474 http_rps=8.578 http_p50_ms=116.705 http_p95_ms=118.521 irq_mode=auto hush=skipped-linux-off verified=1
+PERF date=2026-10-19T07:20:06+00:00 backend=vbox smp=4 nic=e1000 linux=0 sample=3 http_n=20 http_s=2.383669 http_rps=8.390 http_p50_ms=117.009 http_p95_ms=130.993 irq_mode=auto hush=skipped-linux-off verified=1

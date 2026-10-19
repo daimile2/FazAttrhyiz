@@ -14,8 +14,8 @@ make examples iso
 
 独立 ELF 在 `build/example-{hello,nc,cat,ls,http-get,httpd}.elf`。ISO 内核携带这些初始文件；
 产品启动仅在路径不存在时通过 VFS 写入并 fsync。路径为：
-`/bin/hello-sdk.elf`、`/bin/nc.elf`、`/bin/cat.elf`、`/bin/ls.elf`、`/bin/http-get.elf`、`/bin/httpd.elf`。
-原 `/bin/hello.elf` 测试镜像保持原有用途。另提供 `/example.txt` 文本。
+`/bin/hello-sdk.faz`、`/bin/nc.faz`、`/bin/cat.faz`、`/bin/ls.faz`、`/bin/http-get.faz`、`/bin/httpd.faz`。
+原 `/bin/hello.faz` 测试镜像保持原有用途。另提供 `/example.txt` 文本。
 
 新盘一行安装（目标必须不存在或是符合安装器条件的全零普通 RAW 文件）：
 
@@ -42,10 +42,10 @@ qemu-system-x86_64 -enable-kvm -m 512 -cpu host -smp 4 \
 键盘从 QEMU 图形窗口输入，serial 镜像输出；serial stdin 不是输入终端。
 
 ```text
-run /bin/hello-sdk.elf first second
-run /bin/ls.elf /bin
-run /bin/cat.elf /example.txt
-run -i /bin/nc.elf 10.0.2.2 9998
+run /bin/hello-sdk.faz first second
+run /bin/ls.faz /bin
+run /bin/cat.faz /example.txt
+run -i /bin/nc.faz 10.0.2.2 9998
 ```
 
 nc 运行前，在宿主另一个终端启动 `python3 scripts/tcp-echo.py`。
@@ -59,10 +59,10 @@ QEMU user-net 的 `10.0.2.2:9998` 可达这个宿主 echo 服务。输入一行�
 
 ```bash
 make examples build/cow-put
-python3 scripts/copy-to-disk.py /path/system.img build/example-cat.elf /bin/mycat.elf
+python3 scripts/copy-to-disk.py /path/system.img build/example-cat.elf /bin/mycat.faz
 ```
 
-nc/ls/hello 同理。普通文本也可用同一脚本导入 `/mytext.txt` 再 `run /bin/cat.elf /mytext.txt`。
+nc/ls/hello 同理。普通文本也可用同一脚本导入 `/mytext.txt` 再 `run /bin/cat.faz /mytext.txt`。
 离线导入的锁、staging、重挂校验等边界见 [EXTERNAL_ELF.md](EXTERNAL_ELF.md)。
 
 ## 控制台授权与 run -i
@@ -107,7 +107,7 @@ EOF 或 `/quit` 后调用 CLOSE，退出后 shell 的 CHILD_WAIT 消耗 child ha
 
 ## 验收关键词
 
-- `hello from external gcc static ELF`、`argv[0]=/bin/hello-sdk.elf`、参数值。
+- `hello from external gcc static ELF`、`argv[0]=/bin/hello-sdk.faz`、参数值。
 - `ls entries=N`、`cat bytes read=N`，冷启动后仍能读出同一盘的内容。
 - `user console delegated`、`nc connected`、`nc tx bytes=N`、`nc rx bytes=N`、`nc closed`。
 - 普通 run nc：`console denied`、`exit=3 reap=ok`。
@@ -116,12 +116,12 @@ EOF 或 `/quit` 后调用 CLOSE，退出后 shell 的 CHILD_WAIT 消耗 child ha
 
 ## 最小 HTTP GET
 
-构建仍是一行 `make examples iso`，产品新盘自动 provision `/bin/http-get.elf`。
+构建仍是一行 `make examples iso`，产品新盘自动 provision `/bin/http-get.faz`。
 已有安装盘无需重装内核：关闭 VM 后可只导入这个新文件（不覆盖已有路径）：
 
 ```bash
 make examples build/cow-put
-python3 scripts/copy-to-disk.py /path/system.img build/example-http-get.elf /bin/http-get.elf
+python3 scripts/copy-to-disk.py /path/system.img build/example-http-get.elf /bin/http-get.faz
 ```
 
 宿主准备一份文本并启动 HTTP 服务：
@@ -135,7 +135,7 @@ python3 -m http.server 8000 --bind 127.0.0.1 --directory /tmp/capmix-www
 QEMU 使用上文 user-net + e1000 或 virtio-net；在产品 shell（也可无 ISO 从盘启动）：
 
 ```text
-run /bin/http-get.elf 10.0.2.2 8000 /hello.txt
+run /bin/http-get.faz 10.0.2.2 8000 /hello.txt
 ```
 
 无需 `run -i` 或额外 console capability；它使用普通 ELF 的网络句柄和诊断 stdout。
@@ -168,15 +168,15 @@ run /bin/http-get.elf 10.0.2.2 8000 /hello.txt
 
 ## 标准I/O重定向续作
 
-前台shell已支持 `>`、`>>`、`<`，如 `run /bin/ls.elf /bin > /listing.txt`、
-`run /bin/cat.elf < /example.txt > /copy.txt`。cat可省略路径读fd0；SDK的
+前台shell已支持 `>`、`>>`、`<`，如 `run /bin/ls.faz /bin > /listing.txt`、
+`run /bin/cat.faz < /example.txt > /copy.txt`。cat可省略路径读fd0；SDK的
 `cm_report`摘要走fd2，其余 `cm_print/cm_output`走可重定向fd1。
 `run -i`及后台`&`不与重定向混用；nc仍用交互方式，无新增batch/pipe语义。
 覆盖/追加、权限、失败副作用、冷启动和QEMU/VBox验收见 [SHELL.md](SHELL.md)。
 
 ## 用户态 HTTP 服务端
 
-新增 `/bin/httpd.elf`：`run /bin/httpd.elf 8080 &`，监听后串行accept并返回HTTP/1.0 200。
+新增 `/bin/httpd.faz`：`run /bin/httpd.faz 8080 &`，监听后串行accept并返回HTTP/1.0 200。
 使用宿主端口转发访问；非阻塞accept、容量/超时/回收、QEMU/VBox命令及验收矩阵见 [HTTPD.md](HTTPD.md)。
 
 ## 可选静态解释器展示品
@@ -197,6 +197,15 @@ run /bin/micropython.elf /data/linux/micropython-demo.py
 
 `http-get.elf` 和 `nc.elf` 共用 [hosts stub](HOSTS_RESOLVER.md)，先读 `/etc/hosts`，
 未匹配再尝试数字 IPv4。不发 DNS 请求；无记录退出 2。
-例如 `run /bin/http-get.elf host.capmix.test 8000 /hello.txt`。
+例如 `run /bin/http-get.faz host.capmix.test 8000 /hello.txt`。
 Linux 开启后 `/bin/linux-hosts-http.elf HOST PORT` 可验证同一解析器和 Linux TCP ABI；
 不代表任意现成 wget/getaddrinfo 自动接入。已有盘上 ELF 不会被启动流程覆盖，应显式升级工具或用新测试盘。
+
+## httpd有界多进程示例（2026-10-19）
+
+同一 `/bin/httpd.faz PORT REQUESTS WORKER_ID` 可由shell启动最多4个演示实例，WORKER_ID=1..4用于日志标识。
+例如 `run /bin/httpd.faz 8080 17 1 &`、`run /bin/httpd.faz 8081 17 2 &`，再按需增加8082/8083。
+每实例独立监听/串行accept，客户端按端口分片；不是共享同一监听端口或accept后跨进程传cap。
+旧 `run /bin/httpd.faz 8080 2 &` 用法保留。配额完成关闭listener并退出，shell照常reap/kill/poweroff。
+原生ABI、默认Linux关闭、TCP RTO与IRQ核心不变。
+复现脚本、QEMU/VBox端口转发、真实CPU分布、吞吐与p95限制见 [HTTP_WORKERS](HTTP_WORKERS.md)。

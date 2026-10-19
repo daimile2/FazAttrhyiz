@@ -1,4 +1,4 @@
-# CapMix 文档导航
+# FazAttrhyiz 文档导航
 
 当前能力以 [内核总览](KERNEL_OVERVIEW.zh-CN.md)、源码和后续功能文档为准。
 第一次从冷启动体验先读 [用户旅程](USER_JOURNEY.md)；平台配置再读 [VirtualBox 测试手册](VIRTUALBOX_TESTING.zh-CN.md)。开发用户程序先读
@@ -13,6 +13,7 @@
 | VBox 配置、产品/自测、验收清单 | [VirtualBox 测试手册](VIRTUALBOX_TESTING.zh-CN.md) |
 | 磁盘安装与无 ISO 冷启动 | [INSTALL_DISK](INSTALL_DISK.md) |
 | 用户态 init/shell、管理能力 | [USER_INIT_SHELL](USER_INIT_SHELL.md) |
+| 屏幕小写字形、PS/2输入、大小写路径与截图 | [控制台可读性](CONSOLE_READABILITY.md) |
 | shell重定向、标准I/O、QEMU/VBox矩阵 | [SHELL](SHELL.md) |
 | kill、关机等待与应急降级 | [KILL_SHUTDOWN](KILL_SHUTDOWN.md) |
 | GCC SDK、crt、离线导入 | [EXTERNAL_ELF](EXTERNAL_ELF.md) |
@@ -29,6 +30,8 @@
 | hosts-only 名称解析（原生/Linux共享，非DNS客户端） | [HOSTS_RESOLVER](HOSTS_RESOLVER.md) |
 | 用户 TCP/UDP ABI | [USER_NETWORK_ABI](USER_NETWORK_ABI.md) |
 | SYN/数据/FIN 重传 | [TCP_RTO](TCP_RTO.md) |
+| 原生httpd独立端口多进程、并发客户端与SMP对照 | [HTTP_WORKERS](HTTP_WORKERS.md) |
+| VBox ICH9 e1000受限INTx路由、原生HTTP吞吐/延迟A/B | [VBOX_ICH9_INTX](VBOX_ICH9_INTX.md) |
 | e1000/virtio-net RX IRQ | [NET_RX_IRQ](NET_RX_IRQ.md) |
 | buddy SMP 安全与 soak | [P0A_BUDDY_SMP](P0A_BUDDY_SMP.md) |
 | 无 TSC-deadline 时钟标定 | [P0B_TIMER](P0B_TIMER.md) |
@@ -77,3 +80,5 @@ Linux未实现调用排序、13/14有限元数据与复现脚本：[LINUX_ENOSYS
 Linux多CPU、AP创建/fork/回收与CPU查询：[LINUX_SMP](LINUX_SMP.md)。
 
 有界Linux clone线程、futex与固定黄金探针：[LINUX_THREADS](LINUX_THREADS.md)。
+
+系统现名 **FazAttrhyiz**（原 CapMix），原生发布后缀为 **`.faz`**。旧路径、SDK/ABI 标识和安装布局的兼容策略见 [更名说明](FAZATTRHYIZ.md)。

@@ -1,0 +1,18 @@
+Linux L0 disabled/native retained: PASS
+Linux L1 disabled/native retained: PASS
+Linux L2 disabled/native retained: PASS
+Linux L3 disabled/native retained: PASS
+Linux L4a gate-off/static retained: PASS
+Linux L5 disabled/native retained: PASS
+Linux fixed musl BusyBox sh disabled/native retained: PASS
+Linux bounded real ldso gate-off/static retained: PASS
+Linux bounded DSO initial-exec TLS: SKIP (gate/hosted)
+Linux dynamic W^X/RELRO: SKIP (gate)
+TCP32 pool/RX 16384 mechanism: PASS
+Linux SMP: SKIP (gate/hosted)
+Linux bounded clone/futex: SKIP persona disabled
+Linux controlled migration: SKIP disabled
+MicroPython guest: SKIP disabled
+SIGCHLD evidence: SKIP disabled; native regression PASS
+FD64 capacity/full-error/rollback/high-fd/reuse/reclaim: PASS (Linux skipped; native verified)
+VBox7.2.20 UEFI/SMP4/ICH9/e1000 Linux-off full selftest PASS

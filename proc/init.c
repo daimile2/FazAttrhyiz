@@ -60,26 +60,35 @@ static cm_error_t install_missing(const char *path,const void *bytes,uint64_t le
     if(!e)kinfo("init: provisioned %s via VFS (%u bytes)",path,(unsigned)length);
     return e;
 }
+/* Canonical native suffix; preserve legacy paths and existing disk files. */
+static cm_error_t install_native(const char *legacy,const void *bytes,uint64_t length)
+{
+    char path[128];size_t n=strlen(legacy);
+    if(n<4 || n>=sizeof(path) || memcmp(legacy+n-4,".elf",4))return CM_ERR_INVAL;
+    memcpy(path,legacy,n+1);memcpy(path+n-4,".faz",4);
+    cm_error_t e=install_missing(path,bytes,length);
+    return e?e:install_missing(legacy,bytes,length);
+}
 static cm_error_t provision(void)
 {
     cm_stat_t stat;cm_error_t e=cm_vfs_stat("/bin",&stat);
     if(e==CM_ERR_NOENT)e=cm_vfs_mkdir("/bin");
     else if(!e && stat.kind!=CM_INO_DIR)e=CM_ERR_NOTDIR;
     if(e)return e;
-    e=install_missing("/bin/shell.elf",cm_user_shell_elf,sizeof(cm_user_shell_elf));
-    if(!e)e=install_missing("/bin/spin.elf",cm_spin_elf,sizeof(cm_spin_elf));
-    if(!e)e=install_missing("/bin/hello.elf",cm_test_elf,sizeof(cm_test_elf));
-    if(!e)e=install_missing("/bin/filetest.elf",cm_file_elf,sizeof(cm_file_elf));
-    if(!e)e=install_missing("/bin/udpwire.elf",cm_wire_elf,sizeof(cm_wire_elf));
-    if(!e)e=install_missing("/bin/tcpwire.elf",cm_tcp_elf,sizeof(cm_tcp_elf));
-    if(!e)e=install_missing("/bin/argtest.elf",cm_argv_elf,sizeof(cm_argv_elf));
-    if(!e)e=install_missing("/bin/concurrent.elf",cm_concurrent_elf,sizeof(cm_concurrent_elf));
-    if(!e)e=install_missing("/bin/hello-sdk.elf",cm_example_hello_elf,sizeof(cm_example_hello_elf));
-    if(!e)e=install_missing("/bin/nc.elf",cm_example_nc_elf,sizeof(cm_example_nc_elf));
-    if(!e)e=install_missing("/bin/cat.elf",cm_example_cat_elf,sizeof(cm_example_cat_elf));
-    if(!e)e=install_missing("/bin/ls.elf",cm_example_ls_elf,sizeof(cm_example_ls_elf));
-    if(!e)e=install_missing("/bin/http-get.elf",cm_example_http_get_elf,sizeof(cm_example_http_get_elf));
-    if(!e)e=install_missing("/bin/httpd.elf",cm_example_httpd_elf,sizeof(cm_example_httpd_elf));
+    e=install_native("/bin/shell.elf",cm_user_shell_elf,sizeof(cm_user_shell_elf));
+    if(!e)e=install_native("/bin/spin.elf",cm_spin_elf,sizeof(cm_spin_elf));
+    if(!e)e=install_native("/bin/hello.elf",cm_test_elf,sizeof(cm_test_elf));
+    if(!e)e=install_native("/bin/filetest.elf",cm_file_elf,sizeof(cm_file_elf));
+    if(!e)e=install_native("/bin/udpwire.elf",cm_wire_elf,sizeof(cm_wire_elf));
+    if(!e)e=install_native("/bin/tcpwire.elf",cm_tcp_elf,sizeof(cm_tcp_elf));
+    if(!e)e=install_native("/bin/argtest.elf",cm_argv_elf,sizeof(cm_argv_elf));
+    if(!e)e=install_native("/bin/concurrent.elf",cm_concurrent_elf,sizeof(cm_concurrent_elf));
+    if(!e)e=install_native("/bin/hello-sdk.elf",cm_example_hello_elf,sizeof(cm_example_hello_elf));
+    if(!e)e=install_native("/bin/nc.elf",cm_example_nc_elf,sizeof(cm_example_nc_elf));
+    if(!e)e=install_native("/bin/cat.elf",cm_example_cat_elf,sizeof(cm_example_cat_elf));
+    if(!e)e=install_native("/bin/ls.elf",cm_example_ls_elf,sizeof(cm_example_ls_elf));
+    if(!e)e=install_native("/bin/http-get.elf",cm_example_http_get_elf,sizeof(cm_example_http_get_elf));
+    if(!e)e=install_native("/bin/httpd.elf",cm_example_httpd_elf,sizeof(cm_example_httpd_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-hosts-http.elf",cm_linux_hosts_http_elf,sizeof(cm_linux_hosts_http_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/linux-hello.elf",cm_linux_hello_elf,sizeof(cm_linux_hello_elf));
     if(!e && cm_linux_enabled())e=install_missing("/bin/busybox-l1.elf",cm_busybox_l1_elf,sizeof(cm_busybox_l1_elf));
@@ -119,7 +128,7 @@ static cm_error_t provision(void)
     /* Only create a missing file; preserve disk administrators' hosts entries. */
     static const char hosts[]="# CapMix hosts-only resolver; no DNS queries\n127.0.0.1 localhost\n10.0.2.2 host.capmix.test hostgateway\n";
     if(!e)e=install_missing("/etc/hosts",hosts,sizeof(hosts)-1);
-    static const char sample[]="CapMix examples: persistent root ready\n";
+    static const char sample[]="FazAttrhyiz examples: persistent root ready\n";
     if(!e)e=install_missing("/example.txt",sample,sizeof(sample)-1);
     return e;
 }
@@ -140,11 +149,11 @@ void cm_product_start(cm_error_t status)
     cm_error_t prep=provision();
     cm_stat_t st;
     if(!prep){prep=cm_vfs_stat("/sbin",&st);if(prep==CM_ERR_NOENT)prep=cm_vfs_mkdir("/sbin");}
-    if(!prep)prep=install_missing("/sbin/init.elf",cm_user_init_elf,sizeof(cm_user_init_elf));
+    if(!prep)prep=install_native("/sbin/init.elf",cm_user_init_elf,sizeof(cm_user_init_elf));
     if(prep){kerr("init: bootstrap ELF provisioning failed=%d",prep);cm_console_idle();return;}
-    const char *argv[]={"/sbin/init.elf",NULL};
+    const char *argv[]={"/sbin/init.faz",NULL};
     const char *envp[]={"PATH=/bin","CAPMIX=product",NULL};
-    cm_spawn_attr_t attr={.path="/sbin/init.elf",.argv=argv,.envp=envp,.qos=CM_QOS_USER_INTERACTIVE};
+    cm_spawn_attr_t attr={.path="/sbin/init.faz",.argv=argv,.envp=envp,.qos=CM_QOS_USER_INTERACTIVE};
     cm_id_t pid=0;cm_error_t e=cm_posix_spawn(&attr,&pid);
     if(e || pid!=1){kerr("init: PID1 spawn failed=%d pid=%llu",e,(unsigned long)pid);cm_console_idle();return;}
     cm_proc_t *p=cm_proc_lookup(pid);
@@ -153,7 +162,7 @@ void cm_product_start(cm_error_t status)
         (void)cm_proc_release_child(0,pid);kerr("init: bootstrap capabilities failed=%d",e);cm_console_idle();return;}
     if(cm_blk_installed())kinfo("disk install: system ELF provisioning synced; root=disk base_lba=%llu ready",(unsigned long)cm_blk_root_base());
     kinfo("linux persona: compiled=%u enabled=%u product default=off native files retained",CM_LINUX_ABI,cm_linux_enabled());
-    kinfo("init: kernel bootstrap -> /sbin/init.elf PID1 (user ELF)");
+    kinfo("init: kernel bootstrap -> /sbin/init.faz PID1 (user ELF)");
     (void)cm_net_bg_start();
     cm_smp_sched_enable();
     for(;;) {

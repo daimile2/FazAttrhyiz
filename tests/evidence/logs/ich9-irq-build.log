@@ -1,0 +1,4 @@
+make: Nothing to be done for 'kernel'.
+make: 'third_party/limine/limine' is up to date.
+make: 'build/cow-put' is up to date.
+make: 'build/perf-verify.cmx' is up to date.

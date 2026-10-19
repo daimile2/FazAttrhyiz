@@ -137,7 +137,7 @@ static void ingress(int id,uint8_t *packet,uint16_t n,int notified)
 }
 static void background(void *arg)
 {
-    CM_UNUSED(arg);uint8_t packet[CM_PKT_MAX];uint64_t health=0;
+    CM_UNUSED(arg);uint8_t packet[CM_PKT_MAX];uint64_t health=0;unsigned reported=0;
     while(__atomic_load_n(&running,__ATOMIC_ACQUIRE)) {
         unsigned events=__atomic_exchange_n(&rx_pending,0,__ATOMIC_ACQ_REL);
         uint64_t now=cm_rdtsc();int watchdog=now>=health;
@@ -153,6 +153,11 @@ static void background(void *arg)
                 if(e)continue;
                 __atomic_fetch_add(&frames,1,__ATOMIC_RELAXED);
                 if(irq && (events&(1u<<id)))__atomic_fetch_add(&irq_frames,1,__ATOMIC_RELAXED);
+                if(irq && (events&(1u<<id)) && !(reported&(1u<<id))) {
+                    reported|=1u<<id;
+                    kinfo("net irq rx active: if=%s hardware=%llu notified-frame=1",cm_if_get(id)->name,
+                          (unsigned long)(id==cm_e1000_ifid()?cm_e1000_irq_count():cm_virtio_net_irq_count()));
+                }
                 ingress(id,packet,bytes,irq && (events&(1u<<id)));
                 if(budget==15)__atomic_fetch_or(&rx_pending,1u<<id,__ATOMIC_RELEASE);
             }

@@ -1,0 +1,17 @@
+PERF_SUMMARY date=2026-10-19T07:37:35+00:00 backend=vbox smp=1 nic=e1000 linux=0 workers=1 concurrency=4 samples=3 http_rps_median=7.936 hush=skipped-linux-off verified=1
+LATENCY smp=1 p50_ms=126.966 p95_ms=2393.530
+PERF_SUMMARY date=2026-10-19T07:37:35+00:00 backend=vbox smp=4 nic=e1000 linux=0 workers=1 concurrency=4 samples=3 http_rps_median=8.614 hush=skipped-linux-off verified=1
+LATENCY smp=4 p50_ms=116.213 p95_ms=2204.538
+performance evidence: PASS (read-only arithmetic/CPU/payload assertions, no VMs launched)
+PERF_SUMMARY date=2026-10-19T07:36:45+00:00 backend=vbox smp=1 nic=e1000 linux=0 workers=4 concurrency=4 samples=3 http_rps_median=26.505 hush=skipped-linux-off verified=1
+LATENCY smp=1 p50_ms=149.646 p95_ms=166.567
+PERF_SUMMARY date=2026-10-19T07:36:45+00:00 backend=vbox smp=4 nic=e1000 linux=0 workers=4 concurrency=4 samples=3 http_rps_median=29.974 hush=skipped-linux-off verified=1
+LATENCY smp=4 p50_ms=92.878 p95_ms=299.642
+performance evidence: PASS (read-only arithmetic/CPU/payload assertions, no VMs launched)
+HTTP_WORKERS backend=vbox workers=1 concurrency=4 smp=1 rps=7.936 p50_ms=126.966 p95_ms=2393.530 worker_cpus=0
+HTTP_WORKERS backend=vbox workers=1 concurrency=4 smp=4 rps=8.614 p50_ms=116.213 p95_ms=2204.538 worker_cpus=0
+HTTP_SMP backend=vbox workers=1 smp4_vs_smp1_pct=8.54
+HTTP_WORKERS backend=vbox workers=4 concurrency=4 smp=1 rps=26.505 p50_ms=149.646 p95_ms=166.567 worker_cpus=0,0,0,0
+HTTP_WORKERS backend=vbox workers=4 concurrency=4 smp=4 rps=29.974 p50_ms=92.878 p95_ms=299.642 worker_cpus=0,1,2,3
+HTTP_SMP backend=vbox workers=4 smp4_vs_smp1_pct=13.09
+HTTP workers comparison: PASS (bounded independent ports, exact payload/EOF/quota/exit/reap; no speedup assertion)

@@ -7,7 +7,7 @@
 
 本实现扩展仓库自有 `/lib/ld-capmix.so.1`，支持启动阶段加载的 DSO 使用
 x86-64 Variant II initial-exec TLS。不是 musl/glibc ld.so，不承诺任意 Linux
-动态程序。原生 ABI 不变，原生新软件仍建议 `.cmx` 或 `/bin/cm/`。
+动态程序。原生 ABI 不变，原生新软件仍建议 `.faz` 或 `/bin/cm/`。
 
 ## 开关与运行
 

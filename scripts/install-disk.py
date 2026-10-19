@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a BIOS/UEFI CapMix disk image. No raw devices, force, or in-place upgrade."""
+"""Create a BIOS/UEFI FazAttrhyiz disk image (compatible CapMix layout). No raw devices, force, or in-place upgrade."""
 import argparse
 import fcntl
 import os

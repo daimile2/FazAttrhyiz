@@ -2,7 +2,7 @@
 
 首版沿用现有**宿主离线安装/管理 RAW 镜像、下次启动生效**的工作流；没有 guest 内包管理器、
 在线切换或内核热卸。包是内核已有 Linux persona + 内置的固定测试程序配置，不是 Linux 发行版、
-容器、独立下载的 glibc 或通用 BusyBox。原生 CapMix ABI/程序保持独立；新原生软件仍建议 `.cmx` 或 `/bin/cm/`。
+容器、独立下载的 glibc 或通用 BusyBox。原生 CapMix ABI/程序保持独立；新原生软件仍建议 `.faz` 或 `/bin/cm/`。
 
 默认产品 Linux 关闭。此工具启用稳定的 L0–L3 路径，明确写入 `capmix.linux_interp=0`，
 不自动开启实验性 L4a。L1 仍是**定制 musl 静态 BusyBox 子集 + 有界 BSS 分配**。

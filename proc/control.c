@@ -65,7 +65,7 @@ static int64_t spawn(cm_proc_t *p,uint64_t hid,uint64_t address,uint64_t output,
         e=acquire(p,2,CM_OBJ_CONSOLE,CM_RIGHT_READ|CM_RIGHT_WRITE|CM_RIGHT_DUPLICATE,&console);
         if(e)goto finish;
     }
-    if(shell && (p->pid!=1 || !equal(path,"/bin/shell.elf") ||
+    if(shell && (p->pid!=1 || (!equal(path,"/bin/shell.faz") && !equal(path,"/bin/shell.elf")) ||
        !(cm_handle_lookup(p->task,(int)hid)->rights&CM_RIGHT_DUPLICATE))){e=CM_ERR_DENIED;goto finish;}
     if(io_address) {
         cm_user_stdio_t io;

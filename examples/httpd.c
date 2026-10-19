@@ -1,9 +1,10 @@
 #include "capmix.h"
-/* A deliberately bounded serial HTTP/1.0 responder, not a general web server. */
+/* One bounded serial worker per process. Optional ID labels a 1..4 process
+ * shard launched by shell; no fork, spawn authority or socket handoff. */
 static const char response[]=
-    "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 25\r\n"
-    "Connection: close\r\n\r\nhello from CapMix httpd!\n";
-_Static_assert(sizeof("hello from CapMix httpd!\n")-1==25,"HTTP content length");
+    "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 30\r\n"
+    "Connection: close\r\n\r\nhello from FazAttrhyiz httpd!\n";
+_Static_assert(sizeof("hello from FazAttrhyiz httpd!\n")-1==30,"HTTP content length");
 static int serve(long h,uint64_t hz)
 {
     char request[2048];size_t used=0;int complete=0;
@@ -26,18 +27,29 @@ static int serve(long h,uint64_t hz)
     if(e<0){cm_report("httpd send error",e);return 1;}
     cm_print("httpd response: HTTP/1.0 200 payload=25 verified\n");return 0;
 }
+static void worker_record(const char *event,unsigned id,unsigned port,unsigned handled,int status)
+{
+    char b[120];size_t at=0;const char *parts[]={"httpd worker ",event,": id=",NULL};
+    for(unsigned i=0;parts[i];i++)for(const char *p=parts[i];*p;p++)b[at++]=*p;
+    unsigned values[]={id,port,handled,(unsigned)status};
+    const char *labels[]={" port="," handled="," status=","\n"};
+    for(unsigned i=0;i<4;i++){char digits[12];unsigned n=0,v=values[i];do{digits[n++]=(char)('0'+v%10);v/=10;}while(v);while(n)b[at++]=digits[--n];for(const char *p=labels[i];*p;p++)b[at++]=*p;}
+    b[at]=0;cm_print(b);
+}
 int main(int argc,char **argv,char **envp)
 {
-    (void)envp;uint16_t port=8080;unsigned limit=0;
-    if(argc>3 || (argc>=2 && !cm_parse_port(argv[1],&port))) {
-        cm_print("usage: run /bin/httpd.elf [PORT [REQUESTS]] [&]\n");return 2;
+    (void)envp;uint16_t port=8080;unsigned limit=0,worker=0;
+    if(argc>4 || (argc>=2 && !cm_parse_port(argv[1],&port))) {
+        cm_print("usage: run /bin/httpd.elf [PORT [REQUESTS [WORKER_ID]]] [&]\n");return 2;
     }
-    if(argc==3) {
+    if(argc>=3) {
         uint16_t n;if(!cm_parse_port(argv[2],&n) || n>100){cm_print("httpd: REQUESTS must be 1..100\n");return 2;}limit=n;
     }
+    if(argc==4){uint16_t n;if(!cm_parse_port(argv[3],&n) || n>4){cm_print("httpd: WORKER_ID must be 1..4\n");return 2;}worker=n;}
     uint64_t hz=cm_hz();if(!hz)return 1;
     long listener=cm_tcp_serve(port,4);if(listener<0){cm_report("httpd listen error",listener);return 1;}
     cm_report("httpd listening port",port);cm_print("httpd accept=nonblocking backlog=4 serial=1\n");
+    if(worker)worker_record("ready",worker,port,0,0);
     unsigned handled=0;int status=0;
     for(;;) {
         long h=cm_tcp_accept(listener);
@@ -47,8 +59,10 @@ int main(int argc,char **argv,char **envp)
         int failed=serve(h,hz);long e=cm_tcp_hangup(h);
         if(e<0)cm_report("httpd close error",e);
         cm_report("httpd handled",++handled);
-        if(limit && handled>=limit){status=failed || e<0;break;}
+        status|=failed || e<0;
+        if(limit && handled>=limit)break;
     }
     long e=cm_tcp_hangup(listener);if(e<0)status=1;
+    if(worker)worker_record("done",worker,port,handled,status);
     cm_print("httpd stopped: listener closed\n");return status;
 }

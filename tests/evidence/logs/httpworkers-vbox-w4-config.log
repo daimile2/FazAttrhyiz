@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-19T07:36:45+00:00",
+  "backend": "vbox",
+  "cpus": [
+    1,
+    4
+  ],
+  "memory_mib": 512,
+  "nic": "e1000",
+  "disk": "AHCI/no-ISO",
+  "linux": 0,
+  "linux_interp": 0,
+  "chipset": "ich9",
+  "e1000_irq": "auto",
+  "http_only": true,
+  "workers": 4,
+  "concurrency": 4,
+  "samples": 3,
+  "http_requests": 20,
+  "http_warmup": 8,
+  "pipes": 32,
+  "pipe_bytes": 6000,
+  "pipe_total_bytes": 192000,
+  "vbox_carrier_setup_wait_seconds": 6,
+  "clock": "host perf_counter, wall time",
+  "host_platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+  "git_revision": "0f79286bb3280b8a59df6357499de4ced9da8607",
+  "qemu_cpu": "host",
+  "qemu_accel": "kvm",
+  "qemu": "QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)",
+  "vbox": "7.2.20r175154",
+  "kernel_sha256": "d317253b81058386486b540d736d8e91ce6f3c51de11ac989dc153478bc6945d"
+}

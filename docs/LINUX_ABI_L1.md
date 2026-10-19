@@ -34,7 +34,7 @@ make kernel iso LINUX_ABI=0              # 编译关闭，cmdline 无法重新�
 `/bin/busybox-l1.elf`，不覆盖现有同名文件。关闭时拒绝 Linux 镜像的运行，
 **不删除、格式化、改名任何原生或 Linux 文件**；不提供 `.o` 热卸载。
 升级已有盘上的旧同名 Linux 文件需由用户显式处理，不借开关执行更新。
-新原生软件建议 `.cmx` 或 `/bin/cm/`；旧 `.elf` 工具保留，后缀不参与 ABI 判断。
+新原生软件建议 `.faz` 或 `/bin/cm/`；旧 `.elf` 工具保留，后缀不参与 ABI 判断。
 
 ## 文件 syscall 与权限
 

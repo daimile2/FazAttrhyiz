@@ -34,7 +34,7 @@ persona记录于ELF image和proc，在进程发布之前确定，用户程序不
 - 有PT_INTERP的ET_EXEC/ET_DYN都明确拒绝并记录日志；PT_DYNAMIC/PT_TLS仍拒绝，
   ET_DYN/PIE仍不支持。不尝试加载ld.so，不把动态Linux镜像当原生运行。
 
-新CapMix原生软件建议采用 `.cmx` 后缀或 `/bin/cm/` 路径；这只是发布命名约定，
+新CapMix原生软件建议采用 `.faz` 后缀或 `/bin/cm/` 路径；这只是发布命名约定，
 不用于ABI识别。本轮不重命名、删除或迁移已有 `.elf` 工具。
 
 ## 构建与开关

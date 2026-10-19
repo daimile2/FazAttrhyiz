@@ -246,7 +246,7 @@ int cm_linux_file_call(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t d,i
         *result=cm_copyout(caller()->elf,a,root,2)?-14:2;break;
     }
     case 63: {
-        cm_linux_utsname_t u={0};memcpy(u.sysname,"CapMix",7);memcpy(u.nodename,"capmix",7);
+        cm_linux_utsname_t u={0};memcpy(u.sysname,"FazAttrhyiz",sizeof("FazAttrhyiz"));memcpy(u.nodename,"fazattrhyiz",sizeof("fazattrhyiz"));
         memcpy(u.release,"0.8.0-l1",9);memcpy(u.version,"Linux ABI L1 subset",20);memcpy(u.machine,"x86_64",7);
         *result=cm_copyout(caller()->elf,a,&u,sizeof(u))?-14:0;break;
     }

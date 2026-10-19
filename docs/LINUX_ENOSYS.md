@@ -3,7 +3,7 @@
 > 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
 
 Linux persona 默认仍关闭（`capmix.linux=0`）。本轮不改变原生 ABI、原生
-`/bin` 数据或卸载策略；新原生程序仍建议 `.cmx` 或 `/bin/cm/`。
+`/bin` 数据或卸载策略；新原生程序仍建议 `.faz` 或 `/bin/cm/`。
 这不是通用 Linux、glibc、任意 BusyBox 或 curl 兼容保证。
 
 ## 固定 corpus 与基线

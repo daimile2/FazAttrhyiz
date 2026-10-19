@@ -2,7 +2,7 @@
 
 这是**定制 MicroPython 1.24.1 静态标量展示子集**，不是通用 MicroPython、CPython、
 任意 musl/glibc 或 Linux 发行版兼容。产品默认 Linux persona 关闭；原生 ABI、
-`/bin` 工具、hush/ldso/TLS 黄金均保留。原生新软件 `.cmx` 或 `/bin/cm/` 约定不变。
+`/bin` 工具、hush/ldso/TLS 黄金均保留。原生新软件 `.faz` 或 `/bin/cm/` 约定不变。
 不新增内核热卸或改变 `/data/linux` 保留/显式删除政策。
 
 ## 固定来源、配方与补丁

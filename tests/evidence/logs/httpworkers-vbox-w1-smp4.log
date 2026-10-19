@@ -1,0 +1,602 @@
+[INF] boot mode: product (Limine cmdline snapshot)
+[INF] req: mmap=0xffff80001f006000 hhdm=0xffff80001f018000 kaddr=0xffff80001f01d000
+[INF] kaddr: phys=1844a000 virt=ffffffff80000000 size=10358784 (excluded from buddy)
+[INF] limine: usable phys=100000 pages=99146 hhdm=ffff800000000000 → buddy virt=ffff800000110000 n=16384
+[INF] gdt: lgdt + ltr 0x30 cpu=0 ist1=0xffffffff8008d000 ist2=0xffffffff8006d000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] gdt: lgdt + ltr 0x30 cpu=0 ist1=0xffffffff8008d000 ist2=0xffffffff8006d000
+[INF] gdt: seg reload was cs=8 ds=10 ss=10 -> now cs=8 ss=10
+[INF] idt: lidt base=0xffffffff800aa000 #PF/#GP/#DF/#SS IST=1 timer=0x40 IST=0
+[INF] ====================================================
+[INF] CapMix 0.8.0-phase8 — capability hybrid kernel
+[INF] skeleton: capability hybrid (Zircon + L4 IPC + XNU split)
+[INF] mm: no-overcommit + buddy/SLUB + 4-level pressure
+[INF] sched: EEVDF + QoS bands + turnstile
+[INF] obs: trace_id on every IPC (day-0, not bolted on)
+[INF] proc: posix_spawn first-class, fork is compat-only
+[INF] fs: COW volume (APFS + Btrfs csum + XFS AG + ReFS scrub)
+[INF] io: irq split + uring + blk-mq + user-mode drivers
+[INF] net: in-kernel + XDP/eBPF (kill-switch) + nft
+[INF] sec: cap + Seatbelt + SIP + one-shot authz + signing
+[INF] virt: Type-1 KVM + job/cgroup v2
+[INF] obs: ETW session + hist + cap-gated consume
+[INF] ====================================================
+[INF] mm: commit limit 15401 pages (no-overcommit, reserve 983)
+[INF] mm: watermarks min=256 low=512 high=768 pages
+[INF] mm: commit limit 16425 pages (+1024 backed by swap)
+[INF] anon: 52428 page slots, compressor pool <= 8192 segs, swap 1024 x 4 KiB segs
+[INF] mm: buddy ready, 16384 pages (65536 KiB), max order 11
+[INF] paging: active levels=4 max=5 folded=1
+[INF] paging: mapped kernel virt=ffffffff80000000 phys=1844a000 pages=2529
+[INF] paging: mapped heap virt=ffff800000110000 phys=110000 pages=16384
+[INF] lapic: mapped phys=fee00000 -> ffffffff8fee0000 (PCD)
+[INF] probe rsp=ffffffff802c9150 (boot_stack=0xffffffff802a9170) land
+[INF] paging: CR3=4100000 tables=44 mapped=18914 stack=bss (own walker live)
+[INF] paging: KPTI enabled, PGE disabled
+[INF] fb console ready: 1024x768 pitch=4096 bpp=32 text=85x40 serial retained
+[INF] mp: mapped 1 response page(s) on demand at ffff80001f017000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ed7e000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ed7d000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ed79000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ed78000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ed77000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ed76000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ed75000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ed74000
+[INF] numa: single node0 fallback (SRAT absent/invalid or one domain), existing arena unchanged
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ed7a000
+[INF] mp: mapped 2 response page(s) on demand at ffff80001ed7a000
+[INF] acpi poweroff ready: S5=5/5 PM1=b004/0
+[INF] irq: top/bottom half ready, 32 lines
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ed7e000
+[INF] ioapic: MADT addr=fec00000 IRQ1 gsi=1
+[INF] ioapic: version=170020
+[INF] ioapic: IRQ1 gsi=1 -> vec 0x41 dest=0
+[INF] ps2: ready set1 IRQ1 echo (bounded i8042 initialization)
+[INF] io: uring SQ/CQ 256 entries, IOCP inflight counter on
+[INF] virtio-blk skipped: no supported PCI device
+[INF] ahci PCI: 0:31.2 ABAR=e1624000
+[INF] ahci SATA disk: port=0
+[INF] ahci ready: sectors=262144 logical=512 DMA=4096 slot=0 polling FLUSH_EXT=1
+[INF] disk install: layout verified backend=2 root_base_lba=2048 ESP separate, root window=8MiB
+[INF] blk root backend: ahci
+[INF] blk: mq 4 queues x qd 32, ramdisk 16384 sectors (raw 64 / swap 8192 / fs 8128)
+[INF] drv: user-mode framework, capability IRQ broker ready
+[INF] cowfs: mounted gen=38 (slot A, other slot valid/older) snaps=0
+[INF] vfs: '/' = cowfs (in-kernel, no IPC hop); snapshots under /.snap
+[INF] ebpf: verifier on, kill-switch available, JIT later
+[INF] udp: lo/NIC datagrams, 16 capability endpoints x 8 queued, max payload=1472
+[INF] tcp pool: slots=32 backlog=8 rx_bytes=16384 slot_bytes=17072 pool_bytes=546304 static-resident commit=0
+[INF] virtio-net skipped: no supported PCI device
+[INF] e1000 PCI: 0:3.0 device=100e BAR0=e1600000 model=8254x
+[INF] net: iface enet0 id=0 addr=a00020f
+[INF] e1000 INTx probe: VBox/ICH9 root-slot=3 pin=1 firmware_line=11 verified_gsi=19 LPC=27b98086
+[INF] irq rx route: PCI INTx GSI=19 pin=19 vector=0x42 dest=0 level/low
+[INF] e1000 irq rx enabled: INTx line=11 gsi=19 RXDMT0/RXO/RXT0; top=ack+notify
+[INF] e1000 ready: link=down RX/TX=16 legacy DMA=2048 MAC=8:0:27:88:ab:32 irq=1
+[INF] e1000 ip: enet0=10.0.2.15/24 gateway=10.0.2.2
+[INF] net primary: unavailable (priority virtio-net > e1000)
+[INF] net: in-kernel stack (XNU lesson), XDP + nft
+[INF] sip: mask=f cr4=20
+[INF] mitigations=0 SMEP=0 SMAP=0 KPTI=0 kpti_configured=1 kaslr=unimplemented kaslr_slide=0
+[INF] mitigations: KPTI awaiting actual ring3 shadow/full CR3 verification (hosted has no hardware entry)
+[INF] sec: cap deny-by-default + Seatbelt + SIP + one-shot authz + sign
+[INF] virt: Type-1 KVM + VFIO/SR-IOV stubs, job/cgroup v2 ready
+[INF] lapic: cpuid1 edx.apic=1 ecx.tsc_deadline=0
+[INF] lapic: tsc_freq=3187359082 Hz (3187 MHz, src=pit-median)
+[INF] lapic calib: mode=periodic calib_hz=62495368 divisor=16 samples=5 initial_count=62495 tsc_src=pit-median
+[INF] lapic: BSP tsc-deadline=0 calib_hz=62495368 target_ns=1000000 initial_count=62495
+[INF] lapic: readback lvt(0x320)=20040 dcr(0x3E0)=3
+[INF] probe rsp=ffffffff802c9140 (boot_stack=0xffffffff802a9170) after_paging
+[INF] fault: installed error-code stubs for 8,10,11,12,13,14,17 (IST=1)
+[INF] smp: probe enter cpu_id=0
+[INF] mp: response=0xffff80001f008000 max_ids=8
+[INF] mp: mapped 1 response page(s) on demand at ffff80001f008000
+[INF] mp: revision=0 flags=0 bsp=0 cpu_count=4 cpus=0xffff80001f007000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001f007000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001f00c000
+[INF] mp:   [0] info=0xffff80001f00c000 lapic_id=0
+[INF] mp:   [1] info=0xffff80001f00c020 lapic_id=1
+[INF] mp:   [2] info=0xffff80001f00c040 lapic_id=2
+[INF] mp:   [3] info=0xffff80001f00c060 lapic_id=3
+[INF] smp: cm_limine_mp rc=0 n=4 bsp=0
+[INF] smp: cpu_count=4 bsp_lapic_id=0 (this cpu=0, index=0)
+[INF] smp:   cpu[0] lapic_id=0 (BSP)
+[INF] smp:   cpu[1] lapic_id=1
+[INF] smp:   cpu[2] lapic_id=2
+[INF] smp:   cpu[3] lapic_id=3
+[INF] numa: node=0 domain=0 cpu_mask=f total=16384 free=13753
+[INF] numa: distance node0->node0=10
+[INF] gdt: lgdt + ltr 0x30 cpu=1 ist1=0xffffffff80091000 ist2=0xffffffff80071000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=1 timer armed tsc-deadline=0 calib_hz=62495368 initial_count=62495
+[INF] ap: cpu=1 lapic_id=1 up on stack 0xffffffff802d1270
+[INF] gdt: lgdt + ltr 0x30 cpu=2 ist1=0xffffffff80095000 ist2=0xffffffff80075000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=2 timer armed tsc-deadline=0 calib_hz=62495368 initial_count=62495
+[INF] ap: cpu=2 lapic_id=2 up on stack 0xffffffff802d5270
+[INF] gdt: lgdt + ltr 0x30 cpu=3 ist1=0xffffffff80099000 ist2=0xffffffff80079000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=3 timer armed tsc-deadline=0 calib_hz=62495368 initial_count=62495
+[INF] smp: started 3 AP(s), online=4/4
+[INF] ap: cpu=3 lapic_id=3 up on stack 0xffffffff802d9270
+[INF] fault: installed error-code stubs for 8,10,11,12,13,14,17 (IST=1)
+[INF] idt[64]: off=ffffffff8006613e sel=8 ist=0 type=8e present=1
+[INF] idt[64]: timer stub is MATCHED (cm_timer_stub=ffffffff8006613e)
+[INF] probe rsp=ffffffff802c9130 (boot_stack=0xffffffff802a9170) pre-sti
+[INF] lapic: pre-sti lvt=20040 id=0 svr=1ff
+[INF] lapic: armed dl=0 tsc=ba88faaf (dl>tsc=0)
+[INF] irq: after bare-spin IF=1 firings=80 ticks=8 ccr=97
+[INF] timer: tick=1 tsc=baf60c5b (baseline, no delta yet)
+[INF] timer: tick=2 tsc=bb176209 delta_tsc=2184622 (~685 us, target 1000 us)
+[INF] timer: tick=3 tsc=bb4802ab delta_tsc=3186850 (~999 us, target 1000 us)
+[INF] timer: tick=4 tsc=bb78a2f8 delta_tsc=3186765 (~999 us, target 1000 us)
+[INF] timer: tick=5 tsc=bbb02679 delta_tsc=3638145 (~1141 us, target 1000 us)
+[INF] elf load: path=/sbin/init.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=1 path=/sbin/init.elf ELF entry=400000 full=14d000 shadow=15a000
+[INF] disk install: system ELF provisioning synced; root=disk base_lba=2048 ready
+[INF] linux persona: compiled=1 enabled=0 product default=off native files retained
+[INF] init: kernel bootstrap -> /sbin/init.elf PID1 (user ELF)
+[INF] net bg RX started: scheduler thread tid=2 budget=16/interface IRQ=e1000/virtio-net-if-routed; idle=BLOCKED timer=10ms watchdog=100ms
+[INF] usermode: EFER.SCE LSTAR=0xffffffff80066232 STAR user=0x18 kernel=0x08
+[INF] exec ring3: pid=1 entry=400000 rsp=7fff90 cpu=0
+init ELF: pid=1 CPL=3
+[INF] cowfs: mounted gen=38 (slot A, other slot valid/older) snaps=0
+[INF] user init: root mount finalized backend=ahci
+[INF] dhcp skipped: no up supported NIC (static fallback retained)
+init: CapMix product root=disk backend=ahci nic=none/down
+[INF] elf load: path=/bin/shell.elf ET_EXEC entry=400000 PT_LOAD=2 pages=7 BSS zeroed
+[INF] exec spawn: pid=2 path=/bin/shell.elf ELF entry=400000 full=148000 shadow=17b000
+[INF] user spawn: parent=1 child=2 cpu=0 child-cap=4
+init: shell pid=2 user ELF launched
+[INF] exec ring3: pid=2 entry=400000 rsp=7fff90 cpu=0
+shell ELF ready: CPL=3 PS/2 -> user shell -> FB+serial
+
+[SHELL v=1 event=ready seq=1 status=0]
+capmix> run /bin/httpd.elf 8080 68 1 &
+[SHELL v=1 event=begin seq=1 status=0]
+[INF] elf load: path=/bin/httpd.elf ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=3 path=/bin/httpd.elf ELF entry=400000 full=186000 shadow=193000
+[INF] user spawn: parent=2 child=3 cpu=0 child-cap=4
+[INF] exec ring3: pid=3 entry=400000 rsp=7fff70 cpu=0
+[INF] tcp listen: if=enet0 port=8080 backlog=4 slots=32 accept=nonblocking
+[INF] user[3]: httpd listening port=8080
+[INF] user[3]: httpd accept=nonblocking backlog=4 serial=1
+[INF] user[3]: httpd worker ready: id=1 port=8080 handled=0 status=0
+[INF] net irq rx active: if=enet0 hardware=1 notified-frame=1
+shell background start: pid=[INF] tcp established: if=enet0 local=8080 peer_port=57526 passive=1
+[INF] tcp accept: port=8080 peer_port=57526 handle=2
+[INF] tcp established: if=enet0 local=8080 peer_port=57524 passive=1
+[INF] user[3]: httpd accepted
+[INF] tcp established: if=enet0 local=8080 peer_port=57554 passive=1
+[INF] tcp established: if=enet0 local=8080 peer_port=57566 passive=1
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57568 passive=1
+3 cpu=0
+
+[SHELL v=1 event=end seq=1 status=0]
+
+[SHELL v=1 event=ready seq=2 status=0]
+capmix> [INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=1
+[INF] tcp accept: port=8080 peer_port=57524 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57580 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=2
+[INF] tcp accept: port=8080 peer_port=57580 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57596 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=3
+[INF] tcp accept: port=8080 peer_port=57596 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57604 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=4
+[INF] tcp accept: port=8080 peer_port=57604 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=5
+[INF] tcp accept: port=8080 peer_port=57554 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=6
+[INF] tcp accept: port=8080 peer_port=57566 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=7
+[INF] tcp accept: port=8080 peer_port=57568 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57620 passive=1
+[INF] tcp established: if=enet0 local=8080 peer_port=57618 passive=1
+[INF] tcp established: if=enet0 local=8080 peer_port=57642 passive=1
+[INF] tcp established: if=enet0 local=8080 peer_port=57646 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=8
+[INF] tcp accept: port=8080 peer_port=57620 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57648 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=9
+[INF] tcp accept: port=8080 peer_port=57618 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57664 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=10
+[INF] tcp accept: port=8080 peer_port=57664 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57670 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=11
+[INF] tcp accept: port=8080 peer_port=57670 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57674 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=12
+[INF] tcp accept: port=8080 peer_port=57674 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57684 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=13
+[INF] tcp accept: port=8080 peer_port=57684 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57694 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=14
+[INF] tcp accept: port=8080 peer_port=57694 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57704 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=15
+[INF] tcp accept: port=8080 peer_port=57704 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57706 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=16
+[INF] tcp accept: port=8080 peer_port=57706 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57718 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=17
+[INF] tcp accept: port=8080 peer_port=57718 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57734 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=18
+[INF] tcp accept: port=8080 peer_port=57734 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57750 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=19
+[INF] tcp accept: port=8080 peer_port=57750 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57762 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=20
+[INF] tcp accept: port=8080 peer_port=57762 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57774 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=21
+[INF] tcp accept: port=8080 peer_port=57774 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57790 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=22
+[INF] tcp accept: port=8080 peer_port=57790 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57806 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=23
+[INF] tcp accept: port=8080 peer_port=57806 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57814 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=24
+[INF] tcp accept: port=8080 peer_port=57814 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=25
+[INF] tcp accept: port=8080 peer_port=57642 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=26
+[INF] tcp accept: port=8080 peer_port=57646 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=27
+[INF] tcp accept: port=8080 peer_port=57648 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57820 passive=1
+[INF] tcp established: if=enet0 local=8080 peer_port=57822 passive=1
+[INF] tcp established: if=enet0 local=8080 peer_port=57828 passive=1
+[INF] tcp established: if=enet0 local=8080 peer_port=57840 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=28
+[INF] tcp accept: port=8080 peer_port=57820 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57854 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=29
+[INF] tcp accept: port=8080 peer_port=57822 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57868 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=30
+[INF] tcp accept: port=8080 peer_port=57868 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57872 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=31
+[INF] tcp accept: port=8080 peer_port=57872 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57884 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=32
+[INF] tcp accept: port=8080 peer_port=57884 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57900 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=33
+[INF] tcp accept: port=8080 peer_port=57900 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57908 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=34
+[INF] tcp accept: port=8080 peer_port=57908 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57924 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=35
+[INF] tcp accept: port=8080 peer_port=57924 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57926 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=36
+[INF] tcp accept: port=8080 peer_port=57926 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57930 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=37
+[INF] tcp accept: port=8080 peer_port=57930 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57936 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=38
+[INF] tcp accept: port=8080 peer_port=57936 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57948 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=39
+[INF] tcp accept: port=8080 peer_port=57948 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57960 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=40
+[INF] tcp accept: port=8080 peer_port=57960 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57972 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=41
+[INF] tcp accept: port=8080 peer_port=57972 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57986 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=42
+[INF] tcp accept: port=8080 peer_port=57986 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57996 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=43
+[INF] tcp accept: port=8080 peer_port=57996 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=57998 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=44
+[INF] tcp accept: port=8080 peer_port=57998 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=45
+[INF] tcp accept: port=8080 peer_port=57828 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=46
+[INF] tcp accept: port=8080 peer_port=57840 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=47
+[INF] tcp accept: port=8080 peer_port=57854 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58014 passive=1
+[INF] tcp established: if=enet0 local=8080 peer_port=58012 passive=1
+[INF] tcp established: if=enet0 local=8080 peer_port=58030 passive=1
+[INF] tcp established: if=enet0 local=8080 peer_port=58038 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=48
+[INF] tcp accept: port=8080 peer_port=58014 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58046 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=49
+[INF] tcp accept: port=8080 peer_port=58012 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58060 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=50
+[INF] tcp accept: port=8080 peer_port=58060 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58070 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=51
+[INF] tcp accept: port=8080 peer_port=58070 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58074 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=52
+[INF] tcp accept: port=8080 peer_port=58074 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58090 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=53
+[INF] tcp accept: port=8080 peer_port=58090 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58102 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=54
+[INF] tcp accept: port=8080 peer_port=58102 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58108 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=55
+[INF] tcp accept: port=8080 peer_port=58108 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58118 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=56
+[INF] tcp accept: port=8080 peer_port=58118 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58122 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=57
+[INF] tcp accept: port=8080 peer_port=58122 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58132 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=58
+[INF] tcp accept: port=8080 peer_port=58132 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58146 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=59
+[INF] tcp accept: port=8080 peer_port=58146 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=58154 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=60
+[INF] tcp accept: port=8080 peer_port=58154 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=42606 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=61
+[INF] tcp accept: port=8080 peer_port=42606 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=42614 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=62
+[INF] tcp accept: port=8080 peer_port=42614 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=42624 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=63
+[INF] tcp accept: port=8080 peer_port=42624 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp established: if=enet0 local=8080 peer_port=42626 passive=1
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=64
+[INF] tcp accept: port=8080 peer_port=42626 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=65
+[INF] tcp accept: port=8080 peer_port=58030 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=66
+[INF] tcp accept: port=8080 peer_port=58038 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=67
+[INF] tcp accept: port=8080 peer_port=58046 handle=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=25 verified
+[INF] tcp close: state=6 fin=complete error=0 TIME_WAIT=100ms handle released
+[INF] user[3]: httpd handled=68
+[INF] tcp listener close: queued connections reclaimed
+[INF] user[3]: httpd worker done: id=1 port=8080 handled=68 status=0
+[INF] user[3]: httpd stopped: listener closed
+[INF] sys: exit pid=3 code=0
+[INF] exec exit: pid=3 code=0 writes=209 bytes=5708 timer_entries=345
+[INF] elf preempt: pid=3 preempts=341 run_ticks=4744 cpu=0
+[INF] exec reap: pid=3 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=3 task/entry-stack slot recycled
+shell child done: pid=3 exit=0 reap=ok
+echo workers-drained
+[SHELL v=1 event=begin seq=2 status=0]
+workers-drained
+
+[SHELL v=1 event=end seq=2 status=0]
+
+[SHELL v=1 event=ready seq=3 status=0]
+capmix> poweroff
+[SHELL v=1 event=begin seq=3 status=0]
+[INF] user poweroff: capability authorized root sync=0
+[INF] poweroff: ACPI S5 request

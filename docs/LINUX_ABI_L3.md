@@ -3,7 +3,7 @@
 > 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
 
 Linux persona 仍是可选翻译层，产品启动默认关闭。原生 syscall、capability 与
-`/bin/*.elf` 保留；新原生软件建议 `.cmx` 或 `/bin/cm/`。关闭编译/启动开关不会删除
+`/bin/*.elf` 保留；新原生软件建议 `.faz` 或 `/bin/cm/`。关闭编译/启动开关不会删除
 程序或用户数据。本轮没有扩大为通用 Linux、通用 BusyBox 或任意 musl 兼容。
 L1 仍是**定制 musl 静态 BusyBox 子集 + 有界 BSS 分配**；其文件工具不变。
 

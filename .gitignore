@@ -24,3 +24,6 @@ build/
 
 # Pinned scalar MicroPython static Linux-user golden fixture.
 !tests/fixtures/micropython.elf
+
+# FazAttrhyiz ISO release name (capmix.iso remains a compatibility copy).
+fazattrhyiz.iso

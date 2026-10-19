@@ -1,0 +1,2 @@
+PERF date=2026-10-19T07:40:11+00:00 backend=qemu smp=4 nic=e1000 linux=0 sample=1 workers=2 concurrency=2 client_peak=2 http_n=4 http_s=0.266687 http_rps=14.999 http_p50_ms=78.616 http_p95_ms=239.312 irq_mode=auto hush=skipped-linux-off verified=1
+performance baseline: PASS (payload/status/EOF/exit/reap verified; no speedup assertion)

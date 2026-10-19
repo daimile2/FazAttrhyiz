@@ -26,7 +26,7 @@ def boot(cold=False):
    time.sleep(.1)
   raise AssertionError('timeout '+marker)
  try:
-  wait('capmix> ')
+  wait('fazattrhyiz> ')
   con=socket.socket(socket.AF_UNIX);con.connect(monitor);con.settimeout(.001)
   keys={' ':'spc','&':'shift-7','/':'slash','.':'dot','-':'minus','>':'shift-dot','<':'shift-comma','|':'shift-backslash','\n':'ret'}
   def send(text):

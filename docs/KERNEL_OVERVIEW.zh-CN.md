@@ -1,4 +1,6 @@
-# CapMix 内核总览：设计理念、接口定义、能力边界与当前状态
+# FazAttrhyiz 内核总览：设计理念、接口定义、能力边界与当前状态
+
+现名 **FazAttrhyiz**（原 CapMix），原生发布后缀为 `.faz`；[更名与兼容说明](FAZATTRHYIZ.md)。本文历史实现名称和内部 `cm_*` 接口保留。
 
 **更新日期：2026-10-15；覆盖 phase0–9、NUMA/EPT、M2–M8、P0a/P0b、P1a–P1d及后续用户态产品功能。**
 
@@ -305,7 +307,7 @@ COW物理起点为10304；ESP只供引导，运行期VFS根为COW。详见 [安�
 | TCP MSS / 单次用户I/O | 536B / 4096B | MSS可受对端更小值限制；一次仅一段待确认 |
 | TCP重传 | 初始200ms，最大1600ms，最多4次重传 | SYN/数据/FIN；指数退避，API总期限可能先终止，无拥塞控制 |
 | RX预算/等待 | 16帧/接口，idle BLOCKED | 已路由IRQ通知为主；10ms推进RTO/回退，100ms IRQ watchdog |
-| NIC IRQ路由 | 0x42 e1000、0x43 virtio-net | 已验证i440FX INTx；共享GSI后注册者回退，无MSI-X/共享fanout |
+| NIC IRQ路由 | 0x42 e1000、0x43 virtio-net | 已验证i440FX INTx及受限VBox ICH9 e1000；共享GSI后注册者回退，无MSI-X/共享fanout |
 | 受限 BPF | 64 条指令，4 个程序 | 简化 ISA，无 JIT |
 | nft 规则 | 16 | 简化规则模型 |
 | blk queues / depth | 4 / 每队列 32 | 当前硬件仍同步单 in-flight；不是 128 个硬件并发命令 |
@@ -543,7 +545,7 @@ kernel_alive；这不覆盖内核态 AHCI/NIC 驱动自身出现任意程序错�
 | `cm_net_probe` | ARP/ICMP硬件自测 | 原有BSP有界probe仍保留，不代表产品RX仍只靠手动轮询 |
 
 virtio-net仍为legacy/transitional PCI；e1000支持82540EM/82545EM/82574L名单。
-e1000和virtio-net在已验证i440FX路由上使用真实INTx；top half确认设备中断、
+e1000和virtio-net在已验证i440FX路由上使用真实INTx；e1000另支持受限的VBox ICH9 root-bus路由（见 [IRQ/性能证据](VBOX_ICH9_INTX.md)）。top half确认设备中断、
 计数、notify、EOI，worker处理ARP/UDP/TCP/DHCP并入队。virtio IRQ模式下TX/RX
 轮询不再读取read-to-clear ISR，防止误清RX通知；TX仍同步并请求抑制中断。
 未知平台路由、无IOAPIC或GSI冲突时明确fallback，后注册设备不覆盖已有IRQ路由。
@@ -1059,7 +1061,7 @@ accept非阻塞，连接池32槽、监听backlog≤8；支持队列满拒绝及c
 
 新增可关闭的Linux静态persona，仅对明确标记的Linux静态x86-64 ET_EXEC启用独立
 write/exit/arch_prctl分发、Linux auxv与FS基址上下文。产品默认关闭，原生工具不删除、不改名；
-新原生软件建议`.cmx`或`/bin/cm/`。不是任意静态glibc兼容层，详见 [LINUX_ABI_L0.md](LINUX_ABI_L0.md)。
+新原生软件建议`.faz`或`/bin/cm/`。不是任意静态glibc兼容层，详见 [LINUX_ABI_L0.md](LINUX_ABI_L0.md)。
 
 ### Linux ABI L1 文件续作
 

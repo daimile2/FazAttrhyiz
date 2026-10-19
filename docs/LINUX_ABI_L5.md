@@ -4,7 +4,7 @@
 
 L5 仅作用于 `CM_ABI_LINUX`。产品默认 `capmix.linux=0`，原生程序继续使用
 CapMix syscall/capability、posix_spawn 和原生 fork=NOTSUP；后续原生软件命名
-`.cmx` 或放 `/bin/cm/`，不强制改名已有 `.elf`。关闭/离线卸载 persona 不删除
+`.faz` 或放 `/bin/cm/`，不强制改名已有 `.elf`。关闭/离线卸载 persona 不删除
 原生 `/bin`，Linux 数据保留/显式删除政策见 [LINUX_PACKAGE](LINUX_PACKAGE.md)。
 
 本轮新增匿名映射与一个**未修改 musl 1.2.5 libc/分配器**的固定静态探针。

@@ -5,7 +5,7 @@
 本轮验收对象是固定的 **BusyBox 1.36.0 + musl 1.2.5 静态 hush 子集**，
 不是通用 BusyBox、glibc、完整 POSIX shell 或任意 Linux 二进制兼容性承诺。
 产品 Linux persona 默认关闭；仅明确标记的 Linux ELF 走翻译路径。原生 init/shell、
-`/bin/*.elf`、未来 `.cmx` / `/bin/cm/` 约定不变；关闭/卸载 Linux 不删除原生工具。
+`/bin/*.elf`、未来 `.faz` / `/bin/cm/` 约定不变；关闭/卸载 Linux 不删除原生工具。
 
 L1 的 `busybox-l1.elf` 及其**定制 musl 静态 BusyBox 子集 + 有界 BSS 分配**仍原样保留。
 新 `busybox-sh.elf` 使用真实 musl malloc/brk/mmap，不覆盖 L1 fixture/分配器。

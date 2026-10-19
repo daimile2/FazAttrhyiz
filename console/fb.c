@@ -2,8 +2,8 @@
 #include "capmix/arch.h"
 #include "capmix/klog.h"
 #include <string.h>
-/* Original compact 5x7 font: five columns, bit 0 at the top. Lowercase
- * uses uppercase glyphs; this first console covers printable ASCII logs. */
+/* Original ASCII font: five columns, bit 0 at the top. Preserve source case
+ * in framebuffer glyphs; never fold filenames, input or serial bytes. */
 static const uint8_t letters[][5] = {
  {126,17,17,17,126},{127,73,73,73,54},{62,65,65,65,34},{127,65,65,34,28},
  {127,73,73,73,65},{127,9,9,9,1},{62,65,73,73,122},{127,8,8,8,127},
@@ -12,6 +12,35 @@ static const uint8_t letters[][5] = {
  {62,65,81,33,94},{127,9,25,41,70},{38,73,73,73,50},{1,1,127,1,1},
  {63,64,64,64,63},{31,32,64,32,31},{127,32,24,32,127},{99,20,8,20,99},
  {3,4,120,4,3},{97,81,73,69,67}
+};
+/* Original lowercase glyphs, 5x8; row 7 holds descenders inside the 9px cell. */
+static const uint8_t lowercase[26][5] = {
+ {32,84,84,84,120}, /* a */
+ {127,72,68,68,56}, /* b */
+ {56,68,68,68,40}, /* c */
+ {56,68,68,72,127}, /* d */
+ {56,84,84,84,24}, /* e */
+ {8,126,9,1,2}, /* f */
+ {24,164,164,164,124}, /* g */
+ {127,8,4,4,120}, /* h */
+ {0,68,125,64,0}, /* i */
+ {64,128,132,125,0}, /* j */
+ {127,16,40,68,0}, /* k */
+ {0,65,127,64,0}, /* l */
+ {124,4,24,4,120}, /* m */
+ {124,8,4,4,120}, /* n */
+ {56,68,68,68,56}, /* o */
+ {252,36,36,36,24}, /* p */
+ {24,36,36,36,252}, /* q */
+ {124,8,4,4,8}, /* r */
+ {72,84,84,84,36}, /* s */
+ {4,63,68,64,32}, /* t */
+ {60,64,64,32,124}, /* u */
+ {28,32,64,32,28}, /* v */
+ {60,64,48,64,60}, /* w */
+ {68,40,16,40,68}, /* x */
+ {28,160,160,160,124}, /* y */
+ {68,100,84,76,68}, /* z */
 };
 static const uint8_t digits[][5] = {
  {62,81,73,69,62},{0,66,127,64,0},{98,81,73,73,70},{34,65,73,73,54},
@@ -28,7 +57,7 @@ static uint64_t chars;
 static uint8_t bits(char ch, unsigned x)
 {
     unsigned char c = (unsigned char)ch;
-    if (c >= 'a' && c <= 'z') c -= 'a'-'A';
+    if (c >= 'a' && c <= 'z') return lowercase[c-'a'][x];
     if (c >= 'A' && c <= 'Z') return letters[c-'A'][x];
     if (c >= '0' && c <= '9') return digits[c-'0'][x];
     switch (c) {
@@ -74,7 +103,7 @@ static void paint(unsigned cx,unsigned cy,char old,char next)
 {
     for (unsigned x=0;x<5;x++) {
         uint8_t a=bits(old,x), b=bits(next,x), diff=a^b;
-        for (unsigned y=0;y<7;y++) if (diff&(1u<<y)) {
+        for (unsigned y=0;y<8;y++) if (diff&(1u<<y)) {
             uint32_t v=(b&(1u<<y)) ? foreground() : 0;
             for (unsigned sy=0;sy<scale;sy++) for (unsigned sx=0;sx<scale;sx++) {
                 volatile uint8_t *p=pixels+((cy*9+y)*scale+sy)*info.pitch+((cx*6+x)*scale+sx)*(info.bpp/8);
@@ -134,7 +163,7 @@ void cm_console_init(void)
     rows=(unsigned)(info.height/(9*scale)); if(rows>40)rows=40;
     memset(cells,' ',sizeof(cells));
     for (unsigned y=0;y<info.height;y++) for (uint64_t x=0;x<info.width*(info.bpp/8);x++) pixels[y*info.pitch+x]=0;
-    kinfo("fb console ready: %llux%llu pitch=%llu bpp=%u text=%ux%u serial retained",
+    kinfo("fb console ready: %llux%llu pitch=%llu bpp=%u text=%ux%u font=ASCII-mixed-case serial retained",
           (unsigned long)info.width,(unsigned long)info.height,(unsigned long)info.pitch,info.bpp,cols,rows);
 }
 void cm_console_poll(void) { cm_ps2_poll(); }
@@ -152,7 +181,13 @@ void cm_console_idle(void)
 }
 int cm_console_selftest(void)
 {
-    if (!letters[0][0] || bits('a',0)!=bits('A',0)) return 1;
+    if (!letters[0][0]) return 1;
+    for(unsigned i=0;i<26;i++) {
+        unsigned different=0;
+        for(unsigned x=0;x<5;x++)different|=bits((char)('a'+i),x)^bits((char)('A'+i),x);
+        if(!different)return 1;
+    }
+    kinfo("fb ASCII case: a-z distinct from A-Z; path bytes preserved");
 #ifdef CAPMIX_HOSTED
     static uint8_t image[64*36*4+16];
     memset(image,0,sizeof(image));
@@ -163,11 +198,15 @@ int cm_console_selftest(void)
     cm_console_putchar('\b');
     for(unsigned i=0;i<64*36*4;i++) if(image[i]) { pixels=NULL;return 1; }
     if(cells[0][0]!=' ') return 1;
+    cm_console_putchar('g');
+    if(!(bits('g',1)&128) || image[7*256+4]!=255)return 1;
+    cm_console_putchar('\b');
+    for(unsigned i=0;i<64*36*4;i++)if(image[i])return 1;
     for(unsigned i=0;i<8;i++) { cm_console_putchar('B'); cm_console_putchar('\n'); }
     if(row!=3 || cells[2][0]!='B' || cells[3][0]!=' ') return 1;
     for(unsigned i=64*36*4;i<sizeof(image);i++) if(image[i])return 1;
     pixels=NULL;
-    kinfo("fb hosted selftest: glyph/backspace/scroll/pitch bounds verified");
+    kinfo("fb hosted selftest: mixed-case glyph/descender/backspace/scroll/pitch bounds verified");
 #else
     kinfo("fb selftest: %s chars=%llu",pixels ? "active log output" : "skipped (serial only)",(unsigned long)chars);
 #endif

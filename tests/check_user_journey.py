@@ -15,6 +15,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend',choices=['qemu','vbox'],required=True)
 p.add_argument('--lab',type=Path,required=True)
 p.add_argument('--port',type=int,default=18080)
+p.add_argument('--scenario',choices=['journey','console-case'],default='journey')
 a=p.parse_args();lab=a.lab.resolve();disk=lab/'system.img'
 assert (lab/'.capmix-user-journey').is_file() and disk.is_file(), 'prepare a disposable lab first'
 assert 1024<=a.port<=65535
@@ -63,16 +64,16 @@ def boot(stage):
     running=True
     sequence=1
     wait('[SHELL v=1 event=ready seq=1 status=0]')
-    wait('capmix> ')
+    wait('fazattrhyiz> ')
     assert 'root=disk' in text() and 'boot mode: product' in text()
     if a.backend=='qemu':
         monitor=socket.socket(socket.AF_UNIX);monitor.connect(str(sock));monitor.settimeout(.002)
 
-def send(command):
+def send(command,enter=True):
     if a.backend=='qemu':
         keys={' ':'spc','/':'slash','.':'dot','-':'minus','>':'shift-dot','&':'shift-7'}
-        for c in command+'\n':
-            key='ret' if c=='\n' else keys.get(c,c)
+        for c in command+('\n' if enter else ''):
+            key='ret' if c=='\n' else ('shift-'+c.lower() if c.isupper() else keys.get(c,c))
             monitor.sendall(('sendkey '+key+' 8\n').encode());time.sleep(.035)
             try:monitor.recv(65536)
             except TimeoutError:pass
@@ -80,15 +81,15 @@ def send(command):
         codes={c:int(h,16) for c,h in zip('1234567890qwertyuiopasdfghjklzxcvbnm',
             '02 03 04 05 06 07 08 09 0a 0b 10 11 12 13 14 15 16 17 18 19 1e 1f 20 21 22 23 24 25 26 2c 2d 2e 2f 30 31 32'.split())}
         codes.update({' ':0x39,'/':0x35,'.':0x34,'-':0x0c,'\n':0x1c})
-        for c in command+'\n':
-            shift=c in '>&';key=0x34 if c=='>' else 0x08 if c=='&' else codes[c]
+        for c in command+('\n' if enter else ''):
+            shift=c in '>&' or c.isupper();key=0x34 if c=='>' else 0x08 if c=='&' else codes[c.lower()]
             seq=([0x2a] if shift else [])+[key,key|0x80]+([0xaa] if shift else [])
             call('VBoxManage','controlvm',vm,'keyboardputscancode',*[f'{n:02x}' for n in seq])
             time.sleep(.025)
 
-def command(cmd,marker,status=0):
+def command(cmd,marker,status=0,input_fn=None):
     global sequence
-    offset=len(text());send(cmd)
+    offset=len(text());input_fn() if input_fn else send(cmd)
     begin=f'[SHELL v=1 event=begin seq={sequence} status=0]'
     s=wait(begin,offset)
     # Exclude every echoed input byte, even if it contains the expected result.
@@ -147,38 +148,89 @@ try:
              '--boot1','disk','--boot2','none','--boot3','none','--boot4','none','--uart1','0x3f8','4',
              '--natpf1',f'httpd,tcp,127.0.0.1,{a.port},10.0.2.15,8080')
         call('VBoxManage','storagectl',vm,'--name','SATA','--add','sata','--controller','IntelAhci','--portcount','1')
-    boot('native')
-    command('help','help | > >> <')
-    assert 'hello from elf' in command('run /bin/hello.elf','exit=0 reap=ok')
-    command('echo journey-native > /journey-native.txt','shell redirect committed: status=0')
-    stop('native')
-    (lab/'journey-enable.log').write_text(call('python3',ROOT/'scripts/linux_package.py','enable',disk))
-    boot('linux')
-    assert 'journey-native' in command('run /bin/cat.elf /journey-native.txt','exit=0 reap=ok')
-    # SMP shell status writes may interleave with direct stdout. Verify exit
-    # here, then verify the complete output through the existing FILE path.
-    command('run /bin/micropython.elf /data/linux/micropython-demo.py','exit=0 reap=ok')
-    command('run /bin/micropython.elf /data/linux/micropython-demo.py > /journey-python.txt','shell redirect committed: status=0')
-    assert 'micropython golden\n42\n' in command('run /bin/cat.elf /journey-python.txt','exit=0 reap=ok')
-    command('run /bin/httpd.elf 8080 2 &','httpd listening')
-    # The full host payload/EOF checker proves wire traffic, not just link-up.
-    result=subprocess.run(['python3',str(ROOT/'tests/check_httpd.py'),'--port',str(a.port),'--requests','2'],
-        stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
-    (lab/'journey-http-client.log').write_text(result.stdout)
-    result.check_returncode()
-    wait('httpd handled=2')
-    command('run /bin/hello.elf','exit=0 reap=ok')
-    stop('linux')
-    (lab/'journey-disable.log').write_text(call('python3',ROOT/'scripts/linux_package.py','disable',disk))
-    boot('disabled')
-    assert 'journey-native' in command('run /bin/cat.elf /journey-native.txt','exit=0 reap=ok')
-    assert 'micropython golden\n42\n' in command('run /bin/cat.elf /journey-python.txt','exit=0 reap=ok')
-    s=command('run /bin/micropython.elf /data/linux/micropython-demo.py','shell error=-7',status=-7)
-    assert 'linux persona disabled' in s
-    command('run /bin/hello.elf','exit=0 reap=ok')
-    stop('disabled')
-    result=f'user journey {a.backend}: PASS (3 cold boots, no ISO, native -> offline Linux -> MicroPython -> native HTTP200 -> disabled/native retained)\n'
-    (lab/'journey-result.log').write_text(result);print(result,end='')
+    if a.scenario=='console-case':
+        for stage in ('case-first','case-second'):
+            boot(stage)
+            assert 'FazAttrhyiz' in text() and '/sbin/init.faz' in text()
+            command('run /bin/hello.faz','exit=0 reap=ok')
+            command('run /bin/cat.faz /example.txt','exit=0 reap=ok')
+            command('run /bin/hello.elf','exit=0 reap=ok')
+            command('run /bin/httpd.faz 8080 1 &','httpd listening')
+            reply=call('python3',ROOT/'tests/check_httpd.py','--port',a.port,'--requests','1')
+            (lab/(stage+'-http-client.log')).write_text(reply)
+            wait('httpd handled=1')
+            assert 'font=ASCII-mixed-case' in text(), 'framebuffer required for this visual test'
+            if stage=='case-first':
+                command('echo lower-file > /case.txt','shell redirect committed: status=0')
+                command('echo upper-file > /Case.txt','shell redirect committed: status=0')
+            command('cat /case.txt','lower-file')
+            command('cat /Case.txt','upper-file')
+            command('cat /CASE.txt','shell error=-12',status=-12)
+            def caps_key():
+                if a.backend=='qemu':
+                    monitor.sendall(b'sendkey caps_lock 8\n');time.sleep(.1)
+                    try:monitor.recv(65536)
+                    except TimeoutError:pass
+                else:
+                    call('VBoxManage','controlvm',vm,'keyboardputscancode','3a','ba')
+                    time.sleep(.1)
+            def modifiers():
+                send('echo ',enter=False)
+                caps_key()
+                send('abc',enter=False)  # Caps -> uppercase
+                send('A',enter=False)    # Shift + Caps -> lowercase
+                caps_key()
+                send('def')             # Caps off -> lowercase
+            command('modifier PS/2 sequence','ABCadef',input_fn=modifiers)
+            command('echo lowercase abcdefghijklmnopqrstuvwxyz','lowercase abcdefghijklmnopqrstuvwxyz')
+            command('echo UPPERCASE ABCDEFGHIJKLMNOPQRSTUVWXYZ','UPPERCASE ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+            command('echo /bin /Bin /BIN g j p q y','/bin /Bin /BIN g j p q y')
+            png=lab/(stage+'.png')
+            if a.backend=='qemu':
+                from PIL import Image
+                ppm=lab/(stage+'.ppm')
+                monitor.sendall(('screendump '+str(ppm)+'\n').encode())
+                time.sleep(1)
+                Image.open(ppm).save(png)
+            else:
+                call('VBoxManage','controlvm',vm,'screenshotpng',png,'0')
+            stop(stage)
+        result=f'console case {a.backend}: PASS lowercase PS/2, mixed-case paths distinct, cold-boot persistence, framebuffer screenshots saved\n'
+        (lab/'journey-result.log').write_text(result);print(result,end='')
+    else:
+        boot('native')
+        command('help','help | > >> <')
+        assert 'hello from elf' in command('run /bin/hello.elf','exit=0 reap=ok')
+        command('echo journey-native > /journey-native.txt','shell redirect committed: status=0')
+        stop('native')
+        (lab/'journey-enable.log').write_text(call('python3',ROOT/'scripts/linux_package.py','enable',disk))
+        boot('linux')
+        assert 'journey-native' in command('run /bin/cat.elf /journey-native.txt','exit=0 reap=ok')
+        # SMP shell status writes may interleave with direct stdout. Verify exit
+        # here, then verify the complete output through the existing FILE path.
+        command('run /bin/micropython.elf /data/linux/micropython-demo.py','exit=0 reap=ok')
+        command('run /bin/micropython.elf /data/linux/micropython-demo.py > /journey-python.txt','shell redirect committed: status=0')
+        assert 'micropython golden\n42\n' in command('run /bin/cat.elf /journey-python.txt','exit=0 reap=ok')
+        command('run /bin/httpd.elf 8080 2 &','httpd listening')
+        # The full host payload/EOF checker proves wire traffic, not just link-up.
+        result=subprocess.run(['python3',str(ROOT/'tests/check_httpd.py'),'--port',str(a.port),'--requests','2'],
+            stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+        (lab/'journey-http-client.log').write_text(result.stdout)
+        result.check_returncode()
+        wait('httpd handled=2')
+        command('run /bin/hello.elf','exit=0 reap=ok')
+        stop('linux')
+        (lab/'journey-disable.log').write_text(call('python3',ROOT/'scripts/linux_package.py','disable',disk))
+        boot('disabled')
+        assert 'journey-native' in command('run /bin/cat.elf /journey-native.txt','exit=0 reap=ok')
+        assert 'micropython golden\n42\n' in command('run /bin/cat.elf /journey-python.txt','exit=0 reap=ok')
+        s=command('run /bin/micropython.elf /data/linux/micropython-demo.py','shell error=-7',status=-7)
+        assert 'linux persona disabled' in s
+        command('run /bin/hello.elf','exit=0 reap=ok')
+        stop('disabled')
+        result=f'user journey {a.backend}: PASS (3 cold boots, no ISO, native -> offline Linux -> MicroPython -> native HTTP200 -> disabled/native retained)\n'
+        (lab/'journey-result.log').write_text(result);print(result,end='')
+
 finally:
     if monitor:monitor.close()
     if a.backend=='qemu' and proc and proc.poll() is None:

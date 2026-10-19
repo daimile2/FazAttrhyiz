@@ -10,18 +10,18 @@
 make external-hello DISK_IMAGE=/path/capmix-system.img
 ```
 
-它使用宿主 GCC 的 `-static` 构建 `build/external-hello.elf`，再将其写入磁盘 COW
-根的 `/bin/external-hello.elf`。示例是**外部文件**，没有嵌入内核或开机 provisioning。
+它使用宿主 GCC 的 `-static` 构建 `build/external-hello.faz`，再将其写入磁盘 COW
+根的 `/bin/external-hello.faz`。示例是**外部文件**，没有嵌入内核或开机 provisioning。
 新路径必须不存在；已有路径拒绝覆盖。第一轮新安装盘尚未启动初始化时也拒绝导入。
 
 重新启动同一个磁盘（可以不挂 ISO），在用户 shell 输入：
 
 ```text
-run /bin/external-hello.elf host gcc argv
+run /bin/external-hello.faz host gcc argv
 ```
 
 可观察到 `hello from external gcc static ELF`、
-`argv[0]=/bin/external-hello.elf`、`argv[1]=host`、`argv[2]=gcc`、`argv[3]=argv`，
+`argv[0]=/bin/external-hello.faz`、`argv[1]=host`、`argv[2]=gcc`、`argv[3]=argv`，
 以及 `exit=0 reap=ok`。`run ... &` 沿用后台语义；示例打印后自行退出。
 再次正常 poweroff/冷启动仍可运行该文件。
 
@@ -49,7 +49,7 @@ python3 scripts/copy-to-disk.py /path/capmix-system.img /tmp/hello.elf /bin/myhe
 ## 这不是 Linux 静态 glibc 兼容层
 
 `gcc -static hello.c` 默认链接 Linux 的 crt/libc，并使用 Linux syscall、TLS 和
-进程启动约定，因此不能直接作为 CapMix 程序。这里的 `-nostdlib` 排除这些运行时；
+进程启动约定，因此不能直接作为 FazAttrhyiz 程序。这里的 `-nostdlib` 排除这些运行时；
 `-static -no-pie` 生成无解释器的静态 ET_EXEC。没有 printf/malloc/errno/atexit，
 没有 ld.so、共享库、动态重定位或完整 POSIX libc。请使用 SDK syscall wrapper。
 
@@ -65,7 +65,7 @@ SIMD/FPU 保存约定。不要自行启用 SSE/AVX、TLS、栈保护或 PIE。�
   envp 指针数组、NULL；字符串存在用户栈内。入口其他寄存器不是参数 ABI。
 - crt 读取栈到 RDI/RSI/RDX，以 SysV x86_64 C 调用约定执行
   `int main(int argc, char **argv, char **envp)`。
-- main 返回 int 后，crt 使用 CapMix syscall **1 EXIT**，把返回值符号扩展到 RDI；
+- main 返回 int 后，crt 使用 FazAttrhyiz syscall **1 EXIT**，把返回值符号扩展到 RDI；
   不执行 libc 的析构/atexit。
 - argc 至少 1；未传 argv 时加载器将镜像路径作为 argv[0]。shell run 传完整程序路径和
   空白分词参数；末尾独立 `&` 不传给程序。没有引号展开或重定向。
@@ -92,9 +92,9 @@ BSS 是 NOLOAD，并由内核清零。两个 PT_LOAD 标记分别为 R|X、R|W�
 
 | 项目 | 定义 |
 | --- | --- |
-| 指令 | SYSCALL；RAX 为 CapMix syscall 号 |
+| 指令 | SYSCALL；RAX 为 FazAttrhyiz syscall 号 |
 | 参数 | RDI、RSI、RDX、R10；第四参数不是 RCX |
-| 返回 | RAX，负值为 CapMix 错误码；不转换 errno |
+| 返回 | RAX，负值为 FazAttrhyiz 错误码；不转换 errno |
 | 编译器 clobber | RCX、R11、memory、cc |
 | 1 EXIT | exit_code,0,0,0；crt 负责调用 |
 | 2 WRITE | fd,用户地址,字节数,0 |
@@ -109,7 +109,7 @@ fdio/FILE capability 检查与 copyin，语义见 [P1A 文件 ABI](P1A_ELF_FILES
 
 ## 离线导入安全边界
 
-- 仅支持已初始化的 **CapMix 安装 RAW 镜像**，沿用固定 MBR root/ESP 布局解析；
+- 仅支持已初始化的 **FazAttrhyiz 安装 RAW 镜像**，沿用固定 MBR root/ESP 布局解析；
   不支持 VMDK/QCOW2、旧未分区数据盘、宿主真实块设备或未知盘。转换/备份需自行完成。
 - 拒绝 symlink/hardlink/device、相对/含 `..` 的目标路径、已存在目标文件和缺失父目录。
   不自动建目录、覆盖文件或格式化根。宿主源文件须普通文件、非空、最多 1MiB；这是
@@ -127,7 +127,7 @@ fdio/FILE capability 检查与 copyin，语义见 [P1A 文件 ABI](P1A_ELF_FILES
 ## 验证
 
 ```bash
-make build/cow-put build/external-hello.elf
+make build/cow-put build/external-hello.faz
 python3 tests/test_copy_to_disk.py
 # 可选已有、已关闭的初始化安装盘作只读 fixture；测试在临时副本写入：
 CAPMIX_TEST_DISK=/path/capmix-system.img python3 tests/test_copy_to_disk.py
@@ -145,8 +145,8 @@ SDK分块处理短写，`cm_report`摘要走fd2。SPAWN扩展和前台重定向�
 
 服务端扩展提供listen/accept syscall40/41与SDK包装，完整ABI及最小httpd用法见 [HTTPD.md](HTTPD.md)。
 
-Linux静态ELF是独立可关闭persona，不能套用原生crt/syscall号；L0识别与构建见 [LINUX_ABI_L0.md](LINUX_ABI_L0.md)。新原生软件建议 `.cmx` 或 `/bin/cm/`，已有 `.elf` 不强制改名。
+Linux静态ELF是独立可关闭persona，不能套用原生crt/syscall号；L0识别与构建见 [LINUX_ABI_L0.md](LINUX_ABI_L0.md)。新原生软件建议 `.faz` 或 `/bin/cm/`，已有 `.elf` 不强制改名。
 
 Linux 文件兼容轨的固定 BusyBox echo/cat/ls 构建、64KiB BSS 限制及来源见
 [LINUX_ABI_L1](LINUX_ABI_L1.md)。这是定制子集，不表示任意宿主 musl 静态程序可用；
-原生 SDK、`.cmx` 或 `/bin/cm/` 约定继续保留。
+原生 SDK、`.faz` 或 `/bin/cm/` 约定继续保留。

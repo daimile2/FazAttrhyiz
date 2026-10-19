@@ -1,0 +1,73 @@
+{
+  "config": {
+    "date": "2026-10-19T07:40:11+00:00",
+    "backend": "qemu",
+    "cpus": [
+      4
+    ],
+    "memory_mib": 512,
+    "nic": "e1000",
+    "disk": "AHCI/no-ISO",
+    "linux": 0,
+    "linux_interp": 0,
+    "chipset": "piix3",
+    "e1000_irq": "auto",
+    "http_only": true,
+    "workers": 2,
+    "concurrency": 2,
+    "samples": 1,
+    "http_requests": 4,
+    "http_warmup": 8,
+    "pipes": 32,
+    "pipe_bytes": 6000,
+    "pipe_total_bytes": 192000,
+    "vbox_carrier_setup_wait_seconds": 0,
+    "clock": "host perf_counter, wall time",
+    "host_platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+    "git_revision": "0f79286bb3280b8a59df6357499de4ced9da8607",
+    "qemu_cpu": "host",
+    "qemu_accel": "kvm",
+    "qemu": "QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)",
+    "vbox": "not used",
+    "kernel_sha256": "d317253b81058386486b540d736d8e91ce6f3c51de11ac989dc153478bc6945d"
+  },
+  "samples": [
+    {
+      "date": "2026-10-19T07:40:11+00:00",
+      "backend": "qemu",
+      "smp": 4,
+      "nic": "e1000",
+      "linux": 0,
+      "sample": 1,
+      "http_requests": 4,
+      "http_seconds": 0.2666868099477142,
+      "http_rps": 14.998867026022875,
+      "http_latency_ms": [
+        130.54182392079383,
+        26.690189028158784,
+        239.31199999060482,
+        6.112269009463489
+      ],
+      "http_p50_ms": 78.61600647447631,
+      "http_p95_ms": 239.31199999060482,
+      "client_peak": 2,
+      "worker_placements": [
+        {
+          "worker": 1,
+          "pid": 3,
+          "cpu": 0,
+          "port": 8080
+        },
+        {
+          "worker": 2,
+          "pid": 4,
+          "cpu": 1,
+          "port": 8081
+        }
+      ],
+      "hush_bytes": 0,
+      "hush_seconds": null,
+      "hush_Bps": null
+    }
+  ]
+}
