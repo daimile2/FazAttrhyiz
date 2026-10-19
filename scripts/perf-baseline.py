@@ -32,12 +32,15 @@ p.add_argument('--e1000-irq',choices=('auto','poll'),default='auto')
 p.add_argument('--http-only',action='store_true',help='native HTTP only; Linux persona remains disabled')
 p.add_argument('--workers',type=int,choices=(1,2,4),default=1,help='bounded independent native httpd processes/ports')
 p.add_argument('--concurrency',type=int,choices=(1,2,4),default=1,help='host HTTP clients; requests balance evenly across worker ports')
+p.add_argument('--serial-only',action='store_true',help='no virtual VGA/GOP, isolate framebuffer logging cost without kernel changes')
+p.add_argument('--diagnose',action='store_true',help='phase timings, 130ms paced HTTP, guest hush timer auto vs CPU0')
 a=p.parse_args()
 cpus=[int(c) for c in a.cpus.split(',')]
 assert cpus and len(cpus)==len(set(cpus)) and all(1<=c<=8 for c in cpus)
-assert 1<=a.samples<=5 and 1<=a.requests and 8+a.samples*a.requests<=100
+assert 1<=a.samples<=5 and 1<=a.requests and 8+a.samples*a.requests*(2 if a.diagnose else 1)<=100
 assert 1<=a.pipes<=128 and 1024<=a.port<=65535-a.workers+1
 assert a.requests%a.workers==0 and 8%a.workers==0
+if a.diagnose:assert a.workers==1 and a.concurrency==1,'diagnosis compares sequential single-worker requests'
 lab=a.lab.resolve();lab.mkdir(parents=True,exist_ok=False)
 (lab/'.capmix-perf-disposable').write_text('perf baseline v1\n')
 date=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')
@@ -70,13 +73,13 @@ class Guest:
             self.proc=subprocess.Popen(['qemu-system-x86_64','-enable-kvm','-m','512','-cpu','host','-smp',str(self.cpus),
                 '-drive',f'id=root,file={self.disk},if=none,format=raw','-device','ich9-ahci,id=ahci','-device','ide-hd,drive=root,bus=ahci.0',
                 '-netdev','user,id=n0'+''.join(f',hostfwd=tcp:127.0.0.1:{a.port+i}-:{8080+i}' for i in range(a.workers)),'-device','e1000,netdev=n0',
-                '-serial','file:'+str(self.log),'-display','none','-no-reboot','-monitor','unix:'+str(self.sock)+',server=on,wait=off'],stdout=self.output,stderr=subprocess.STDOUT)
+                *(['-vga','none'] if a.serial_only else []),'-serial','file:'+str(self.log),'-display','none','-no-reboot','-monitor','unix:'+str(self.sock)+',server=on,wait=off'],stdout=self.output,stderr=subprocess.STDOUT)
         else:
             self.medium=lab/(self.tag+'.vdi')
             call('VBoxManage','convertfromraw',self.disk,self.medium,'--format','VDI')
             call('VBoxManage','createvm','--name',self.vm,'--ostype','Other_64','--basefolder',lab/'vms','--register');self.created=True
             call('VBoxManage','modifyvm',self.vm,'--memory','512','--cpus',self.cpus,'--ioapic','on','--acpi','on',
-                 '--chipset',a.chipset,'--firmware','efi64','--graphicscontroller','vmsvga','--vram','16','--keyboard','ps2','--mouse','ps2',
+                 '--chipset',a.chipset,'--firmware','efi64','--graphicscontroller','none' if a.serial_only else 'vmsvga',*(['--vram','16'] if not a.serial_only else []),'--keyboard','ps2','--mouse','ps2',
                  '--nic1','nat','--nic-type1','82540EM','--cable-connected1','on','--boot1','disk','--boot2','none','--boot3','none','--boot4','none',
                  '--uart1','0x3f8','4','--uart-mode1','file',self.log,'--natpf1',f'perf,tcp,127.0.0.1,{a.port},10.0.2.15,8080')
             for i in range(1,a.workers):call('VBoxManage','modifyvm',self.vm,'--natpf1',f'worker{i},tcp,127.0.0.1,{a.port+i},10.0.2.15,{8080+i}')
@@ -84,6 +87,7 @@ class Guest:
             call('VBoxManage','storageattach',self.vm,'--storagectl','SATA','--port','0','--device','0','--type','hdd','--medium',self.medium)
             call('VBoxManage','startvm',self.vm,'--type','headless')
         self.wait('fazattrhyiz> ')
+        if a.serial_only:assert 'fb console skipped' in self.text() and 'fb console ready:' not in self.text(),'virtual GPU still supplied framebuffer'
         assert 'root=disk' in self.text() and 'boot mode: product' in self.text() and ('persona: compiled=1 enabled='+str(int(not a.http_only))) in self.text()
         assert re.search(r'\bcpu_count='+str(self.cpus)+r'\b',self.text()),'guest CPU count mismatch'
         if a.e1000_irq=='poll':assert 'forced_poll=1' in self.text() and 'e1000 irq rx enabled:' not in self.text()
@@ -103,10 +107,14 @@ class Guest:
             codes={c:int(h,16) for c,h in zip('1234567890qwertyuiopasdfghjklzxcvbnm',
                 '02 03 04 05 06 07 08 09 0a 0b 10 11 12 13 14 15 16 17 18 19 1e 1f 20 21 22 23 24 25 26 2c 2d 2e 2f 30 31 32'.split())}
             codes.update({' ':0x39,'/':0x35,'.':0x34,'-':0x0c,'\n':0x1c})
-            for c in text:
-                shift=c in '>&';key=0x34 if c=='>' else 0x08 if c=='&' else codes[c]
-                seq=([0x2a] if shift else [])+[key,key|0x80]+([0xaa] if shift else [])
-                call('VBoxManage','controlvm',self.vm,'keyboardputscancode',*[f'{n:02x}' for n in seq]);time.sleep(0 if c=='\n' else .02)
+            # Small bounded batches avoid one CLI process per character; Return
+            # remains a separate timed call. At most 16 scan bytes per batch.
+            for offset in range(0,len(text),4):
+                seq=[]
+                for c in text[offset:offset+4]:
+                    shift=c in '>&';key=0x34 if c=='>' else 0x08 if c=='&' else codes[c]
+                    seq+=([0x2a] if shift else [])+[key,key|0x80]+([0xaa] if shift else [])
+                call('VBoxManage','controlvm',self.vm,'keyboardputscancode',*[f'{n:02x}' for n in seq]);time.sleep(0 if text[offset:offset+4]=='\n' else .02)
     def command(self,cmd,marker):
         offset=len(self.text());self.send(cmd)
         # Timer begins immediately before Return. Typing command text is excluded;
@@ -144,35 +152,42 @@ class Guest:
             subprocess.run(['VBoxManage','unregistervm',self.vm]+(['--delete'] if detached.returncode==0 else []),stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 
 
-def http_batch(count):
+def http_batch(count,gap_ms=0):
     start=time.perf_counter();deadline=start+40;active=peak=0;guard=threading.Lock()
     def request(index):
         nonlocal active,peak
         with guard:active+=1;peak=max(peak,active)
+        if gap_ms:time.sleep(gap_ms/1000)
         request_start=time.perf_counter()
         remaining=deadline-time.perf_counter();assert remaining>0,'HTTP batch deadline exceeded'
         with socket.create_connection(('127.0.0.1',a.port+index%a.workers),timeout=min(3,remaining)) as s:
+            connected=time.perf_counter()
             s.sendall(b'GET / HTTP/1.0\r\nHost: perf\r\nConnection: close\r\n\r\n')
+            sent=time.perf_counter();first=None;body_at=None
             response=bytearray()
             while True:
                 remaining=deadline-time.perf_counter();assert remaining>0,'HTTP deadline exceeded'
                 s.settimeout(min(3,remaining));b=s.recv(1024)
                 if not b:break
+                if first is None:first=time.perf_counter()
                 response.extend(b);assert len(response)<=4096
+                if body_at is None and b'\r\n\r\n' in response and len(response.split(b'\r\n\r\n',1)[1])==30:body_at=time.perf_counter()
         headers,body=bytes(response).split(b'\r\n\r\n',1)
         assert headers.startswith(b'HTTP/1.0 200 OK\r\n') and b'Content-Length: 30' in headers.split(b'\r\n')
         assert body==b'hello from FazAttrhyiz httpd!\n'
-        elapsed=(time.perf_counter()-request_start)*1000
+        ended=time.perf_counter();elapsed=(ended-request_start)*1000
+        assert first is not None and body_at is not None
+        phases=dict(connect=(connected-request_start)*1000,send=(sent-connected)*1000,ttfb=(first-sent)*1000,body=(body_at-first)*1000,eof=(ended-body_at)*1000)
         with guard:active-=1
-        return elapsed
-    if a.concurrency==1:latency=[request(i) for i in range(count)]
+        return elapsed,phases
+    if a.concurrency==1:measurements=[request(i) for i in range(count)]
     else:
-        with ThreadPoolExecutor(max_workers=a.concurrency) as pool:latency=list(pool.map(request,range(count)))
-    return dict(seconds=time.perf_counter()-start,latency_ms=latency,client_peak=peak)
+        with ThreadPoolExecutor(max_workers=a.concurrency) as pool:measurements=list(pool.map(request,range(count)))
+    return dict(seconds=time.perf_counter()-start,latency_ms=[x[0] for x in measurements],phase_ms=[x[1] for x in measurements],gap_ms=gap_ms,client_peak=peak)
 
 
 def main():
-    metadata=dict(date=date,backend=a.backend,cpus=cpus,memory_mib=512,nic='e1000',disk='AHCI/no-ISO',linux=int(not a.http_only),linux_interp=0,chipset=a.chipset,e1000_irq=a.e1000_irq,http_only=a.http_only,
+    metadata=dict(serial_only=a.serial_only,diagnose=a.diagnose,date=date,backend=a.backend,cpus=cpus,memory_mib=512,nic='e1000',disk='AHCI/no-ISO',linux=int(not a.http_only),linux_interp=0,chipset=a.chipset,e1000_irq=a.e1000_irq,http_only=a.http_only,
         workers=a.workers,concurrency=a.concurrency,samples=a.samples,http_requests=a.requests,http_warmup=8,pipes=a.pipes,pipe_bytes=6000,
         pipe_total_bytes=a.pipes*6000,vbox_carrier_setup_wait_seconds=6 if a.backend=='vbox' else 0,clock='host perf_counter, wall time',host_platform=platform.platform(),
         git_revision=call('git','rev-parse','HEAD').strip(),qemu_cpu='host',qemu_accel='kvm',
@@ -196,6 +211,12 @@ def main():
     for src,dest in ((payload,'/perf-input.txt'),(script,'/perf-pipe.sh'),(verify,'/bin/perf-verify.faz')):
         if not a.http_only:
             with (lab/'import.log').open('a') as out:out.write(call('python3','scripts/copy-to-disk.py',seed,src,dest))
+    diagnosis=[]
+    if a.diagnose:
+        (lab/'timer-build.log').write_text(call('make','build/perf-hush-timer.elf'))
+        empty=lab/'empty.sh';empty.write_text('exit 0\n')
+        for src,dest in ((ROOT/'build/perf-hush-timer.elf','/bin/perf-hush-timer.elf'),(empty,'/perf-empty.sh')):
+            (lab/('timer-import-'+src.name+'.log')).write_text(call('python3','scripts/copy-to-disk.py',seed,src,dest))
     rows=[]
     for ncpu in cpus:
         disk=lab/f'smp{ncpu}.img';shutil.copyfile(seed,disk);g=Guest(disk,ncpu,f'smp{ncpu}')
@@ -204,16 +225,17 @@ def main():
             # VBox can expose the product shell before virtual carrier comes up.
             # Fixed, bounded setup wait only; never retry/omit failed measured requests.
             if a.backend=='vbox':time.sleep(6)
-            total=8+a.samples*a.requests;quota=total//a.workers
+            total=8+a.samples*a.requests*(2 if a.diagnose else 1);quota=total//a.workers
             placements=[]
             for i in range(a.workers):
-                output,_=g.command(f'run /bin/httpd.elf {8080+i} {quota} {i+1} &',f'httpd worker ready: id={i+1} port={8080+i} handled=0 status=0')
+                output,_=g.command(f'run /bin/httpd.faz {8080+i} {quota} {i+1}'+(' 1' if a.diagnose else '')+' &',f'httpd worker ready: id={i+1} port={8080+i} handled=0 status=0')
                 spawned=re.search(r'user spawn: parent=\d+ child=(\d+) cpu=(\d+) child-cap=\d+',output)
                 assert spawned,'missing worker PID/CPU placement'
                 placements.append(dict(worker=i+1,pid=int(spawned[1]),cpu=int(spawned[2]),port=8080+i))
             assert len({x['pid'] for x in placements})==a.workers
             if ncpu>1 and a.workers>1:assert len({x['cpu'] for x in placements})>1,'workers did not span CPUs'
             http_batch(8);http=[http_batch(a.requests) for _ in range(a.samples)]
+            paced=[http_batch(a.requests,130) for _ in range(a.samples)] if a.diagnose else []
             for i in range(a.workers):g.wait(f'httpd worker done: id={i+1} port={8080+i} handled={quota} status=0')
             g.command('echo workers-drained','\nworkers-drained\n')
             for worker in placements:
@@ -221,6 +243,22 @@ def main():
             (lab/f'smp{ncpu}-workers.json').write_text(json.dumps(placements,indent=2)+'\n')
             if a.backend=='vbox' and a.chipset=='ich9' and a.e1000_irq=='auto':
                 assert re.search(r'net irq rx active: if=enet0 hardware=[1-9]\d* notified-frame=1',g.text()),'no actual INTx RX observed'
+            detail=dict(smp=ncpu,http= http,paced=paced,guest_http=[dict(zip(('read_us','send_ack_us','close_us'),map(int,m))) for m in re.findall(r'httpd profile read_us=(\d+) send_ack_us=(\d+) close_us=(\d+)',g.text())],hush=[])
+            if a.diagnose and not a.http_only:
+                hz=int(re.search(r'lapic: tsc_freq=(\d+) Hz',g.text())[1])
+                for mode in ('auto','bsp'):
+                    for sample in range(a.samples+1):
+                        for workload in ('empty','pipe'):
+                            scriptpath='/perf-empty.sh' if workload=='empty' else '/perf-pipe.sh'
+                            text,seconds=g.command('run /bin/perf-hush-timer.elf '+scriptpath+' '+mode+' > /perf-output.txt','shell redirect committed: status=0')
+                            match=re.search(r'hush timer cycles=(\d+) cpu=(\d+)',text);assert match,text
+                            if workload=='pipe':
+                                proof,_=g.command('run /bin/perf-verify.faz /perf-output.txt '+str(a.pipes*6000),'exit=0 reap=ok');assert 'perf pipe verified bytes=' in proof
+                            if sample:
+                                cycles,cpu=map(int,match.groups());detail['hush'].append(dict(mode=mode,workload=workload,sample=sample,host_s=seconds,guest_s=cycles/hz,cpu=cpu,tsc_hz=hz))
+                diagnosis.append(detail)
+                (lab/'diagnosis-progress.json').write_text(json.dumps(dict(config=metadata,runs=diagnosis),indent=2)+'\n')
+            if a.diagnose and a.http_only:diagnosis.append(detail)
             hush=[]
             for sample in range(0 if a.http_only else a.samples+1):
                 text,seconds=g.command('run /bin/busybox-sh.elf sh /perf-pipe.sh > /perf-output.txt','shell redirect committed: status=0')
@@ -244,6 +282,7 @@ def main():
                 with (lab/'numbers.log').open('a') as out:out.write(line+'\n')
             g.stop()
         finally:g.close()
+    if a.diagnose:(lab/'diagnosis.json').write_text(json.dumps(dict(config=metadata,runs=diagnosis),indent=2)+'\n')
     (lab/'results.json').write_text(json.dumps(dict(config=metadata,samples=rows),indent=2)+'\n')
     print('performance baseline: PASS (payload/status/EOF/exit/reap verified; no speedup assertion)',flush=True)
 

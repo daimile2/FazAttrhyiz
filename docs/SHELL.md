@@ -1,10 +1,33 @@
-# 用户 shell：标准输入/输出重定向
+# 用户 shell：短命令与标准输入/输出重定向
 
-> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；本次仅归档，未重跑测试。命令中的 `/tmp` 是新运行的输出位置。
+> 证据归档：见 [tests/evidence 索引与脱敏规则](../tests/evidence/README.md)。矩阵链接为原轮次留存日志的脱敏副本；旧矩阵保留原轮次记录；短命令增量实测见本文末尾。命令中的 `/tmp` 是新运行的输出位置。
 
 更新：2026-10-15。本轮交付前台 `>`、`>>`、`<` 与输入输出组合，适用于内建
-`echo/ls/cat` 和 `run /absolute/program.elf ...`。仍是用户态shell，使用现有VFS/FILE
+`echo/ls/cat`、外部短命令和 `run /absolute/program.faz ...`。仍是用户态shell，使用现有VFS/FILE
 capability；未改KPTI、buddy锁、时钟、TCP RTO或IRQ核心。
+
+## 短命令优先
+
+在 FazAttrhyiz 提示符直接输入命令，不需要 `run` 或后缀：
+
+```text
+hello
+hello-sdk first second
+cat /example.txt
+ls /bin
+httpd 8080 2 &
+http-get 10.0.2.2 8000 /hello.txt
+```
+
+内建 `help/echo/ls/cat/kill/exit/poweroff/shutdown` 优先。其余短名称查找固定目录 `/bin`，先尝试 `.faz`，仅文件不存在时回退 `.elf`；不搜索当前目录、不展开环境 PATH，也不会因 persona 禁用或权限错误再尝试另一份程序。短名称限 1–63 个 ASCII 字母、数字、`-`、`_`；文件名区分大小写。未找到返回 `shell error=-12`。
+
+`micropython /data/linux/micropython-demo.py` 使用同一解析规则，但仍须先开启 Linux persona；关闭时明确拒绝。原生短命令不依赖 Linux。
+
+`run` 保留作显式路径/授权入口，例如 `run /bin/hello.faz`、`run /bin/cat.faz /example.txt`。内建 `cat/ls` 不创建子进程，若要验证对应外部 ELF 或规避内建长度限制，请显式使用 `run`。交互式 nc 仍用 `run -i /bin/nc.faz 10.0.2.2 9998` 委托控制台；短命令不会自动获得键盘权限。直接输入 `nc HOST PORT` 会返回 `-7` 并提示 `use run -i /bin/nc.faz HOST PORT`，不会尝试连接。
+
+短命令支持原有前后台及前台重定向：`httpd 8080 2 &`、`hello > /hello-output.txt`、`micropython /data/linux/micropython-demo.py > /python-output.txt`。后台重定向、`run -i` 与重定向组合仍拒绝。不存在的外部命令与显式 `run` 一样，可能在打开输出文件之后才失败，因此不要用未知命令重定向覆盖重要文件。
+
+旧安装盘不会自动覆盖已有 shell；复现本轮旅程请用新安装盘，或明确部署更新后的 `/bin/shell.faz` 与内核引导文件，不要重新格式化已有数据盘。
 
 ## 用法
 
@@ -13,9 +36,9 @@ echo first > /note.txt
 echo second >> /note.txt
 ls /bin > /listing.txt
 cat < /note.txt > /copy.txt
-run /bin/cat.elf < /copy.txt > /elf-copy.txt
-run /bin/ls.elf /bin > /elf-list.txt
-run /bin/http-get.elf 10.0.2.2 8000 /hello.txt > /response.txt
+cat < /copy.txt > /elf-copy.txt
+ls /bin > /elf-list.txt
+http-get 10.0.2.2 8000 /hello.txt > /response.txt
 cat /response.txt
 ```
 
@@ -31,7 +54,7 @@ cat /response.txt
 | `< /in > /out` | 先输入、再输出 | 输入打开失败不会截断输出；相同文本路径拒绝 |
 
 每条命令最多一个输入目标、一个输出目标；重复、缺路径、后台`&`、`run -i`组合、
-不支持命令或管道语法在打开文件前拒绝。`run`程序路径须绝对路径。
+管理命令、非法短名称或管道语法在打开文件前拒绝。`run`程序路径须绝对路径。
 但文件成功打开后，程序不存在/ELF加载失败/执行报错**不会恢复被截断的旧内容**；
 已有部分写入也可能保留。这不是事务式重定向或原子文件替换。
 
@@ -45,10 +68,9 @@ shell redirect committed: status=0
 子进程自己的退出码仍在 `shell child done: ... exit=N reap=ok` 中可见；重定向run的
 非零子退出被shell报告为IO错误，不当作成功提交。错误不保证撤销已有磁盘副作用。
 
-内建cat沿用最多4096B文本显示边界；较大的流式文件请用 `/bin/cat.elf`，上限1MiB。
-两者替换非文本字节，不是二进制cp。ELF cat省略路径时读取fd0，指定路径时仍打开该文件。
+内建 `cat` 仅在直接显示到屏幕时做最多4096B的文本预览并替换非打印字节；若文件仍有内容，明确返回 `CM_ERR_NOSPC (-6)` 和预览上限提示。重定向时按原始字节复制到 EOF，不转义、不截为4096B、不添加换行。`/bin/cat.faz` 也按原始字节复制到 EOF，无原先1MiB总量限制；底层单次调用/文件容量限制仍保留。ELF cat省略路径时读取fd0，指定路径时打开该文件。屏幕直接显示二进制请优先使用内建预览，避免终端控制字节。
 SDK `cm_print/cm_output`写fd1，`cm_report`计数/错误摘要改用fd2，避免把
-`ls entries`、`cat bytes read`等诊断计数混入输出文件。不是所有示例都把所有诊断移至stderr。
+`ls entries`等诊断计数混入输出文件。不是所有示例都把所有诊断移至stderr。
 
 ## 权限与生命周期
 
@@ -88,7 +110,7 @@ I/O限制不变，非法指针不会消耗输入流或写入文件。
 
 ## 与交互、后台和管道的关系
 
-- `run -i /bin/nc.elf ...`沿用CONSOLE授权与PS/2交互，正常收发、`/quit`退出。
+- `run -i /bin/nc.faz ...`沿用CONSOLE授权与PS/2交互，正常收发、`/quit`退出。
   不能与重定向或`&`混用；拒绝时不先打开/截断目标。
 - 普通 `run ... &`、kill和有界poweroff保持原有行为；首版不支持后台重定向。
 - `nc`本轮未增加文件批处理/半关闭语义，不能用 `< file`替代它的交互控制台。
@@ -122,8 +144,8 @@ echo old > /redirect.txt
 echo redir-first > /redirect.txt
 echo redir-append >> /redirect.txt
 cat < /redirect.txt > /copy.txt
-run /bin/cat.elf < /copy.txt > /elf-copy.txt
-run /bin/ls.elf /bin > /listing.txt
+cat < /copy.txt > /elf-copy.txt
+ls /bin > /listing.txt
 poweroff
 ```
 
@@ -177,12 +199,12 @@ python3 tests/check_shell_redirection.py vbox /tmp/redir-vbox-final2.log
 
 ```text
 [SHELL v=1 event=ready seq=1 status=0]
-capmix> echo hello
+fazattrhyiz> echo hello
 [SHELL v=1 event=begin seq=1 status=0]
 hello
 [SHELL v=1 event=end seq=1 status=0]
 [SHELL v=1 event=ready seq=2 status=0]
-capmix>
+fazattrhyiz>
 ```
 
 每条记录以换行开始、以换行结束，小于112字节，用一次既有CONSOLE_WRITE capability调用输出。
@@ -235,3 +257,23 @@ scripts/demo-user-journey.sh check-vbox /tmp/capmix-protocol-vbox
 [内核构建](../tests/evidence/logs/shellproto-kernel.log)无新增warning/error，
 [默认产品ISO](../tests/evidence/logs/shellproto-product-iso.log)成功；
 [默认ISO启动](../tests/evidence/logs/shellproto-product.log)看到ready seq=1与提示符，空闲timeout=124，非全量自测。
+
+## 短命令旅程增量验收（2026-10-19）
+
+当前源码原先仅内建 `cat/ls/echo`；本轮按授权补了用户态 shell 的 `/bin/*.faz` → `.elf` 有界查找，不改内核。
+
+| 环境 | 本轮结果与证据 |
+|---|---|
+| hosted 全量 | [PASS (0 failures)](../tests/evidence/logs/short-commands-hosted.log) |
+| QEMU/KVM，512MiB，4 CPU，AHCI/e1000，无 ISO | [三次冷启动旅程 PASS](../tests/evidence/logs/short-commands-qemu-check.log)：Linux off→on→off；短命令 hello/cat/httpd/micropython、显式 run、持久化/重定向、HTTP200、关机；[native](../tests/evidence/logs/short-commands-qemu-native.log)、[Linux](../tests/evidence/logs/short-commands-qemu-linux.log)、[disabled](../tests/evidence/logs/short-commands-qemu-disabled.log)、[HTTP 客户端](../tests/evidence/logs/short-commands-qemu-http-client.log) |
+| VBox UEFI，512MiB，4 CPU，PIIX3，AHCI/e1000，无 ISO | [相同三次冷启动旅程 PASS](../tests/evidence/logs/short-commands-vbox-check.log)；[native](../tests/evidence/logs/short-commands-vbox-native.log)、[Linux](../tests/evidence/logs/short-commands-vbox-linux.log)、[disabled](../tests/evidence/logs/short-commands-vbox-disabled.log)、[HTTP 客户端](../tests/evidence/logs/short-commands-vbox-http-client.log) |
+
+产品按键由 `scripts/demo-user-journey.sh check-qemu/check-vbox LAB` 注入，经 `[SHELL ... begin/end/ready]` 边界断言真实输出；不把命令回显当成功。负例包括未知短命令 `-12`、Linux 关闭拒绝 `-7`，以及 `poweroff > /short-guard.txt` 在打开目标前拒绝，随后确认目标不存在。原生 `hello > /short-output.txt` 与 Linux `micropython ... > /journey-python.txt` 均读回正确。
+
+[编译日志](../tests/evidence/logs/short-commands-build.log)无 warning/error。产品旅程 PASS 不替代 VBox 全量 debug 或网络压力验收。
+
+QEMU/KVM smp4、Linux/interp 开启、无 NIC 的[全量回归为 PASS (0 failures)](../tests/evidence/logs/short-commands-debug.log)，外部网络按原有语义 skip；[默认产品 ISO 已重新构建](../tests/evidence/logs/short-commands-product-iso.log)。
+
+2026-10-19 cat 数据完整性修复：重定向原样复制到 EOF；外部 cat 也不再替换字节。QEMU/VBox 三次冷启动逐字节比较通过，详见 [v11 评审核对与环境矩阵](REVIEW_V11_FOLLOWUP.md)。旧矩阵和旧数据边界记录不代表当前cat实现。
+
+发布前性能口径更新：约117ms已分解到前一连接同步TIME_WAIT等待及剩余请求阶段；历史hush比值含CPU0/AP放置变化，不作跨核扩展性结论。见 [HTTP/hush诊断与矩阵](RELEASE_PERF_DIAGNOSTICS.md)。

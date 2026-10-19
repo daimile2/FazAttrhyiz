@@ -140,3 +140,5 @@ VirtualBox 7.2.20、UEFI/ICH9、AHCI、82540EM INTx GSI19、NAT四端口、512Mi
 [旧IRQ A/B格式复算](../tests/evidence/logs/httpworkers-legacy-check.log)仍通过。
 [默认ISO构建](../tests/evidence/logs/httpworkers-product-iso.log)成功，
 [默认ISO启动](../tests/evidence/logs/httpworkers-product.log)到shell ready；空闲timeout=124仅为启动检查。
+
+发布前性能口径更新：约117ms已分解到前一连接同步TIME_WAIT等待及剩余请求阶段；历史hush比值含CPU0/AP放置变化，不作跨核扩展性结论。见 [HTTP/hush诊断与矩阵](RELEASE_PERF_DIAGNOSTICS.md)。

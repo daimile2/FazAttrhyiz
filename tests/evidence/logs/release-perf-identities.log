@@ -1,0 +1,43 @@
+{
+  "measured_kernel_sha256": "34ba2a780d8bae3c0ceb1be0b4b90e9b0579f7b92654f7de2245b39007a2b065",
+  "final_kernel_sha256": "d17f906828eaa91d7f5c807441532d7bd5968049424bbf5ec374236a837f73d7",
+  "PT_LOAD_identical": true,
+  "PT_LOAD": [
+    {
+      "vaddr": "<kernel-address>",
+      "flags": 6,
+      "filesz": 576,
+      "memsz": 576,
+      "sha256": "92359482c6cbe979d04f05868b735c67ddb77f59388debce1ec603aa06ab58ec"
+    },
+    {
+      "vaddr": "<kernel-address>",
+      "flags": 5,
+      "filesz": 417792,
+      "memsz": 417792,
+      "sha256": "51bbea607af7565466609d0e3c630e6cd54e35927400ab22be70b757a1554488"
+    },
+    {
+      "vaddr": "<kernel-address>",
+      "flags": 6,
+      "filesz": 2363656,
+      "memsz": 9940992,
+      "sha256": "d341135f2b49ada23a060bc3e467c848c1f37ee38b3115b666bc4924b7070418"
+    }
+  ],
+  "sources": {
+    "arch/x86_64/ioapic.c": "5fdc621fcc1d98d2d9644b5ddf66e90066b6624b1f7798fdb52ad38003e20f85",
+    "arch/x86_64/power.c": "488ca588118757d9648d8dabce8d25f86d02ce191874e22808bdb63e70ab9815",
+    "abi/linux.c": "2e3497c9a3fc7acbeab276fda6479e1740f7091e907847e0c7ff97a770a3aada",
+    "include/capmix/abi.h": "ec351b48d6ad63503d23f982c5fbc92f36d58c83f6a88e65ff33070f0325592d",
+    "proc/spawn.c": "26cd1503a32610fd5cabad2870822d56f9ba862477511472a146553532365204",
+    "boot/linux_compat_test.c": "436f3ef8a818f08ef85e295dd501f03abc58a3eb526ffdb4250587e92730de99",
+    "examples/httpd.c": "62066dce29e3aea9844cdc7a4ccc339ee11d5f8bfe6758c36437faf0233fbd06",
+    "tests/perf_hush_timer.c": "03ac27cf073d4673876053018c71c1b466447c854c42758e953bb03cfc66bc98",
+    "scripts/perf-baseline.py": "01115a2bbf62c073368509f7b555022bd1d94c3156ab9378d1402c6de8fc4771",
+    "tests/check_perf_investigation.py": "2a19101fd5ac2210f28819316b4e459aa56922d5c6afc9fa037e3077c804b524",
+    "tests/check_release_observation.py": "f3ce7d1f5f7e5fd9d781c540e6582982329ce5725bfb45dca21bfb9627483d2b",
+    "build/perf-hush-timer.elf": "1835ee643e7c9b254ee16547d379162db5f019bd396bb43c50b305db74dd8c6b",
+    "tests/fixtures/busybox-sh.elf": "83576b81f0972e75676b1e595d6e0bd403ce5ef71bbd08fbeefdf283a528e050"
+  }
+}

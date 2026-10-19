@@ -15,13 +15,13 @@ for cpu in c['cpus']:
     if cpu>1:assert f'online={cpu}/{cpu}' in s
     assert 'root=disk' in s and 'boot mode: product' in s
     assert 'persona: compiled=1 enabled='+str(c['linux']) in s
-    total=8+c['samples']*c['http_requests'];workers=c.get('workers',1)
+    total=8+c['samples']*c['http_requests']*(2 if c.get('diagnose') else 1);workers=c.get('workers',1)
     if 'workers' in c:
         quota=total//workers
         for worker in range(workers):assert f'httpd worker done: id={worker+1} port={8080+worker} handled={quota} status=0' in s
     else:assert f'httpd handled={total}' in s
-    assert s.count('httpd response: HTTP/1.0 200 payload=25 verified')==8+c['samples']*c['http_requests']
-    if not c.get('http_only'):assert s.count('perf pipe verified bytes='+str(c['pipe_total_bytes']))==c['samples']+1
+    assert len(re.findall(r'httpd response: HTTP/1.0 200 payload=(?:25|30) verified',s))==total
+    if not c.get('http_only'):assert s.count('perf pipe verified bytes='+str(c['pipe_total_bytes']))==(c['samples']+1)*(3 if c.get('diagnose') else 1)
     if c.get('e1000_irq')=='poll':assert 'forced_poll=1' in s and 'e1000 irq rx enabled:' not in s
     if c.get('chipset')=='ich9' and c['backend']=='vbox' and c.get('e1000_irq')=='auto':
         assert 'verified_gsi=' in s and 'e1000 irq rx enabled:' in s

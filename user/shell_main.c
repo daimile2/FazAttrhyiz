@@ -95,6 +95,34 @@ static long run(char *text)
     if(!e){finished(&result);if((input_fd>=0 || output_fd>=0) && result.exit_code)e=CM_ERR_IO;}
     return e;
 }
+/* Fixed /bin search, no environment PATH expansion or implicit console grant. */
+static int short_name(const char *name)
+{
+    if(ueq(name,"help") || ueq(name,"kill") || ueq(name,"exit") ||
+       ueq(name,"poweroff") || ueq(name,"shutdown"))return 0;
+    unsigned n=0;
+    for(;name[n];n++)if(n>=63 || !((name[n]>='a' && name[n]<='z') ||
+       (name[n]>='A' && name[n]<='Z') || (name[n]>='0' && name[n]<='9') ||
+       name[n]=='-' || name[n]=='_'))return 0;
+    return n!=0;
+}
+static long short_run(const char *name,const char *args)
+{
+    if(ueq(name,"nc")) {
+        uputs("nc needs keyboard access: use run -i /bin/nc.faz HOST PORT\n");
+        return CM_ERR_NOTSUP;
+    }
+    if(!short_name(name))return CM_ERR_NOTSUP;
+    if(ulen(name)+ulen(args)+11>=384)return CM_ERR_NOSPC;
+    for(unsigned legacy=0;legacy<2;legacy++) {
+        char buffer[384],*p=append_text(buffer,"/bin/");
+        p=append_text(p,name);p=append_text(p,legacy?".elf":".faz");
+        if(*args){*p++=' ';p=append_text(p,args);}*p=0;
+        long e=run(buffer);
+        if(e!=CM_ERR_NOENT || legacy)return e;
+    }
+    return CM_ERR_NOENT;
+}
 static long list(const char *path)
 {
     for(unsigned i=0;i<256;i++){cm_dirent_t entry;long e=ucall(35,(uintptr_t)path,i,(uintptr_t)&entry,0);
@@ -108,10 +136,23 @@ static long cat(const char *path)
 {
     int own=*path!=0;long fd=own?ucall(11,(uintptr_t)path,CM_O_RDONLY,0,0):input_fd;
     if(fd<0)return own?fd:CM_ERR_INVAL;
-    unsigned total=0;long e=0;char data[129];
-    while(total<4096){long n=ucall(12,fd,(uintptr_t)data,128,0);if(n<0){e=n;break;}if(!n)break;
-        for(long i=0;i<n;i++){unsigned char c=(unsigned char)data[i];if((c<32 && c!='\n' && c!='\t') || c>126)data[i]='.';}
-        data[n]=0;e=out_bytes(data,(unsigned)n);if(e)break;total+=(unsigned)n;}
+    unsigned total=0;long e=0;char data[129];int raw=output_fd>=0;
+    /* Redirected output is data, not a terminal preview: no escaping or limit. */
+    while(raw || total<4096) {
+        long n=ucall(12,fd,(uintptr_t)data,128,0);
+        if(n<0){e=n;break;}if(!n)break;
+        if(!raw)for(long i=0;i<n;i++) {
+            unsigned char c=(unsigned char)data[i];
+            if((c<32 && c!='\n' && c!='\t') || c>126)data[i]='.';
+        }
+        e=out_bytes(data,(unsigned)n);if(e)break;
+        if(!raw)total+=(unsigned)n;
+    }
+    if(!e && !raw && total==4096) {
+        long n=ucall(12,fd,(uintptr_t)data,1,0);
+        if(n<0)e=n;
+        else if(n){uputs("\ncat: terminal preview limited to 4096 bytes; redirect to copy raw data\n");e=CM_ERR_NOSPC;}
+    }
     if(own){long close=ucall(13,fd,0,0,0);if(!e)e=close;}
     if(output_fd<0)uputs("\n");
     return e;
@@ -121,7 +162,7 @@ static long command(char *text)
     while(*text==' ' || *text=='\t')text++;
     if(!*text)return 0;
     char *args=text;while(*args && *args!=' ' && *args!='\t')args++;if(*args)*args++=0;while(*args==' ' || *args=='\t')args++;
-    if(ueq(text,"help")){if(*args)return CM_ERR_INVAL;uputs("help | > >> < (foreground) | echo TEXT | ls [PATH] | cat PATH | run [-i] ELF [ARGS] [&] | kill PID | exit | poweroff/shutdown\n");return 0;}
+    if(ueq(text,"help")){if(*args)return CM_ERR_INVAL;uputs("help | COMMAND [ARGS] [&] | > >> < (foreground) | echo TEXT | ls [PATH] | cat PATH | run [-i] ELF [ARGS] [&] | kill PID | exit | poweroff/shutdown\n");return 0;}
     if(ueq(text,"echo")){long e=out(args);return e?e:out("\n");}
     if(ueq(text,"run"))return run(args);
     if(ueq(text,"kill"))return kill_job(args);
@@ -129,7 +170,7 @@ static long command(char *text)
     if(ueq(text,"cat"))return (!*args || *args=='/')?cat(args):CM_ERR_INVAL;
     if(ueq(text,"exit")){if(*args)return CM_ERR_INVAL;return drain()?1:CM_ERR_BUSY;}
     if(ueq(text,"poweroff") || ueq(text,"shutdown")){if(*args)return CM_ERR_INVAL;int clean=drain();return ucall(37,uboot,clean?0:CM_POWEROFF_FORCE,0,0);}
-    return CM_ERR_NOTSUP;
+    return short_run(text,args);
 }
 /* No quotes/expansion or pipe emulation. Tokenize the complete command before
  * opening anything so unsupported grammar cannot truncate an output file. */
@@ -163,7 +204,7 @@ static long dispatch(char *text)
         } else {if(na==33)return CM_ERR_NOSPC;args[na++]=t;}
     }
     if(!na || (in && output && ueq(in,output)))return CM_ERR_INVAL;
-    if(!ueq(args[0],"echo") && !ueq(args[0],"ls") && !ueq(args[0],"cat") && !ueq(args[0],"run"))return CM_ERR_NOTSUP;
+    if(!ueq(args[0],"echo") && !ueq(args[0],"ls") && !ueq(args[0],"cat") && !ueq(args[0],"run") && !short_name(args[0]))return CM_ERR_NOTSUP;
     if(ueq(args[0],"run") && (na<2 || args[1][0]!='/'))return CM_ERR_INVAL;
     if((ueq(args[0],"ls") || ueq(args[0],"cat")) &&
        (na>2 || (na==2 && args[1][0]!='/')))return CM_ERR_INVAL;

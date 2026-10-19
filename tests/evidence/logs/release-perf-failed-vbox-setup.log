@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "<repo>/scripts/perf-baseline.py", line 290, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 205, in main
+    try:g.boot();g.stop(export=True)
+        ^^^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 81, in boot
+    call('VBoxManage','modifyvm',self.vm,'--memory','512','--cpus',self.cpus,'--ioapic','on','--acpi','on',
+  File "<repo>/scripts/perf-baseline.py", line 51, in call
+    if r.returncode:raise RuntimeError(str(args)+':\n'+r.stdout)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: ('VBoxManage', 'modifyvm', '<test-vm>', '--memory', '512', '--cpus', 1, '--ioapic', 'on', '--acpi', 'on', '--chipset', 'piix3', '--firmware', 'efi64', '--graphicscontroller', 'none', '--vram', '16', '--keyboard', 'ps2', '--mouse', 'ps2', '--nic1', 'nat', '--nic-type1', '82540EM', '--cable-connected1', 'on', '--boot1', 'disk', '--boot2', 'none', '--boot3', 'none', '--boot4', 'none', '--uart1', '0x3f8', '4', '--uart-mode1', 'file', PosixPath('<lab>/faz-diag-vbox-serial/provision-serial.log'), '--natpf1', 'perf,tcp,127.0.0.1,18086,10.0.2.15,8080'):
+VBoxManage: error: Error getting VRAM range for selected graphics controller
+VBoxManage: error: Details: code NS_ERROR_INVALID_ARG (0x80070057), component GraphicsAdapterWrap, interface IGraphicsAdapter, callee nsISupports
+VBoxManage: error: Context: "COMSETTER(VRAMSize)(ValueUnion.u32)" at line 1000 of file VBoxManageModifyVM.cpp
+

@@ -1,0 +1,34 @@
+[
+  {
+    "case": "qemu-fb",
+    "kernel": "34ba2a780d8bae3c0ceb1be0b4b90e9b0579f7b92654f7de2245b39007a2b065",
+    "wall_ratio": 2.4772550887245957,
+    "bsp_guest_ratio": 1.2512138229148655,
+    "bsp1_s": 7.455480110883135,
+    "bsp4_s": 5.958597942528019
+  },
+  {
+    "case": "qemu-serial",
+    "kernel": "34ba2a780d8bae3c0ceb1be0b4b90e9b0579f7b92654f7de2245b39007a2b065",
+    "wall_ratio": 3.1289486389013477,
+    "bsp_guest_ratio": 0.9352722179036848,
+    "bsp1_s": 5.967342376190629,
+    "bsp4_s": 6.380326777551252
+  },
+  {
+    "case": "vbox-fb",
+    "kernel": "34ba2a780d8bae3c0ceb1be0b4b90e9b0579f7b92654f7de2245b39007a2b065",
+    "wall_ratio": 1.2989077015638808,
+    "bsp_guest_ratio": 0.8247632289786975,
+    "bsp1_s": 7.082377635913302,
+    "bsp4_s": 8.58716463958195
+  },
+  {
+    "case": "vbox-serial",
+    "kernel": "34ba2a780d8bae3c0ceb1be0b4b90e9b0579f7b92654f7de2245b39007a2b065",
+    "wall_ratio": 1.2584088235488822,
+    "bsp_guest_ratio": 0.8305948375917734,
+    "bsp1_s": 4.058227796231259,
+    "bsp4_s": 4.885929471940476
+  }
+]

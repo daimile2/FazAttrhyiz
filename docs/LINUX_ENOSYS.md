@@ -146,3 +146,5 @@ arch未使用变量/函数warning。最终ISO恢复默认产品配置、Linux默
 用户 handler 继续 EOPNOTSUPP，rt_sigreturn 继续 ENOSYS 并计数，既有负例与计数断言保留。
 策略修改的 EBUSY 限制、线程组边界、hush JOB 仍关闭及测试证据见
 [LINUX_SIGCHLD.md](LINUX_SIGCHLD.md)。上文 ENOSYS 排序是该历史轮数据，不改写成新一轮统计。
+
+发布版观测增量：每进程文本预算32；nr=0..511直方图计数不受限流影响，超出号码范围明确归入overflow；实际poweroff打印按nr累计值。机制测试35次调用超过文本预算仍完整计数，见 [发布前诊断](RELEASE_PERF_DIAGNOSTICS.md)。

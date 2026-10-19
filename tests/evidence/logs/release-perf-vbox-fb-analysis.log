@@ -1,0 +1,18 @@
+CONFIG backend=vbox serial_only=False kernel=34ba2a780d8bae3c0ceb1be0b4b90e9b0579f7b92654f7de2245b39007a2b065 date=2026-10-19T15:19:00+00:00
+HTTP backend=vbox smp=1 serial_only=0 mode=http n=16 p50_ms=130.857 connect_ms=0.094 send_ms=0.012 ttfb_ms=123.571 body_ms=0.017 eof_ms=7.279
+HTTP backend=vbox smp=1 serial_only=0 mode=paced n=16 p50_ms=22.963 connect_ms=0.169 send_ms=0.015 ttfb_ms=15.467 body_ms=0.014 eof_ms=7.215
+GUEST_HTTP smp=1 n=40 read_us=229.5 send_ack_us=2979.0 close_us=107731.5
+HUSH backend=vbox smp=1 serial_only=0 mode=auto workload=empty cpu=0 n=2 guest_s=0.044058 host_s=0.131258 outside_guest_ms=87.200
+HUSH backend=vbox smp=1 serial_only=0 mode=auto workload=pipe cpu=0 n=2 guest_s=5.896893 host_s=5.998175 outside_guest_ms=101.282
+HUSH backend=vbox smp=1 serial_only=0 mode=bsp workload=empty cpu=0 n=2 guest_s=0.046964 host_s=0.158652 outside_guest_ms=111.689
+HUSH backend=vbox smp=1 serial_only=0 mode=bsp workload=pipe cpu=0 n=2 guest_s=7.082378 host_s=7.175616 outside_guest_ms=93.239
+HTTP backend=vbox smp=4 serial_only=0 mode=http n=16 p50_ms=119.992 connect_ms=0.107 send_ms=0.013 ttfb_ms=116.817 body_ms=0.017 eof_ms=2.974
+HTTP backend=vbox smp=4 serial_only=0 mode=paced n=16 p50_ms=10.967 connect_ms=0.181 send_ms=0.016 ttfb_ms=7.834 body_ms=0.013 eof_ms=2.888
+GUEST_HTTP smp=4 n=40 read_us=207.0 send_ack_us=495.0 close_us=105978.5
+HUSH backend=vbox smp=4 serial_only=0 mode=auto workload=empty cpu=0 n=1 guest_s=0.053958 host_s=0.174341 outside_guest_ms=120.383
+HUSH backend=vbox smp=4 serial_only=0 mode=auto workload=empty cpu=3 n=1 guest_s=0.035861 host_s=0.144704 outside_guest_ms=108.843
+HUSH backend=vbox smp=4 serial_only=0 mode=auto workload=pipe cpu=0 n=1 guest_s=9.456631 host_s=9.561858 outside_guest_ms=105.227
+HUSH backend=vbox smp=4 serial_only=0 mode=auto workload=pipe cpu=1 n=1 guest_s=4.852599 host_s=4.945259 outside_guest_ms=92.660
+HUSH backend=vbox smp=4 serial_only=0 mode=bsp workload=empty cpu=0 n=2 guest_s=0.053887 host_s=0.177014 outside_guest_ms=123.127
+HUSH backend=vbox smp=4 serial_only=0 mode=bsp workload=pipe cpu=0 n=2 guest_s=8.587165 host_s=8.696718 outside_guest_ms=109.553
+performance investigation: PASS (phase sums, payload/EOF, guest timer, affinity and poweroff evidence; no speedup threshold)

@@ -1,29 +1,25 @@
-capmix.iso
+# build outputs
+/build/
 *.o
+*.a
+*.iso
 *.elf
-build/
+*.faz
+!tests/fixtures/**/*.elf
+!tests/fixtures/**/*.faz
+*.img
+*.vdi
+*.bundle
 
-# Fixed, source-backed Linux ABI L0 golden fixture.
-!tests/fixtures/linux-l0.elf
+# backups / editor
+*.bak
+*.bak2
+*~
+.vscode/
+.idea/
+.claude/
+.worktrees/
 
-!tests/fixtures/busybox-l1.elf
-
-# Fixed source-backed musl 1.2.5 L5 mmap/allocator probe.
-!third_party/linux-l5/musl-mmap.elf
-
-!tests/fixtures/busybox-sh.elf
-
-# Fixed dynamic-linking golden ET_EXEC (DSO suffixes are not ignored).
-!tests/fixtures/ldso/linux-dynamic.elf
-
-# Pinned minimal initial-exec TLS golden executable.
-!tests/fixtures/ldso/linux-tls.elf
-
-# Reproducible bounded Linux clone/futex static golden executable.
-!tests/fixtures/linux-threads.elf
-
-# Pinned scalar MicroPython static Linux-user golden fixture.
-!tests/fixtures/micropython.elf
-
-# FazAttrhyiz ISO release name (capmix.iso remains a compatibility copy).
-fazattrhyiz.iso
+# local lab
+/tmp/
+capmix-user.*/

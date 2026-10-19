@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "<repo>/scripts/perf-baseline.py", line 282, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 246, in main
+    text,seconds=g.command('run /bin/perf-hush-timer.elf '+scriptpath+' '+mode+' > /perf-output.txt','shell redirect committed: status=0')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 115, in command
+    start=time.perf_counter();self.send('\n');s=self.wait(marker,offset)
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 66, in wait
+    raise AssertionError('timeout '+marker+'; see '+str(self.log))
+AssertionError: timeout shell redirect committed: status=0; see <lab>/faz-diag-qemu/smp1-serial.log

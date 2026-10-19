@@ -30,7 +30,7 @@ def main():
         assert headers.startswith(b'HTTP/1.0 200 OK\r\n'), repr(headers)
         assert b'Content-Length: 30' in headers.split(b'\r\n'), repr(headers)
         assert body == b'hello from FazAttrhyiz httpd!\n', repr(body)
-        print(f'httpd client request={index + 1} status=200 payload=25 verified EOF=ok', flush=True)
+        print(f'httpd client request={index + 1} status=200 payload=30 verified EOF=ok', flush=True)
     print('httpd client: PASS', flush=True)
 
 

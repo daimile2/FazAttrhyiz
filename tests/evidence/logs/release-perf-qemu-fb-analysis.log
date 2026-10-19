@@ -1,0 +1,18 @@
+CONFIG backend=qemu serial_only=False kernel=34ba2a780d8bae3c0ceb1be0b4b90e9b0579f7b92654f7de2245b39007a2b065 date=2026-10-19T15:13:00+00:00
+HTTP backend=qemu smp=1 serial_only=0 mode=http n=16 p50_ms=117.768 connect_ms=0.075 send_ms=0.005 ttfb_ms=113.661 body_ms=0.012 eof_ms=3.243
+HTTP backend=qemu smp=1 serial_only=0 mode=paced n=16 p50_ms=19.535 connect_ms=0.156 send_ms=0.010 ttfb_ms=12.142 body_ms=0.008 eof_ms=7.577
+GUEST_HTTP smp=1 n=40 read_us=31.5 send_ack_us=2308.0 close_us=107810.0
+HUSH backend=qemu smp=1 serial_only=0 mode=auto workload=empty cpu=0 n=2 guest_s=0.045343 host_s=0.093853 outside_guest_ms=48.510
+HUSH backend=qemu smp=1 serial_only=0 mode=auto workload=pipe cpu=0 n=2 guest_s=6.382769 host_s=6.432631 outside_guest_ms=49.863
+HUSH backend=qemu smp=1 serial_only=0 mode=bsp workload=empty cpu=0 n=2 guest_s=0.035394 host_s=0.086419 outside_guest_ms=51.025
+HUSH backend=qemu smp=1 serial_only=0 mode=bsp workload=pipe cpu=0 n=2 guest_s=7.455480 host_s=7.505899 outside_guest_ms=50.419
+HTTP backend=qemu smp=4 serial_only=0 mode=http n=16 p50_ms=118.965 connect_ms=0.103 send_ms=0.011 ttfb_ms=115.353 body_ms=0.015 eof_ms=3.266
+HTTP backend=qemu smp=4 serial_only=0 mode=paced n=16 p50_ms=9.926 connect_ms=0.152 send_ms=0.011 ttfb_ms=6.502 body_ms=0.010 eof_ms=3.230
+GUEST_HTTP smp=4 n=40 read_us=32.5 send_ack_us=2218.5 close_us=106966.5
+HUSH backend=qemu smp=4 serial_only=0 mode=auto workload=empty cpu=0 n=1 guest_s=0.044081 host_s=0.094716 outside_guest_ms=50.635
+HUSH backend=qemu smp=4 serial_only=0 mode=auto workload=empty cpu=3 n=1 guest_s=0.024133 host_s=0.092384 outside_guest_ms=68.250
+HUSH backend=qemu smp=4 serial_only=0 mode=auto workload=pipe cpu=0 n=1 guest_s=7.296519 host_s=7.347677 outside_guest_ms=51.158
+HUSH backend=qemu smp=4 serial_only=0 mode=auto workload=pipe cpu=1 n=1 guest_s=2.611659 host_s=2.657864 outside_guest_ms=46.205
+HUSH backend=qemu smp=4 serial_only=0 mode=bsp workload=empty cpu=0 n=2 guest_s=0.045878 host_s=0.122861 outside_guest_ms=76.983
+HUSH backend=qemu smp=4 serial_only=0 mode=bsp workload=pipe cpu=0 n=2 guest_s=5.958598 host_s=6.012681 outside_guest_ms=54.083
+performance investigation: PASS (phase sums, payload/EOF, guest timer, affinity and poweroff evidence; no speedup threshold)

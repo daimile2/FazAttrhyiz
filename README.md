@@ -1,5 +1,17 @@
 # FazAttrhyiz
 
+## Naming
+
+- Product / codename: **FazAttrhyiz**
+- Native binaries: `*.faz` (legacy `*.elf` paths may still work)
+- Historical names `capmix.*`, `capmix.iso` are **compatibility aliases** and are not renamed again without a migration note.
+
+## License
+
+Copyright 2026 daimile ([GitHub: daimile2](https://github.com/daimile2)).
+
+项目原创代码采用 [Apache License 2.0](LICENSE)（SPDX: `Apache-2.0`）。第三方组件保留各自原有许可证，具体以对应目录的许可声明为准。
+
 从零写的 **capability 混合内核**，选型严格对齐《从 0 写操作系统内核：混合选型清单》。
 
 > 地基用 capability（seL4/Zircon），IPC 用 L4 的快速同步消息，
@@ -95,3 +107,5 @@ Rust 安全边界（Asterinas 路线）可以在 `cap/` 与 `mm/` 稳定后以 f
 磁盘安装：`make install-disk DISK_IMAGE=/tmp/new-system.img`；新建或全零镜像，首次从盘启动完成 COW provisioning，之后无 ISO 冷启动。布局、拒绝覆盖和 AHCI/virtio 两次启动步骤见 [INSTALL_DISK.md](docs/INSTALL_DISK.md)。
 
 系统现名 **FazAttrhyiz**（原 CapMix），原生发布后缀为 **`.faz`**。旧路径、SDK/ABI 标识和安装布局的兼容策略见 [更名说明](docs/FAZATTRHYIZ.md)。
+
+兼容承诺：`capmix.*` 启动参数、`capmix.h`/`cm_*` ABI、`capmix.elf` 引导文件名及现有磁盘标识长期保留为兼容名称，不因系统更名再次改动；如确需迁移，必须提供迁移说明。v11外部评审核对与数据完整性修复见 [跟进记录](docs/REVIEW_V11_FOLLOWUP.md)。

@@ -35,10 +35,10 @@ struct madt {
     uint32_t    flags;
 } __attribute__((packed));
 
-static uint64_t            g_ioapic_phys;
 static volatile uint32_t  *g_ioapic;
 static int                 g_irq1_gsi = 1;
 #ifndef CAPMIX_HOSTED
+static uint64_t g_ioapic_phys;
 static unsigned g_ioapic_base;
 static int g_pci_pin[2]={-1,-1};
 #endif

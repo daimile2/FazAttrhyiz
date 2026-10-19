@@ -1,5 +1,7 @@
 # FazAttrhyiz 用户旅程：从启动 ISO 到安装盘、文件和网络
 
+显式路径示例仍可用 `run /bin/hello.faz`。日常优先直接输入 `hello`、`cat`、`httpd` 等短命令；`run /绝对路径` 保留用于显式选择程序，`run -i` 用于委托交互控制台。查找顺序、内建优先和错误语义见 [SHELL 短命令](SHELL.md#短命令优先)。
+
 更新：2026-10-19。按顺序操作即可；第一次建议先走 **QEMU 第1～8步**，再尝试可选功能。
 使用 VirtualBox 的读者先完成第1、2步，再转到“VirtualBox 路线”。
 
@@ -70,7 +72,7 @@ fazattrhyiz>
 
 ```text
 help
-run /bin/hello.faz
+hello
 poweroff
 ```
 
@@ -129,10 +131,10 @@ capmix_disk
 **FazAttrhyiz虚拟机内：**
 
 ```text
-run /bin/hello.faz
-run /bin/argtest.faz disk firstboot
+hello
+argtest disk firstboot
 echo first-boot-data > /note.txt
-run /bin/cat.faz /note.txt
+cat /note.txt
 poweroff
 ```
 
@@ -154,11 +156,11 @@ capmix_disk
 **FazAttrhyiz虚拟机内：**
 
 ```text
-run /bin/cat.faz /note.txt
+cat /note.txt
 echo second-boot-data >> /note.txt
-run /bin/cat.faz < /note.txt
-run /bin/ls.faz /bin > /bin-list.txt
-run /bin/cat.faz /bin-list.txt
+cat < /note.txt
+ls /bin > /bin-list.txt
+cat /bin-list.txt
 ```
 
 应先读到上次的 `first-boot-data`，追加后读到两行。`>` 覆盖、`>>` 追加、`<` 作为输入；
@@ -170,7 +172,7 @@ run /bin/cat.faz /bin-list.txt
 **FazAttrhyiz虚拟机内：**
 
 ```text
-run /bin/httpd.faz 8080 2 &
+httpd 8080 2 &
 ```
 
 看到 `httpd listening` 后，打开**另一个宿主终端**，进入同一仓库：
@@ -179,7 +181,7 @@ run /bin/httpd.faz 8080 2 &
 python3 tests/check_httpd.py --port 18080 --requests 2
 ```
 
-预期两次 `status=200 payload=25 verified EOF=ok`，最后 `httpd client: PASS`。
+预期两次 `status=200 payload=30 verified EOF=ok`，最后 `httpd client: PASS`。
 FazAttrhyiz侧应有 `httpd handled=2`。按一次回车或再运行hello，让shell显示后台 `exit=0 reap=ok`。
 
 转发方向是 **宿主127.0.0.1:18080 → guest 10.0.2.15:8080**，不是guest本机TCP回环。
@@ -199,7 +201,7 @@ python3 -m http.server 8000 --bind 127.0.0.1 --directory /tmp/capmix-www
 保持此终端运行，在 **FazAttrhyiz虚拟机内**输入：
 
 ```text
-run /bin/http-get.faz 10.0.2.2 8000 /hello.txt
+http-get 10.0.2.2 8000 /hello.txt
 ```
 
 预期HTTP200、正文 `hello from host`、退出0。结束后宿主服务终端可按Ctrl+C。
@@ -210,14 +212,14 @@ run /bin/http-get.faz 10.0.2.2 8000 /hello.txt
 **FazAttrhyiz虚拟机内：**
 
 ```text
-run /bin/spin.faz &
+spin &
 ```
 
 记下实际输出的 `shell background start: pid=...`。假如PID是7，再输入：
 
 ```text
 kill 7
-run /bin/hello.faz
+hello
 poweroff
 ```
 
@@ -244,10 +246,10 @@ capmix_disk
 **FazAttrhyiz虚拟机内：**
 
 ```text
-run /bin/cat.faz /note.txt
-run /bin/micropython.elf /data/linux/micropython-demo.py
-run /bin/micropython.elf /data/linux/micropython-demo.py > /python-output.txt
-run /bin/cat.faz /python-output.txt
+cat /note.txt
+micropython /data/linux/micropython-demo.py
+micropython /data/linux/micropython-demo.py > /python-output.txt
+cat /python-output.txt
 poweroff
 ```
 
@@ -274,10 +276,10 @@ capmix_disk
 **FazAttrhyiz虚拟机内：**
 
 ```text
-run /bin/cat.faz /note.txt
-run /bin/cat.faz /python-output.txt
-run /bin/micropython.elf /data/linux/micropython-demo.py
-run /bin/hello.faz
+cat /note.txt
+cat /python-output.txt
+micropython /data/linux/micropython-demo.py
+hello
 poweroff
 ```
 
@@ -315,7 +317,7 @@ GUI对应：Other 64-bit、512MiB/4CPU、UEFI且Secure Boot关闭、ICH9/I/O API
 VMSVGA且无3D、PS/2键盘、SATA/AHCI、NAT+Intel PRO/1000 MT Desktop。
 不是PCnet、USB键盘或NVMe。不要重复创建已存在的VM。
 
-点击虚拟屏幕，输入 `help`、`run /bin/hello.faz`、`poweroff`。确认VBox为Powered Off。
+点击虚拟屏幕，输入 `help`、`hello`、`poweroff`。确认VBox为Powered Off。
 默认释放键盘常为右Ctrl，以VBox窗口显示的Host键为准。
 
 ### V2：在宿主生成系统盘，再转换为VDI
@@ -348,7 +350,7 @@ VBoxManage startvm "$CAPMIX_VM" --type gui
 
 ```text
 echo vbox-persistent > /vbox-note.txt
-run /bin/cat.faz /vbox-note.txt
+cat /vbox-note.txt
 poweroff
 ```
 
@@ -361,8 +363,8 @@ VBoxManage modifyvm "$CAPMIX_VM" --uart-mode1 file "$CAPMIX_VBOX/disk-second.log
 VBoxManage startvm "$CAPMIX_VM" --type gui
 ```
 
-在FazAttrhyiz内运行 `run /bin/cat.faz /vbox-note.txt`，应读到 `vbox-persistent`。
-再按第7步启动 `run /bin/httpd.faz 8080 2 &`，宿主运行相同 `check_httpd.py` 命令。
+在FazAttrhyiz内运行 `cat /vbox-note.txt`，应读到 `vbox-persistent`。
+再按第7步启动 `httpd 8080 2 &`，宿主运行相同 `check_httpd.py` 命令。
 V1已经添加18080→8080转发；测试时不能另开占用同端口的QEMU。
 若要运行第7步的http-get，V1的localhostreachable也已配置；载波up前可稍等几秒，不能只凭up日志声称payload通过。
 
@@ -386,9 +388,9 @@ VBoxManage startvm "$CAPMIX_VM" --type gui
 进入shell后，在 **FazAttrhyiz虚拟机内**输入：
 
 ```text
-run /bin/cat.faz /vbox-note.txt
-run /bin/micropython.elf /data/linux/micropython-demo.py > /vbox-python.txt
-run /bin/cat.faz /vbox-python.txt
+cat /vbox-note.txt
+micropython /data/linux/micropython-demo.py > /vbox-python.txt
+cat /vbox-python.txt
 poweroff
 ```
 
@@ -408,10 +410,10 @@ VBoxManage startvm "$CAPMIX_VM" --type gui
 关闭后的FazAttrhyiz内验证：
 
 ```text
-run /bin/cat.faz /vbox-note.txt
-run /bin/cat.faz /vbox-python.txt
-run /bin/micropython.elf /data/linux/micropython-demo.py
-run /bin/hello.faz
+cat /vbox-note.txt
+cat /vbox-python.txt
+micropython /data/linux/micropython-demo.py
+hello
 poweroff
 ```
 
@@ -495,7 +497,7 @@ debug预期 `selftest result: PASS (0 failures)`。无设备/无VMX等明确skip
 不宣称完整Linux/glibc发行版兼容、任意Python生态、TLS/HTTPS、完整POSIX、自动安装器、通用GPU/USB/NVMe或内核热卸。
 
 
-### 历史性能记录
+### 历史性能记录（不作SMP扩展性结论）
 
 保留2026-10-18固定负载记录供查证：Linux=1/interp=0、单进程httpd、串行客户端，
 512MiB、AHCI无ISO、e1000，HTTP三批×20、预热8次；hush每样本32×6000B。
@@ -514,3 +516,7 @@ debug预期 `selftest result: PASS (0 failures)`。无设备/无VMX等明确skip
 ## 屏幕文字大小写
 
 屏幕现在原样显示 ASCII 大小写，默认 PS/2 输入小写。路径区分大小写，`/bin` 与 `/Bin` 不等价；不会自动转换文件名。详见[控制台可读性与屏幕截图](CONSOLE_READABILITY.md)。
+
+短命令增量实测（2026-10-19）：QEMU 与 VBox 三次冷启动旅程均 PASS；配置、原始输出、负例及 hosted 结果见 [SHELL 环境矩阵](SHELL.md#短命令旅程增量验收2026-10-19)。
+
+发布前性能分解：[HTTP 100ms关闭等待、hush显式CPU放置与guest计时](RELEASE_PERF_DIAGNOSTICS.md)。历史2.77×/1.33×混有CPU0/AP放置差异，不能解释为管道跨核并行；本轮矩阵与原始证据另列。

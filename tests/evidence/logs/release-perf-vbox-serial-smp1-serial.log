@@ -1,0 +1,1033 @@
+Ordered selected serial evidence. Repetitive COW/MM/exec rows omitted; boot/CPU/IRQ, all fork affinity rows, timings, failures, verification and poweroff retained. Full original SHA-256: 83d66a4377f5b5a40b7c1ac174d2e30333152bac4893cf50c7976c8322c33dd8
+limine: Loading executable `boot():/boot/capmix.elf`...[INF] boot mode: product (Limine cmdline snapshot)
+[INF] fb console skipped: no Limine framebuffer (serial retained)
+[INF] acpi poweroff ready: S5=5/5 PM1=b004/0
+[INF] e1000 PCI: 0:3.0 device=100e BAR0=80400000 model=8254x
+[INF] irq rx route: PCI INTx GSI=11 pin=11 vector=0x42 dest=0 level/low
+[INF] e1000 irq rx enabled: INTx line=11 gsi=11 RXDMT0/RXO/RXT0; top=ack+notify
+[INF] e1000 ready: link=down RX/TX=16 legacy DMA=2048 MAC=<mac> irq=1
+[INF] lapic: tsc_freq=3187178822 Hz (3187 MHz, src=pit-median)
+[INF] lapic calib: mode=periodic calib_hz=62492872 divisor=16 samples=5 initial_count=62493 tsc_src=pit-median
+[INF] lapic: BSP tsc-deadline=0 calib_hz=62492872 target_ns=1000000 initial_count=62493
+[INF] mp: revision=0 flags=0 bsp=0 cpu_count=1 cpus=0xffff80001f02e000
+[INF] smp: cpu_count=1 bsp_lapic_id=0 (this cpu=0, index=0)
+[INF] disk install: system ELF provisioning synced; root=disk base_lba=2048 ready
+init: FazAttrhyiz product root=disk backend=ahci nic=none/down
+[INF] user spawn: parent=1 child=2 cpu=0 child-cap=4
+[SHELL v=1 event=ready seq=1 status=0]
+fazattrhyiz> init: shell pid=2 user ELF launched
+[SHELL v=1 event=begin seq=1 status=0]
+[INF] user spawn: parent=2 child=3 cpu=0 child-cap=4
+shell background start: pid=3 cpu=0
+[SHELL v=1 event=end seq=1 status=0]
+[SHELL v=1 event=ready seq=2 status=0]
+fazattrhyiz> [INF] tcp listen: if=enet0 port=8080 backlog=4 slots=32 accept=nonblocking
+[INF] user[3]: httpd listening port=8080
+[INF] user[3]: httpd accept=nonblocking backlog=4 serial=1
+[INF] user[3]: httpd worker ready: id=1 port=8080 handled=0 status=0
+[INF] net irq rx active: if=enet0 hardware=1 notified-frame=1
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=170 send_ack_us=2191 close_us=105056
+[INF] user[3]: httpd handled=1
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=190 send_ack_us=2528 close_us=103992
+[INF] user[3]: httpd handled=2
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=179 send_ack_us=4093 close_us=105708
+[INF] user[3]: httpd handled=3
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=106 send_ack_us=2843 close_us=104651
+[INF] user[3]: httpd handled=4
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=195 send_ack_us=2803 close_us=104030
+[INF] user[3]: httpd handled=5
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=4037 send_ack_us=2999 close_us=103110
+[INF] user[3]: httpd handled=6
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=3144 send_ack_us=2995 close_us=103929
+[INF] user[3]: httpd handled=7
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=4082 send_ack_us=3016 close_us=108443
+[INF] user[3]: httpd handled=8
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=93 send_ack_us=2562 close_us=104342
+[INF] user[3]: httpd handled=9
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=83 send_ack_us=2553 close_us=105562
+[INF] user[3]: httpd handled=10
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=210 send_ack_us=2689 close_us=104071
+[INF] user[3]: httpd handled=11
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=186 send_ack_us=2585 close_us=102911
+[INF] user[3]: httpd handled=12
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=175 send_ack_us=2395 close_us=108603
+[INF] user[3]: httpd handled=13
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=97 send_ack_us=2882 close_us=104697
+[INF] user[3]: httpd handled=14
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=80 send_ack_us=3067 close_us=104165
+[INF] user[3]: httpd handled=15
+[INF] user[3]: httpd accepted
+[INF] user[3]: httpd response: HTTP/1.0 200 payload=30 verified
+[INF] user[3]: httpd profile read_us=88 send_ack_us=2178 close_us=104165
+[INF] user[3]: httpd handled=16
+[INF] user[3]: httpd worker done: id=1 port=8080 handled=16 status=0
+[INF] user[3]: httpd stopped: listener closed
+shell child done: pid=3 exit=0 reap=ok
+[SHELL v=1 event=begin seq=2 status=0]
+[SHELL v=1 event=end seq=2 status=0]
+[SHELL v=1 event=ready seq=3 status=0]
+fazattrhyiz> run /bin/perf-hush-timer.elf /perf-empty.sh auto > /perf-output.txt
+[SHELL v=1 event=begin seq=3 status=0]
+[INF] user spawn: parent=2 child=4 cpu=0 child-cap=5
+shell run: pid=4 cpu=0
+[INF] linux L2 fork: parent=4 child=5 pages=6 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=5 write_bytes=0 ENOSYS=0
+hush timer cycles=81731867 cpu=0
+[INF] linux exit: pid=4 write_bytes=33 ENOSYS=0
+shell child done: pid=4 exit=0 reap=ok
+shell redirect committed: status=0
+[SHELL v=1 event=end seq=3 status=0]
+[SHELL v=1 event=ready seq=4 status=0]
+fazattrhyiz> run /bin/perf-hush-timer.elf /perf-pipe.sh auto > /perf-output.txt
+[SHELL v=1 event=begin seq=4 status=0]
+[INF] user spawn: parent=2 child=6 cpu=0 child-cap=5
+shell run: pid=6 cpu=0
+[INF] linux L2 fork: parent=6 child=7 pages=6 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=8 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=9 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=8 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=9 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=10 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=11 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=10 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=11 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=12 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=13 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=12 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=13 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=14 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=15 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=14 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=15 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=16 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=17 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=16 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=17 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=18 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=19 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=18 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=19 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=20 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=21 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=20 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=21 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=22 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=23 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=22 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=23 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=24 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=25 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=24 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=25 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=26 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=27 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=26 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=27 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=28 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=29 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=28 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=29 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=30 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=31 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=30 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=31 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=32 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=33 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=32 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=33 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=34 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=35 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=34 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=35 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=36 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=37 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=36 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=37 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=38 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=39 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=38 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=39 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=40 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=41 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=40 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=41 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=42 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=43 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=42 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=43 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=44 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=45 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=44 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=45 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=46 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=47 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=46 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=47 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=48 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=49 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=48 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=49 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=50 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=51 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=50 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=51 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=52 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=53 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=52 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=53 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=54 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=55 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=54 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=55 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=56 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=57 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=56 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=57 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=58 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=59 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=58 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=59 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=60 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=61 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=60 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=61 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=62 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=63 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=62 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=63 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=64 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=65 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=64 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=65 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=66 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=67 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=66 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=67 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=68 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=69 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=68 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=69 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=7 child=70 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=7 child=71 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=70 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=71 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=7 write_bytes=0 ENOSYS=0
+hush timer cycles=12784928506 cpu=0
+[INF] linux exit: pid=6 write_bytes=36 ENOSYS=0
+shell child done: pid=6 exit=0 reap=ok
+shell redirect committed: status=0
+[SHELL v=1 event=end seq=4 status=0]
+[SHELL v=1 event=ready seq=5 status=0]
+fazattrhyiz> run /bin/perf-verify.faz /perf-output.txt 192000
+[SHELL v=1 event=begin seq=5 status=0]
+[INF] user spawn: parent=2 child=72 cpu=0 child-cap=4
+shell run: pid=72 cpu=0
+[INF] user[72]: perf pipe verified bytes=192000
+shell child done: pid=72 exit=0 reap=ok
+[SHELL v=1 event=end seq=5 status=0]
+[SHELL v=1 event=ready seq=6 status=0]
+fazattrhyiz> run /bin/perf-hush-timer.elf /perf-empty.sh auto > /perf-output.txt
+[SHELL v=1 event=begin seq=6 status=0]
+[INF] user spawn: parent=2 child=73 cpu=0 child-cap=5
+shell run: pid=73 cpu=0
+[INF] linux L2 fork: parent=73 child=74 pages=6 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=74 write_bytes=0 ENOSYS=0
+hush timer cycles=70990713 cpu=0
+[INF] linux exit: pid=73 write_bytes=33 ENOSYS=0
+shell child done: pid=73 exit=0 reap=ok
+shell redirect committed: status=0
+[SHELL v=1 event=end seq=6 status=0]
+[SHELL v=1 event=ready seq=7 status=0]
+fazattrhyiz> run /bin/perf-hush-timer.elf /perf-pipe.sh auto > /perf-output.txt
+[SHELL v=1 event=begin seq=7 status=0]
+[INF] user spawn: parent=2 child=75 cpu=0 child-cap=5
+shell run: pid=75 cpu=0
+[INF] linux L2 fork: parent=75 child=76 pages=6 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=77 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=78 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=77 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=78 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=79 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=80 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=79 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=80 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=81 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=82 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=81 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=82 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=83 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=84 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=83 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=84 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=85 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=86 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=85 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=86 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=87 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=88 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=87 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=88 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=89 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=90 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=89 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=90 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=91 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=92 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=91 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=92 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=93 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=94 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=93 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=94 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=95 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=96 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=95 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=96 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=97 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=98 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=97 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=98 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=99 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=100 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=99 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=100 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=101 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=102 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=101 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=102 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=103 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=104 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=103 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=104 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=105 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=106 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=105 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=106 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=107 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=108 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=107 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=108 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=109 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=110 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=109 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=110 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=111 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=112 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=111 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=112 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=113 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=114 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=113 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=114 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=115 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=116 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=115 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=116 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=117 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=118 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=117 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=118 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=119 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=120 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=119 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=120 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=121 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=122 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=121 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=122 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=123 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=124 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=123 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=124 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=125 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=126 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=125 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=126 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=127 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=128 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=127 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=128 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=129 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=130 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=129 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=130 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=131 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=132 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=131 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=132 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=133 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=134 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=133 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=134 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=135 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=136 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=135 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=136 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=137 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=138 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=137 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=138 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=76 child=139 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=76 child=140 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=139 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=140 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=76 write_bytes=0 ENOSYS=0
+hush timer cycles=13545547567 cpu=0
+[INF] linux exit: pid=75 write_bytes=36 ENOSYS=0
+shell child done: pid=75 exit=0 reap=ok
+shell redirect committed: status=0
+[SHELL v=1 event=end seq=7 status=0]
+[SHELL v=1 event=ready seq=8 status=0]
+fazattrhyiz> run /bin/perf-verify.faz /perf-output.txt 192000
+[SHELL v=1 event=begin seq=8 status=0]
+[INF] user spawn: parent=2 child=141 cpu=0 child-cap=4
+shell run: pid=141 cpu=0
+[INF] user[141]: perf pipe verified bytes=192000
+shell child done: pid=141 exit=0 reap=ok
+[SHELL v=1 event=end seq=8 status=0]
+[SHELL v=1 event=ready seq=9 status=0]
+fazattrhyiz> run /bin/perf-hush-timer.elf /perf-empty.sh bsp > /perf-output.txt
+[SHELL v=1 event=begin seq=9 status=0]
+[INF] user spawn: parent=2 child=142 cpu=0 child-cap=5
+shell run: pid=142 cpu=0
+[INF] linux L2 fork: parent=142 child=143 pages=6 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=143 write_bytes=0 ENOSYS=0
+hush timer cycles=78520565 cpu=0
+[INF] linux exit: pid=142 write_bytes=33 ENOSYS=0
+shell child done: pid=142 exit=0 reap=ok
+shell redirect committed: status=0
+[SHELL v=1 event=end seq=9 status=0]
+[SHELL v=1 event=ready seq=10 status=0]
+fazattrhyiz> run /bin/perf-hush-timer.elf /perf-pipe.sh bsp > /perf-output.txt
+[SHELL v=1 event=begin seq=10 status=0]
+[INF] user spawn: parent=2 child=144 cpu=0 child-cap=5
+shell run: pid=144 cpu=0
+[INF] linux L2 fork: parent=144 child=145 pages=6 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=146 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=147 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=146 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=147 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=148 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=149 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=148 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=149 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=150 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=151 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=150 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=151 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=152 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=153 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=152 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=153 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=154 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=155 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=154 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=155 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=156 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=157 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=156 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=157 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=158 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=159 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=158 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=159 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=160 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=161 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=160 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=161 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=162 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=163 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=162 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=163 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=164 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=165 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=164 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=165 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=166 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=167 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=166 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=167 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=168 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=169 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=168 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=169 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=170 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=171 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=170 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=171 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=172 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=173 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=172 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=173 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=174 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=175 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=174 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=175 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=176 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=177 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=176 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=177 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=178 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=179 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=178 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=179 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=180 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=181 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=180 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=181 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=182 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=183 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=182 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=183 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=184 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=185 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=184 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=185 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=186 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=187 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=186 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=187 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=188 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=189 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=188 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=189 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=190 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=191 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=190 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=191 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=192 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=193 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=192 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=193 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=194 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=195 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=194 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=195 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=196 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=197 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=196 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=197 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=198 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=199 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=198 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=199 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=200 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=201 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=200 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=201 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=202 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=203 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=202 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=203 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=204 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=205 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=204 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=205 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=206 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=207 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=206 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=207 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=145 child=208 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=145 child=209 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=208 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=209 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=145 write_bytes=0 ENOSYS=0
+hush timer cycles=13402851179 cpu=0
+[INF] linux exit: pid=144 write_bytes=36 ENOSYS=0
+shell child done: pid=144 exit=0 reap=ok
+shell redirect committed: status=0
+[SHELL v=1 event=end seq=10 status=0]
+[SHELL v=1 event=ready seq=11 status=0]
+fazattrhyiz> run /bin/perf-verify.faz /perf-output.txt 192000
+[SHELL v=1 event=begin seq=11 status=0]
+[INF] user spawn: parent=2 child=210 cpu=0 child-cap=4
+shell run: pid=210 cpu=0
+[INF] user[210]: perf pipe verified bytes=192000
+shell child done: pid=210 exit=0 reap=ok
+[SHELL v=1 event=end seq=11 status=0]
+[SHELL v=1 event=ready seq=12 status=0]
+fazattrhyiz> run /bin/perf-hush-timer.elf /perf-empty.sh bsp > /perf-output.txt
+[SHELL v=1 event=begin seq=12 status=0]
+[INF] user spawn: parent=2 child=211 cpu=0 child-cap=5
+shell run: pid=211 cpu=0
+[INF] linux L2 fork: parent=211 child=212 pages=6 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=212 write_bytes=0 ENOSYS=0
+hush timer cycles=68194072 cpu=0
+[INF] linux exit: pid=211 write_bytes=33 ENOSYS=0
+shell child done: pid=211 exit=0 reap=ok
+shell redirect committed: status=0
+[SHELL v=1 event=end seq=12 status=0]
+[SHELL v=1 event=ready seq=13 status=0]
+fazattrhyiz> run /bin/perf-hush-timer.elf /perf-pipe.sh bsp > /perf-output.txt
+[SHELL v=1 event=begin seq=13 status=0]
+[INF] user spawn: parent=2 child=213 cpu=0 child-cap=5
+shell run: pid=213 cpu=0
+[INF] linux L2 fork: parent=213 child=214 pages=6 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=215 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=216 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=215 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=216 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=217 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=218 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=217 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=218 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=219 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=220 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=219 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=220 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=221 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=222 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=221 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=222 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=223 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=224 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=223 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=224 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=225 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=226 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=225 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=226 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=227 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=228 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=227 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=228 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=229 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=230 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=229 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=230 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=231 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=232 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=231 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=232 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=233 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=234 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=233 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=234 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=235 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=236 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=235 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=236 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=237 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=238 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=237 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=238 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=239 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=240 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=239 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=240 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=241 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=242 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=241 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=242 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=243 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=244 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=243 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=244 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=245 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=246 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=245 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=246 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=247 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=248 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=247 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=248 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=249 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=250 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=249 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=250 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=251 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=252 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=251 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=252 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=253 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=254 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=253 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=254 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=255 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=256 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=255 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=256 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=257 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=258 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=257 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=258 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=259 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=260 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=259 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=260 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=261 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=262 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=261 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=262 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=263 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=264 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=263 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=264 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=265 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=266 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=265 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=266 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=267 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=268 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=267 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=268 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=269 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=270 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=269 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=270 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=271 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=272 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=271 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=272 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=273 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=274 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=273 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=274 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=275 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=276 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=275 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=276 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=214 child=277 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=214 child=278 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=277 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=278 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=214 write_bytes=0 ENOSYS=0
+hush timer cycles=12934297687 cpu=0
+[INF] linux exit: pid=213 write_bytes=36 ENOSYS=0
+shell child done: pid=213 exit=0 reap=ok
+shell redirect committed: status=0
+[SHELL v=1 event=end seq=13 status=0]
+[SHELL v=1 event=ready seq=14 status=0]
+fazattrhyiz> run /bin/perf-verify.faz /perf-output.txt 192000
+[SHELL v=1 event=begin seq=14 status=0]
+[INF] user spawn: parent=2 child=279 cpu=0 child-cap=4
+[INF] user[279]: perf pipe verified bytes=192000
+shell run: pid=279 cpu=0
+shell child done: pid=279 exit=0 reap=ok
+[SHELL v=1 event=end seq=14 status=0]
+[SHELL v=1 event=ready seq=15 status=0]
+fazattrhyiz> run /bin/busybox-sh.elf sh /perf-pipe.sh > /perf-output.txt
+[SHELL v=1 event=begin seq=15 status=0]
+[INF] user spawn: parent=2 child=280 cpu=0 child-cap=5
+shell run: pid=280 cpu=0
+[INF] linux L2 fork: parent=280 child=281 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=282 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=281 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=282 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=283 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=284 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=283 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=284 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=285 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=286 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=285 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=286 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=287 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=288 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=287 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=288 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=289 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=290 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=289 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=290 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=291 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=292 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=291 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=292 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=293 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=294 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=293 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=294 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=295 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=296 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=295 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=296 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=297 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=298 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=297 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=298 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=299 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=300 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=299 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=300 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=301 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=302 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=301 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=302 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=303 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=304 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=303 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=304 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=305 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=306 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=305 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=306 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=307 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=308 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=307 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=308 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=309 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=310 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=309 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=310 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=311 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=312 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=311 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=312 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=313 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=314 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=313 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=314 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=315 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=316 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=315 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=316 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=317 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=318 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=317 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=318 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=319 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=320 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=319 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=320 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=321 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=322 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=321 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=322 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=323 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=324 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=323 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=324 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=325 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=326 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=325 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=326 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=327 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=328 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=327 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=328 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=329 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=330 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=329 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=330 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=331 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=332 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=331 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=332 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=333 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=334 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=333 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=334 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=335 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=336 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=335 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=336 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=337 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=338 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=337 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=338 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=339 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=340 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=339 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=340 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=341 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=342 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=341 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=342 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=280 child=343 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=280 child=344 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=343 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=344 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=280 write_bytes=0 ENOSYS=0
+shell child done: pid=280 exit=0 reap=ok
+shell redirect committed: status=0
+[SHELL v=1 event=end seq=15 status=0]
+[SHELL v=1 event=ready seq=16 status=0]
+fazattrhyiz> run /bin/perf-verify.faz /perf-output.txt 192000
+[SHELL v=1 event=begin seq=16 status=0]
+[INF] user spawn: parent=2 child=345 cpu=0 child-cap=4
+shell run: pid=345 cpu=0
+[INF] user[345]: perf pipe verified bytes=192000
+shell child done: pid=345 exit=0 reap=ok
+[SHELL v=1 event=end seq=16 status=0]
+[SHELL v=1 event=ready seq=17 status=0]
+fazattrhyiz> run /bin/busybox-sh.elf sh /perf-pipe.sh > /perf-output.txt
+[SHELL v=1 event=begin seq=17 status=0]
+[INF] user spawn: parent=2 child=346 cpu=0 child-cap=5
+shell run: pid=346 cpu=0
+[INF] linux L2 fork: parent=346 child=347 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=348 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=347 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=348 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=349 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=350 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=349 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=350 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=351 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=352 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=351 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=352 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=353 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=354 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=353 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=354 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=355 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=356 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=355 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=356 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=357 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=358 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=357 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=358 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=359 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=360 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=359 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=360 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=361 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=362 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=361 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=362 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=363 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=364 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=363 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=364 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=365 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=366 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=365 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=366 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=367 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=368 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=367 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=368 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=369 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=370 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=369 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=370 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=371 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=372 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=371 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=372 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=373 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=374 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=373 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=374 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=375 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=376 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=375 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=376 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=377 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=378 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=377 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=378 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=379 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=380 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=379 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=380 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=381 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=382 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=381 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=382 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=383 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=384 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=383 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=384 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=385 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=386 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=385 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=386 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=387 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=388 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=387 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=388 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=389 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=390 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=389 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=390 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=391 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=392 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=391 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=392 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=393 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=394 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=393 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=394 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=395 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=396 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=395 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=396 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=397 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=398 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=397 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=398 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=399 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=400 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=399 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=400 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=401 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=402 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=401 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=402 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=403 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=404 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=403 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=404 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=405 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=406 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=405 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=406 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=407 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=408 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=407 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=408 write_bytes=6000 ENOSYS=0
+[INF] linux L2 fork: parent=346 child=409 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux L2 fork: parent=346 child=410 pages=35 COW=RO reserves=resident cpu=0
+[INF] linux exit: pid=409 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=410 write_bytes=6000 ENOSYS=0
+[INF] linux exit: pid=346 write_bytes=0 ENOSYS=0
+shell child done: pid=346 exit=0 reap=ok
+shell redirect committed: status=0
+[SHELL v=1 event=end seq=17 status=0]
+[SHELL v=1 event=ready seq=18 status=0]
+fazattrhyiz> run /bin/perf-verify.faz /perf-output.txt 192000
+[SHELL v=1 event=begin seq=18 status=0]
+[INF] user spawn: parent=2 child=411 cpu=0 child-cap=4
+shell run: pid=411 cpu=0
+[INF] user[411]: perf pipe verified bytes=192000
+shell child done: pid=411 exit=0 reap=ok
+[SHELL v=1 event=end seq=18 status=0]
+[SHELL v=1 event=ready seq=19 status=0]
+fazattrhyiz> poweroff
+[SHELL v=1 event=begin seq=19 status=0]
+[INF] user poweroff: capability authorized root sync=0
+[INF] linux ENOSYS histogram end: scope=poweroff total=0 buckets=512 overflow=explicit
+[INF] poweroff: ACPI S5 request

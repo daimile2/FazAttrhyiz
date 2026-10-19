@@ -23,6 +23,10 @@ static int descriptor_test(void)
     int failed=0;cm_id_t pid=0;cm_proc_t *p=NULL;unsigned files=cm_vfs_open_files();
     uint64_t pages=cm_mm_free_pages()+cm_file_cache_pages();
     cm_spawn_attr_t a={.path="/bin/busybox-l1.elf",.qos=CM_QOS_USER_INTERACTIVE};
+#if CM_LINUX_ABI
+    CHECK(cm_linux_errno(CM_ERR_DEAD)==-104);
+    kinfo("linux errno: DEAD -> ECONNRESET (-104) verified");
+#endif
     CHECK(cm_posix_spawn(&a,&pid)==CM_OK);p=cm_proc_lookup(pid);CHECK(p && p->abi==CM_ABI_LINUX);
     cm_sched_set_current(p->main);
     CHECK(cm_syscall(2,UINT64_MAX,0,0,0)==-14);

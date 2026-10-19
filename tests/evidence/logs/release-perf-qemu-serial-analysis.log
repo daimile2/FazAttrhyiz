@@ -1,0 +1,16 @@
+CONFIG backend=qemu serial_only=True kernel=34ba2a780d8bae3c0ceb1be0b4b90e9b0579f7b92654f7de2245b39007a2b065 date=2026-10-19T15:16:35+00:00
+HTTP backend=qemu smp=1 serial_only=1 mode=http n=4 p50_ms=115.167 connect_ms=0.066 send_ms=0.005 ttfb_ms=111.093 body_ms=0.013 eof_ms=3.952
+HTTP backend=qemu smp=1 serial_only=1 mode=paced n=4 p50_ms=6.814 connect_ms=0.120 send_ms=0.011 ttfb_ms=2.703 body_ms=0.007 eof_ms=3.926
+GUEST_HTTP smp=1 n=16 read_us=27.0 send_ack_us=3549.5 close_us=105800.0
+HUSH backend=qemu smp=1 serial_only=1 mode=auto workload=empty cpu=0 n=1 guest_s=0.024408 host_s=0.075897 outside_guest_ms=51.489
+HUSH backend=qemu smp=1 serial_only=1 mode=auto workload=pipe cpu=0 n=1 guest_s=3.702564 host_s=3.736884 outside_guest_ms=34.320
+HUSH backend=qemu smp=1 serial_only=1 mode=bsp workload=empty cpu=0 n=1 guest_s=0.024345 host_s=0.074809 outside_guest_ms=50.464
+HUSH backend=qemu smp=1 serial_only=1 mode=bsp workload=pipe cpu=0 n=1 guest_s=5.967342 host_s=6.010329 outside_guest_ms=42.987
+HTTP backend=qemu smp=4 serial_only=1 mode=http n=4 p50_ms=120.371 connect_ms=0.114 send_ms=0.012 ttfb_ms=114.446 body_ms=0.018 eof_ms=5.757
+HTTP backend=qemu smp=4 serial_only=1 mode=paced n=4 p50_ms=13.835 connect_ms=0.160 send_ms=0.015 ttfb_ms=6.279 body_ms=0.015 eof_ms=7.294
+GUEST_HTTP smp=4 n=16 read_us=42.5 send_ack_us=2089.0 close_us=106283.5
+HUSH backend=qemu smp=4 serial_only=1 mode=auto workload=empty cpu=0 n=1 guest_s=0.021889 host_s=0.044313 outside_guest_ms=22.425
+HUSH backend=qemu smp=4 serial_only=1 mode=auto workload=pipe cpu=1 n=1 guest_s=1.396257 host_s=1.418291 outside_guest_ms=22.034
+HUSH backend=qemu smp=4 serial_only=1 mode=bsp workload=empty cpu=0 n=1 guest_s=0.013605 host_s=0.030380 outside_guest_ms=16.775
+HUSH backend=qemu smp=4 serial_only=1 mode=bsp workload=pipe cpu=0 n=1 guest_s=6.380327 host_s=6.411986 outside_guest_ms=31.659
+performance investigation: PASS (phase sums, payload/EOF, guest timer, affinity and poweroff evidence; no speedup threshold)

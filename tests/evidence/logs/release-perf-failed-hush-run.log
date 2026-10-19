@@ -1,0 +1,15 @@
+PERF date=2026-10-19T15:05:52+00:00 backend=qemu smp=1 nic=e1000 linux=1 sample=1 workers=1 concurrency=1 client_peak=1 http_n=8 http_s=0.946111 http_rps=8.456 http_p50_ms=118.607 http_p95_ms=120.647 irq_mode=auto hush_bytes=192000 hush_s=7.037207 hush_Bps=27283.550 verified=1
+PERF date=2026-10-19T15:05:52+00:00 backend=qemu smp=1 nic=e1000 linux=1 sample=2 workers=1 concurrency=1 client_peak=1 http_n=8 http_s=0.939977 http_rps=8.511 http_p50_ms=117.185 http_p95_ms=119.051 irq_mode=auto hush_bytes=192000 hush_s=7.156148 hush_Bps=26830.077 verified=1
+Traceback (most recent call last):
+  File "<repo>/scripts/perf-baseline.py", line 282, in <module>
+    
+  File "<repo>/scripts/perf-baseline.py", line 258, in main
+    text,seconds=g.command('run /bin/busybox-sh.elf sh /perf-pipe.sh > /perf-output.txt','shell redirect committed: status=0')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 115, in command
+    # Timer begins immediately before Return. Typing command text is excluded;
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/scripts/perf-baseline.py", line 66, in wait
+    time.sleep(.005)
+^^^^^^^^^^^^^^^^^^^^^
+AssertionError: timeout exit=0 reap=ok; see <lab>/faz-diag-qemu-final/smp4-serial.log

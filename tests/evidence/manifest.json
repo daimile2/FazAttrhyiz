@@ -8327,6 +8327,1234 @@
         "docs/FAZATTRHYIZ.md"
       ],
       "evidence_round": "fazattrhyiz-rename-2026-10-19"
+    },
+    {
+      "source_name": "faz-short-final-build.log",
+      "source_sha256": "6c23ead5c18a95865f9de40c55a29eefb16ae1470bd75a416f54ccb74e79190d",
+      "archive": "logs/short-commands-build.log",
+      "archive_sha256": "6c23ead5c18a95865f9de40c55a29eefb16ae1470bd75a416f54ccb74e79190d",
+      "source_bytes": 2862,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "faz-short-final-hosted.log",
+      "source_sha256": "8acb657109070f77a294ea8c00002149a4f155c96efa53346f0e1611d0196f95",
+      "archive": "logs/short-commands-hosted.log",
+      "archive_sha256": "8acb657109070f77a294ea8c00002149a4f155c96efa53346f0e1611d0196f95",
+      "source_bytes": 85089,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "faz-short-guard-qemu-check.log",
+      "source_sha256": "8c1b14654cf91ae078b19910c0b3f88e9a410c71a88e1bd50ef6e28c4fa09a35",
+      "archive": "logs/short-commands-qemu-check.log",
+      "archive_sha256": "8c1b14654cf91ae078b19910c0b3f88e9a410c71a88e1bd50ef6e28c4fa09a35",
+      "source_bytes": 1259,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "journey-native.log",
+      "source_sha256": "9e2aff7fe3b9f11dad5505cffaa330cba231899435c8d3db4827fdca7fa5b0bf",
+      "archive": "logs/short-commands-qemu-native.log",
+      "archive_sha256": "9e2aff7fe3b9f11dad5505cffaa330cba231899435c8d3db4827fdca7fa5b0bf",
+      "source_bytes": 15792,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "journey-linux.log",
+      "source_sha256": "e673dbfb7e069bb87fcf761a73537d8739579897fd689d3416b5d202250c9333",
+      "archive": "logs/short-commands-qemu-linux.log",
+      "archive_sha256": "e673dbfb7e069bb87fcf761a73537d8739579897fd689d3416b5d202250c9333",
+      "source_bytes": 15967,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "journey-disabled.log",
+      "source_sha256": "435688ee143b26b36ff4a1eb6a369c08f9ff34dce79ba6c4d0ea4a19df9b4e8a",
+      "archive": "logs/short-commands-qemu-disabled.log",
+      "archive_sha256": "435688ee143b26b36ff4a1eb6a369c08f9ff34dce79ba6c4d0ea4a19df9b4e8a",
+      "source_bytes": 11466,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "journey-http-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/short-commands-qemu-http-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "journey-result.log",
+      "source_sha256": "c9da08d1a4fe5dbf9f824402e02a8b2c065bdd249a6b1402c8503c5a51fdc564",
+      "archive": "logs/short-commands-qemu-result.log",
+      "archive_sha256": "c9da08d1a4fe5dbf9f824402e02a8b2c065bdd249a6b1402c8503c5a51fdc564",
+      "source_bytes": 133,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "faz-short-guard-vbox-check.log",
+      "source_sha256": "1bf65143602328e9c78129168b3c32203ea16f3b064b887a655177f59fba7ce6",
+      "archive": "logs/short-commands-vbox-check.log",
+      "archive_sha256": "1bf65143602328e9c78129168b3c32203ea16f3b064b887a655177f59fba7ce6",
+      "source_bytes": 1259,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "journey-native.log",
+      "source_sha256": "abea9d43a37ac22569fd2f2dbc60d15ade0f704e3498a5abdb2eaed9e7b8cd40",
+      "archive": "logs/short-commands-vbox-native.log",
+      "archive_sha256": "67554d8ad55f137ca1d71b59c3ec0f3c6f98791aab0099ad04379546a6a86367",
+      "source_bytes": 16020,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "journey-linux.log",
+      "source_sha256": "6ec194d0185c2393fc908d249339fcd1bb19167552b8068b91388b9efd4cfa35",
+      "archive": "logs/short-commands-vbox-linux.log",
+      "archive_sha256": "9fcd9bca1a666bc1c57229914a0ba6e9a3074dadd8f1f0b9d1a16ef3e907fe57",
+      "source_bytes": 16181,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "journey-disabled.log",
+      "source_sha256": "304af6d4410f0d241d61b62f79acf2eabc928a6cf54280ce8386b2695eb0365a",
+      "archive": "logs/short-commands-vbox-disabled.log",
+      "archive_sha256": "a4dfb56fafb988c3bc2b4258ced16f1debf123d4eef07ef33d71a1fdb489c180",
+      "source_bytes": 11613,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "journey-http-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/short-commands-vbox-http-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "journey-result.log",
+      "source_sha256": "0f0f37499da920c69aa70769ad16629db60ce149e69ab6b3e691e32a8e0a1ad3",
+      "archive": "logs/short-commands-vbox-result.log",
+      "archive_sha256": "0f0f37499da920c69aa70769ad16629db60ce149e69ab6b3e691e32a8e0a1ad3",
+      "source_bytes": 133,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md",
+        "docs/USER_JOURNEY.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "faz-short-final-debug.log",
+      "source_sha256": "fcd30d9afc6740d9a158578120d4b9a8f4b41cf7274b246f47fd451c6d08fbfa",
+      "archive": "logs/short-commands-debug.log",
+      "archive_sha256": "fcd30d9afc6740d9a158578120d4b9a8f4b41cf7274b246f47fd451c6d08fbfa",
+      "source_bytes": 219423,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/SHELL.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "faz-short-final-debug-iso.log",
+      "source_sha256": "f11670b690e54747c38403f05e9947dd735088dc1f2b4f8da0f2f54d82a24de6",
+      "archive": "logs/short-commands-debug-iso.log",
+      "archive_sha256": "c77265c784d510fc11cde4784263a9f072ab4e1426d79aac5cd9052185f022e6",
+      "source_bytes": 2018,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "faz-short-final-product-iso.log",
+      "source_sha256": "2b1ac6ae19918813feec2b59f87675ebe3995ab76fd5ced8c35869e63bdbf68f",
+      "archive": "logs/short-commands-product-iso.log",
+      "archive_sha256": "8f23d2f255152a16164baa70026346247001365f5f84a102fc867440717024d2",
+      "source_bytes": 2006,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/SHELL.md"
+      ],
+      "evidence_round": "short-commands-2026-10-19"
+    },
+    {
+      "source_name": "catfix-build.log",
+      "source_sha256": "f1f56db2194dde7c921f38e3ce66a4febd43a854e77a8a0f49fc2ab5b9c9cfc4",
+      "archive": "logs/cat-integrity-build.log",
+      "archive_sha256": "f1f56db2194dde7c921f38e3ce66a4febd43a854e77a8a0f49fc2ab5b9c9cfc4",
+      "source_bytes": 3618,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "catfix-final-kernel.log",
+      "source_sha256": "fb858e579f0766a91e89f4490be8a571cb22ab15889ea5b182768bcc692c6a8a",
+      "archive": "logs/cat-integrity-kernel-final.log",
+      "archive_sha256": "fb858e579f0766a91e89f4490be8a571cb22ab15889ea5b182768bcc692c6a8a",
+      "source_bytes": 2365,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "catfix-final-hosted.log",
+      "source_sha256": "4e0e6891a43f4cf9f020bf07601cee91114da8cb273eb44b6c22e3e3557b1a29",
+      "archive": "logs/cat-integrity-hosted-on.log",
+      "archive_sha256": "4e0e6891a43f4cf9f020bf07601cee91114da8cb273eb44b6c22e3e3557b1a29",
+      "source_bytes": 85161,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "catfix-hosted-off.log",
+      "source_sha256": "703c90a6f0b7863f3a47a362efae52e0752822942933a1c44ba19812fe2f9cb2",
+      "archive": "logs/cat-integrity-hosted-off.log",
+      "archive_sha256": "703c90a6f0b7863f3a47a362efae52e0752822942933a1c44ba19812fe2f9cb2",
+      "source_bytes": 61960,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "catfix-qemu-check.log",
+      "source_sha256": "876b8df228cc8a7983ef00946e618730e73cfed4423534d7197ee2cdef5b4207",
+      "archive": "logs/cat-integrity-first-qemu-check-failed.log",
+      "archive_sha256": "7abd95e69a14081a50f3e285d72a747b5c8617777ad9ef0245f36df2d3e34a28",
+      "source_bytes": 1604,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "catfix-vbox-check.log",
+      "source_sha256": "1f102e018f57f428b068e6299920c6f11bf9b4ad22a7aa98676dfa476f5d607a",
+      "archive": "logs/cat-integrity-first-vbox-check-failed.log",
+      "archive_sha256": "c96e1aea6f625a9026d750504973565b64b39dea83e3f31e09b123afed57df0f",
+      "source_bytes": 941,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "catfix-qemu-keys-check.log",
+      "source_sha256": "03359ee284ebf5578d5b5d1cd6ed5322fb0416bc4bd4326ba1db7f0c1bcf1d05",
+      "archive": "logs/cat-integrity-qemu-check.log",
+      "archive_sha256": "03359ee284ebf5578d5b5d1cd6ed5322fb0416bc4bd4326ba1db7f0c1bcf1d05",
+      "source_bytes": 1807,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "journey-native.log",
+      "source_sha256": "7bc7cada77958e541caac08013a82f01ca13d622100346a5d7273079df3e8cbc",
+      "archive": "logs/cat-integrity-qemu-native.log",
+      "archive_sha256": "7bc7cada77958e541caac08013a82f01ca13d622100346a5d7273079df3e8cbc",
+      "source_bytes": 22028,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "journey-linux.log",
+      "source_sha256": "9f5fbb29f3106c964e65eb37f8177b119d7907fedfd5f01e0cab176d274203d0",
+      "archive": "logs/cat-integrity-qemu-linux.log",
+      "archive_sha256": "9f5fbb29f3106c964e65eb37f8177b119d7907fedfd5f01e0cab176d274203d0",
+      "source_bytes": 17994,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "journey-disabled.log",
+      "source_sha256": "bece038c19b0f0fed442e549bf78ee95486108bbd465da29d835ecf9d3281b4d",
+      "archive": "logs/cat-integrity-qemu-disabled.log",
+      "archive_sha256": "bece038c19b0f0fed442e549bf78ee95486108bbd465da29d835ecf9d3281b4d",
+      "source_bytes": 12513,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "journey-http-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/cat-integrity-qemu-http-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "journey-result.log",
+      "source_sha256": "c9da08d1a4fe5dbf9f824402e02a8b2c065bdd249a6b1402c8503c5a51fdc564",
+      "archive": "logs/cat-integrity-qemu-result.log",
+      "archive_sha256": "c9da08d1a4fe5dbf9f824402e02a8b2c065bdd249a6b1402c8503c5a51fdc564",
+      "source_bytes": 133,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "catfix-vbox-keys-check.log",
+      "source_sha256": "b86c52bf32f6c19f352afd731c557ff99622c664447351af83ab9741af67e7a8",
+      "archive": "logs/cat-integrity-vbox-check.log",
+      "archive_sha256": "b86c52bf32f6c19f352afd731c557ff99622c664447351af83ab9741af67e7a8",
+      "source_bytes": 1807,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "journey-native.log",
+      "source_sha256": "5800a15222ca68658dbb532d1f628c80a6971dd19d678cf87b0a74cd96d8b77e",
+      "archive": "logs/cat-integrity-vbox-native.log",
+      "archive_sha256": "55f00e73c2c1cf44eeda44aae3f111d135d5864d1a756a98511e8dae0a0c8200",
+      "source_bytes": 22253,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "journey-linux.log",
+      "source_sha256": "913f8b10138cf31812e4bffbb4495576f0f00aa0a6554341cc70810b8c70960d",
+      "archive": "logs/cat-integrity-vbox-linux.log",
+      "archive_sha256": "b1f91f2b44a510601e28c702f80965ab2983901828340a0a064d30f9ff9fb14a",
+      "source_bytes": 18287,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "journey-disabled.log",
+      "source_sha256": "4d1df9d108d1ba55ea11e98015e8676515f7ed92dab17f78184c4e4a92eea50f",
+      "archive": "logs/cat-integrity-vbox-disabled.log",
+      "archive_sha256": "61734befa890f0ba448cb4774a00a42bb28e80cce2dff900de319476d18ccd33",
+      "source_bytes": 12662,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "journey-http-client.log",
+      "source_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "archive": "logs/cat-integrity-vbox-http-client.log",
+      "archive_sha256": "d6c2b36fe054e8456757df31b8147f947617478d459f3691aa82bd594389c4eb",
+      "source_bytes": 141,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "journey-result.log",
+      "source_sha256": "0f0f37499da920c69aa70769ad16629db60ce149e69ab6b3e691e32a8e0a1ad3",
+      "archive": "logs/cat-integrity-vbox-result.log",
+      "archive_sha256": "0f0f37499da920c69aa70769ad16629db60ce149e69ab6b3e691e32a8e0a1ad3",
+      "source_bytes": 133,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "catfix-fixtures.log",
+      "source_sha256": "b3fe4724866603f81a1ebde611c09a56d64176770385f61b337de5aa6346b5d4",
+      "archive": "logs/cat-integrity-fixtures.log",
+      "archive_sha256": "b3fe4724866603f81a1ebde611c09a56d64176770385f61b337de5aa6346b5d4",
+      "source_bytes": 381,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md",
+        "docs/SHELL.md",
+        "docs/EXAMPLES.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "catfix-final-debug.log",
+      "source_sha256": "0f03675f39cd2fa2d8766401ed98ce242adb1b2c0eae4419a5666f195cb612f6",
+      "archive": "logs/cat-integrity-debug.log",
+      "archive_sha256": "0f03675f39cd2fa2d8766401ed98ce242adb1b2c0eae4419a5666f195cb612f6",
+      "source_bytes": 218315,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "catfix-final-debug-iso.log",
+      "source_sha256": "2ef4423863f75d6d33af3e26fea31a5372e1feaef3b521d1f4bebc047f0be9fe",
+      "archive": "logs/cat-integrity-debug-iso.log",
+      "archive_sha256": "1e15e34a27f1a57f3269c771545f27b970d7385c622cf8c2397a2407bf37501f",
+      "source_bytes": 2015,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "catfix-final-product-iso.log",
+      "source_sha256": "121973d003a4baa61dcc7350e8c485976dbeed79daa5364e57a0b31b77f4f139",
+      "archive": "logs/cat-integrity-product-iso.log",
+      "archive_sha256": "c26999c23c9346d4ee588a1d09c16f5b738ff7a8f8c2b0d598ac1396970f8a61",
+      "source_bytes": 2006,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/REVIEW_V11_FOLLOWUP.md"
+      ],
+      "evidence_round": "cat-integrity-2026-10-19"
+    },
+    {
+      "source_name": "config.json",
+      "source_sha256": "bcd25471b646716c20b67ccdf8ddc80637fbfda7b87f771c7c6393f3ccfeb2b2",
+      "archive": "logs/release-perf-qemu-fb-config.log",
+      "archive_sha256": "bcd25471b646716c20b67ccdf8ddc80637fbfda7b87f771c7c6393f3ccfeb2b2",
+      "source_bytes": 903,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "results.json",
+      "source_sha256": "bd4798b1074a99c06f1786328d7b3877c348bffe8e1c5bbddb097418b98f9526",
+      "archive": "logs/release-perf-qemu-fb-results.log",
+      "archive_sha256": "bd4798b1074a99c06f1786328d7b3877c348bffe8e1c5bbddb097418b98f9526",
+      "source_bytes": 4507,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "diagnosis.json",
+      "source_sha256": "1de5c1943843a1613d2d80ef01ce5c1e24c6cf08fe90a32dfb8247f5446fbdd3",
+      "archive": "logs/release-perf-qemu-fb-diagnosis.log",
+      "archive_sha256": "1de5c1943843a1613d2d80ef01ce5c1e24c6cf08fe90a32dfb8247f5446fbdd3",
+      "source_bytes": 32547,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "numbers.log",
+      "source_sha256": "2839603f9be4ff3412549c3fa77d25526d879421cc346b7e9bd1812310706975",
+      "archive": "logs/release-perf-qemu-fb-numbers.log",
+      "archive_sha256": "2839603f9be4ff3412549c3fa77d25526d879421cc346b7e9bd1812310706975",
+      "source_bytes": 1112,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "workload-sha256.txt",
+      "source_sha256": "7747ed8c9dbd0cd9b7491903f69c883885e3eeac84256950722a8765a152ccfc",
+      "archive": "logs/release-perf-qemu-fb-workload-sha256.log",
+      "archive_sha256": "7747ed8c9dbd0cd9b7491903f69c883885e3eeac84256950722a8765a152ccfc",
+      "source_bytes": 232,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "smp1-serial.log",
+      "source_sha256": "c39e9eaa7714e9702555cae719f6d9ae3ce4c011df5383615f15a2a990b79680",
+      "archive": "logs/release-perf-qemu-fb-smp1-serial.log",
+      "archive_sha256": "70424b2c7027bf7516b23621d45b9dc3f941aeb4a9953635308f983ff65cbc4c",
+      "source_bytes": 958043,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19",
+      "archive_form": "ordered selected serial evidence; omissions explicitly stated in archive header"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "30960ee6a5f1d8ec26a08e9d81cf63d39b1085452cbe07174c6cd60d37b86fd2",
+      "archive": "logs/release-perf-qemu-fb-smp4-serial.log",
+      "archive_sha256": "c3b706fa03664c8bd632a1e0bf61e26e14152082be6d0c96ca70bfe91b178a04",
+      "source_bytes": 960195,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19",
+      "archive_form": "ordered selected serial evidence; omissions explicitly stated in archive header"
+    },
+    {
+      "source_name": "perfdiag-qemu-release-check.log",
+      "source_sha256": "16d2dea95f23a93382fedfbb4478383f4debcfb1c87c3e69cac5e9a18cc6de24",
+      "archive": "logs/release-perf-qemu-fb-check.log",
+      "archive_sha256": "16d2dea95f23a93382fedfbb4478383f4debcfb1c87c3e69cac5e9a18cc6de24",
+      "source_bytes": 522,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-qemu-analysis.log",
+      "source_sha256": "5cbaa2da4653c70711731a77cbbe955a389081256edcb71e74e2e617b79123af",
+      "archive": "logs/release-perf-qemu-fb-analysis.log",
+      "archive_sha256": "5cbaa2da4653c70711731a77cbbe955a389081256edcb71e74e2e617b79123af",
+      "source_bytes": 2265,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-qemu-release-run.log",
+      "source_sha256": "e940bbe85e66db3b2d2c7acdf96613e2e5d68dd68801098e11651720bfdd14d7",
+      "archive": "logs/release-perf-qemu-fb-run.log",
+      "archive_sha256": "e940bbe85e66db3b2d2c7acdf96613e2e5d68dd68801098e11651720bfdd14d7",
+      "source_bytes": 1201,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "config.json",
+      "source_sha256": "57113b2e33c9be727855f92ac03a02e6bfdabfc61b4bc805ce5baf5b56dc2771",
+      "archive": "logs/release-perf-qemu-serial-config.log",
+      "archive_sha256": "57113b2e33c9be727855f92ac03a02e6bfdabfc61b4bc805ce5baf5b56dc2771",
+      "source_bytes": 902,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "results.json",
+      "source_sha256": "34c81e15f49c52877fb19d66219648021a7f95abda85f512ed961babfa24e749",
+      "archive": "logs/release-perf-qemu-serial-results.log",
+      "archive_sha256": "34c81e15f49c52877fb19d66219648021a7f95abda85f512ed961babfa24e749",
+      "source_bytes": 2535,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "diagnosis.json",
+      "source_sha256": "64ed6b4533956853d0907b9fa95442c4993f3280c0a8a6f2130f3628aca93d02",
+      "archive": "logs/release-perf-qemu-serial-diagnosis.log",
+      "archive_sha256": "64ed6b4533956853d0907b9fa95442c4993f3280c0a8a6f2130f3628aca93d02",
+      "source_bytes": 11663,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "numbers.log",
+      "source_sha256": "bf56beb26d44c33a8b4cec569a52e1b0c36f2d01a0ff63d3961f87334cb69314",
+      "archive": "logs/release-perf-qemu-serial-numbers.log",
+      "archive_sha256": "bf56beb26d44c33a8b4cec569a52e1b0c36f2d01a0ff63d3961f87334cb69314",
+      "source_bytes": 557,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "workload-sha256.txt",
+      "source_sha256": "7747ed8c9dbd0cd9b7491903f69c883885e3eeac84256950722a8765a152ccfc",
+      "archive": "logs/release-perf-qemu-serial-workload-sha256.log",
+      "archive_sha256": "7747ed8c9dbd0cd9b7491903f69c883885e3eeac84256950722a8765a152ccfc",
+      "source_bytes": 232,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "smp1-serial.log",
+      "source_sha256": "566a78ec2e05afd50eb77bec93024327ba5cde66e70588fb07512f988246181c",
+      "archive": "logs/release-perf-qemu-serial-smp1-serial.log",
+      "archive_sha256": "8f28939ec1975a005cc0fa6995d5e15eb1af833e0e312ca4ac8046fa93b88ade",
+      "source_bytes": 635895,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19",
+      "archive_form": "ordered selected serial evidence; omissions explicitly stated in archive header"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "fd67d475ceacb8b4797924852fb719babd9b25f3539473009b948bc4faeac3a1",
+      "archive": "logs/release-perf-qemu-serial-smp4-serial.log",
+      "archive_sha256": "a35d1c693cabea036d478649333b5a22447e0268e71f0a59c2aa48ad6497170e",
+      "source_bytes": 637794,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19",
+      "archive_form": "ordered selected serial evidence; omissions explicitly stated in archive header"
+    },
+    {
+      "source_name": "perfdiag-qemu-serial-check.log",
+      "source_sha256": "d63370ba19d20bc5e738c361632c664046df1bbfea218d5711db97f28e8765ec",
+      "archive": "logs/release-perf-qemu-serial-check.log",
+      "archive_sha256": "d63370ba19d20bc5e738c361632c664046df1bbfea218d5711db97f28e8765ec",
+      "source_bytes": 523,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-qemu-serial-analysis.log",
+      "source_sha256": "810e82ca17752a5575cf1f849354cff8ec9e010fd14712f65f894a178ec0bf77",
+      "archive": "logs/release-perf-qemu-serial-analysis.log",
+      "archive_sha256": "810e82ca17752a5575cf1f849354cff8ec9e010fd14712f65f894a178ec0bf77",
+      "source_bytes": 2000,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-qemu-serial-run.log",
+      "source_sha256": "fb880e0523795927d07e6fba59b924d9f6ca7a04ac462bd881411e4edefeb599",
+      "archive": "logs/release-perf-qemu-serial-run.log",
+      "archive_sha256": "fb880e0523795927d07e6fba59b924d9f6ca7a04ac462bd881411e4edefeb599",
+      "source_bytes": 646,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "config.json",
+      "source_sha256": "9676489a1ce65462b25afbd15e4e3d879e6e3025d70705657b8d268bdfd1245e",
+      "archive": "logs/release-perf-vbox-fb-config.log",
+      "archive_sha256": "9676489a1ce65462b25afbd15e4e3d879e6e3025d70705657b8d268bdfd1245e",
+      "source_bytes": 908,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "results.json",
+      "source_sha256": "3531a931cd49b12d096d5b0cdef2d7f269ad541c3b900a725ee86971b58427a9",
+      "archive": "logs/release-perf-vbox-fb-results.log",
+      "archive_sha256": "3531a931cd49b12d096d5b0cdef2d7f269ad541c3b900a725ee86971b58427a9",
+      "source_bytes": 4503,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "diagnosis.json",
+      "source_sha256": "bbe672e55225cc3051598a8dd52ce0816d770d1646d76f3fcef4ad9bcc0c400d",
+      "archive": "logs/release-perf-vbox-fb-diagnosis.log",
+      "archive_sha256": "bbe672e55225cc3051598a8dd52ce0816d770d1646d76f3fcef4ad9bcc0c400d",
+      "source_bytes": 32611,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "numbers.log",
+      "source_sha256": "d7044a18d4317df22b553b03363316a552e40d81608bdb9d8c6428aa670e7823",
+      "archive": "logs/release-perf-vbox-fb-numbers.log",
+      "archive_sha256": "d7044a18d4317df22b553b03363316a552e40d81608bdb9d8c6428aa670e7823",
+      "source_bytes": 1112,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "workload-sha256.txt",
+      "source_sha256": "7747ed8c9dbd0cd9b7491903f69c883885e3eeac84256950722a8765a152ccfc",
+      "archive": "logs/release-perf-vbox-fb-workload-sha256.log",
+      "archive_sha256": "7747ed8c9dbd0cd9b7491903f69c883885e3eeac84256950722a8765a152ccfc",
+      "source_bytes": 232,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "smp1-serial.log",
+      "source_sha256": "e5b2dde8f63c461c801e5954bc0116115b524dd27889c2975909848465d2caee",
+      "archive": "logs/release-perf-vbox-fb-smp1-serial.log",
+      "archive_sha256": "b0b1b9dd92542e7430bbb5b108c1b8f5a63c83f07bf0bf88bda0c48863855f35",
+      "source_bytes": 958373,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19",
+      "archive_form": "ordered selected serial evidence; omissions explicitly stated in archive header"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "00db75ff49a4177b105f4d4af35116c0a588e65c651ae88af6dc5ec973483b07",
+      "archive": "logs/release-perf-vbox-fb-smp4-serial.log",
+      "archive_sha256": "911b3a6f0435eb2511538955ee6f41bec766ce2badee4f13443b92c1882ec246",
+      "source_bytes": 960558,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19",
+      "archive_form": "ordered selected serial evidence; omissions explicitly stated in archive header"
+    },
+    {
+      "source_name": "perfdiag-vbox-release-check.log",
+      "source_sha256": "ea4156c801760890a63646c71aff60ba16553614df698d29dcdcc013effaf255",
+      "archive": "logs/release-perf-vbox-fb-check.log",
+      "archive_sha256": "ea4156c801760890a63646c71aff60ba16553614df698d29dcdcc013effaf255",
+      "source_bytes": 522,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-vbox-release-analysis.log",
+      "source_sha256": "6e3e8e076dfbf92a0a7e2be9b5db9bb7b8db5b8226247fce22ff5bafa3975f98",
+      "archive": "logs/release-perf-vbox-fb-analysis.log",
+      "archive_sha256": "6e3e8e076dfbf92a0a7e2be9b5db9bb7b8db5b8226247fce22ff5bafa3975f98",
+      "source_bytes": 2274,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-vbox-release-run.log",
+      "source_sha256": "81e8b331fef877c0d466cafead9c002d1e8cebdaf91e9be8f10f70485c3dbedc",
+      "archive": "logs/release-perf-vbox-fb-run.log",
+      "archive_sha256": "81e8b331fef877c0d466cafead9c002d1e8cebdaf91e9be8f10f70485c3dbedc",
+      "source_bytes": 1201,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "config.json",
+      "source_sha256": "bb9460af0c3070f53748a65e57275ff6099393a57b00d19a3e799086daa99ae8",
+      "archive": "logs/release-perf-vbox-serial-config.log",
+      "archive_sha256": "bb9460af0c3070f53748a65e57275ff6099393a57b00d19a3e799086daa99ae8",
+      "source_bytes": 907,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "results.json",
+      "source_sha256": "36d70a4a8005813190ed3afaa7baccc1fd50b01b8e4bba523ee42a71a90b5610",
+      "archive": "logs/release-perf-vbox-serial-results.log",
+      "archive_sha256": "36d70a4a8005813190ed3afaa7baccc1fd50b01b8e4bba523ee42a71a90b5610",
+      "source_bytes": 2530,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "diagnosis.json",
+      "source_sha256": "619fa3350fb4e32dbd81740dadd8a5e665ed391c54ea35280117b986f458c077",
+      "archive": "logs/release-perf-vbox-serial-diagnosis.log",
+      "archive_sha256": "619fa3350fb4e32dbd81740dadd8a5e665ed391c54ea35280117b986f458c077",
+      "source_bytes": 11688,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "numbers.log",
+      "source_sha256": "adea9b787700728330fb6246ec3b84b08556fa34d185db7d2af9aa99fd5a2e8d",
+      "archive": "logs/release-perf-vbox-serial-numbers.log",
+      "archive_sha256": "adea9b787700728330fb6246ec3b84b08556fa34d185db7d2af9aa99fd5a2e8d",
+      "source_bytes": 556,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "workload-sha256.txt",
+      "source_sha256": "7747ed8c9dbd0cd9b7491903f69c883885e3eeac84256950722a8765a152ccfc",
+      "archive": "logs/release-perf-vbox-serial-workload-sha256.log",
+      "archive_sha256": "7747ed8c9dbd0cd9b7491903f69c883885e3eeac84256950722a8765a152ccfc",
+      "source_bytes": 232,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "smp1-serial.log",
+      "source_sha256": "83d66a4377f5b5a40b7c1ac174d2e30333152bac4893cf50c7976c8322c33dd8",
+      "archive": "logs/release-perf-vbox-serial-smp1-serial.log",
+      "archive_sha256": "ccb26c56fb5db4d2cefbda722920814c3be82e2d12898fd1b792e86c7add1328",
+      "source_bytes": 636304,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19",
+      "archive_form": "ordered selected serial evidence; omissions explicitly stated in archive header"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "04db5054323129de93e1b0016b64006d0c7aacdb3edfb202c2ce7a205847dbc8",
+      "archive": "logs/release-perf-vbox-serial-smp4-serial.log",
+      "archive_sha256": "2aaaccfcc9c8a63565e03f15d7143ba2e2c19b217fc44fc4f1f7d4b40350d760",
+      "source_bytes": 638608,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19",
+      "archive_form": "ordered selected serial evidence; omissions explicitly stated in archive header"
+    },
+    {
+      "source_name": "perfdiag-vbox-serial-check.log",
+      "source_sha256": "52ba90ac7302aa14163f53cbca2f49d3771c7fd577ee645b176928be9aa4373e",
+      "archive": "logs/release-perf-vbox-serial-check.log",
+      "archive_sha256": "52ba90ac7302aa14163f53cbca2f49d3771c7fd577ee645b176928be9aa4373e",
+      "source_bytes": 522,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-vbox-serial-analysis.log",
+      "source_sha256": "650fdd43e15dd6865bc16fb7ae3ba6020b084bddf400ee31b3279ec4ef2a3a6f",
+      "archive": "logs/release-perf-vbox-serial-analysis.log",
+      "archive_sha256": "650fdd43e15dd6865bc16fb7ae3ba6020b084bddf400ee31b3279ec4ef2a3a6f",
+      "source_bytes": 2001,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-vbox-serial-final-run.log",
+      "source_sha256": "4df857e1a20fa65a2da95616522c13c9cc33c42e9ffa6ab8ef68779b37a83069",
+      "archive": "logs/release-perf-vbox-serial-run.log",
+      "archive_sha256": "4df857e1a20fa65a2da95616522c13c9cc33c42e9ffa6ab8ef68779b37a83069",
+      "source_bytes": 645,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-release-kernel.log",
+      "source_sha256": "fb858e579f0766a91e89f4490be8a571cb22ab15889ea5b182768bcc692c6a8a",
+      "archive": "logs/release-perf-kernel.log",
+      "archive_sha256": "fb858e579f0766a91e89f4490be8a571cb22ab15889ea5b182768bcc692c6a8a",
+      "source_bytes": 2365,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-release-hosted.log",
+      "source_sha256": "70d347bc9245bbb4c38664bf4695360d852430b4b4cfb9f60440a1d21ec2e266",
+      "archive": "logs/release-perf-hosted-on.log",
+      "archive_sha256": "70d347bc9245bbb4c38664bf4695360d852430b4b4cfb9f60440a1d21ec2e266",
+      "source_bytes": 86950,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-hosted-off.log",
+      "source_sha256": "a3cd834b87bce287a37766bab99bda2f6c0ebcb674c0fcef15f516f5aa8a41cd",
+      "archive": "logs/release-perf-hosted-off.log",
+      "archive_sha256": "a3cd834b87bce287a37766bab99bda2f6c0ebcb674c0fcef15f516f5aa8a41cd",
+      "source_bytes": 61868,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-debug.log",
+      "source_sha256": "f8b4f12fe9337f61cb0fa8c0b7fa23df4d3e2c8e13ded2a49e80f849b127be98",
+      "archive": "logs/release-perf-debug.log",
+      "archive_sha256": "51e90a17bdd69c9ef315e6f5b81fcdc0edc62786772f157af7c42004d487afa7",
+      "source_bytes": 219140,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-numa.log",
+      "source_sha256": "9676e86aad41dc22c1b34040aaf29b3c2a4bc07c16340ea57a4a1a276b87a958",
+      "archive": "logs/release-perf-numa.log",
+      "archive_sha256": "6095dcfb76101bb4bf3de7b27fdcc48d900a8e33b5eb79085f272f627677a2de",
+      "source_bytes": 215082,
+      "full_selftest_pass_marker": true,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-debug-iso.log",
+      "source_sha256": "65c58c451919542c588950d7c2933675ad476b890b44cd553b7b189a34edfeaa",
+      "archive": "logs/release-perf-debug-iso.log",
+      "archive_sha256": "39a42caee02ec16e355dfa63b2abbed31615b84979244d2198af7f28c67ef314",
+      "source_bytes": 2017,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-product-iso.log",
+      "source_sha256": "d151264ffd10fd5882fa83680868e889699e47c28a13209066ff2aa380f3acea",
+      "archive": "logs/release-perf-product-iso.log",
+      "archive_sha256": "cdf50b4f67511b441ab94298b77f3210fe49a0e59262656d527b63da78413593",
+      "source_bytes": 2006,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-observation-hosted.log",
+      "source_sha256": "ab7f619ea66d47ed16b828e97f83acbbc2405348d115a9f1fea56560ce70e609",
+      "archive": "logs/release-perf-observation-hosted.log",
+      "archive_sha256": "ab7f619ea66d47ed16b828e97f83acbbc2405348d115a9f1fea56560ce70e609",
+      "source_bytes": 130,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-observation-qemu.log",
+      "source_sha256": "04defe13ad34060cef8dfce04d487b7dfeeabf58e237065fb6d1780676fb5442",
+      "archive": "logs/release-perf-observation-qemu.log",
+      "archive_sha256": "04defe13ad34060cef8dfce04d487b7dfeeabf58e237065fb6d1780676fb5442",
+      "source_bytes": 103,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-observation-numa.log",
+      "source_sha256": "04defe13ad34060cef8dfce04d487b7dfeeabf58e237065fb6d1780676fb5442",
+      "archive": "logs/release-perf-observation-numa.log",
+      "archive_sha256": "04defe13ad34060cef8dfce04d487b7dfeeabf58e237065fb6d1780676fb5442",
+      "source_bytes": 103,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-summary.log",
+      "source_sha256": "f3d447c5b03776c2e5a6926dfbd88b47fc4b25542e1d0f5c669cf80976753d07",
+      "archive": "logs/release-perf-summary.log",
+      "archive_sha256": "f3d447c5b03776c2e5a6926dfbd88b47fc4b25542e1d0f5c669cf80976753d07",
+      "source_bytes": 1050,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-identities.log",
+      "source_sha256": "6eed880c3f205ede6891389744543c14dbc2a454fdd4e2f8e67df3b52474507b",
+      "archive": "logs/release-perf-identities.log",
+      "archive_sha256": "a883bd00fbbb3c34dd9f9ab72c8a512fcba4edf396cd2b29eab2b153d71beeb2",
+      "source_bytes": 2127,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "perfdiag-qemu-run.log",
+      "source_sha256": "a37f5cfd3fa41a7194c5c3dcdf16968ecde5cf13d7cb5c949d34a0fe20f8c003",
+      "archive": "logs/release-perf-failed-timer-run.log",
+      "archive_sha256": "55ed9a43941ba513c5d9c511180a4733819ba38b7749e3afc322232599c08e96",
+      "source_bytes": 1057,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "smp1-serial.log",
+      "source_sha256": "f879a605248d93b6fe30ce56fd62806a067e52077ba4b60432bfb2be62e5bfc4",
+      "archive": "logs/release-perf-failed-timer-serial.log",
+      "archive_sha256": "723390da85d339267919ed0e0b20b33324fc520d41194ad954927f77afe3d18a",
+      "source_bytes": 26635,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19",
+      "archive_form": "ordered selected serial evidence; omissions explicitly stated in archive header"
+    },
+    {
+      "source_name": "perfdiag-qemu-final-run.log",
+      "source_sha256": "d50363796838232e8753b9b82fed641da5f613999e4c7f16f8b462211f25c0a1",
+      "archive": "logs/release-perf-failed-hush-run.log",
+      "archive_sha256": "38982443334f64a899bb6eddf4c27e7266aaba02aa38a33c9a45e0a0f26de18f",
+      "source_bytes": 1468,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
+    },
+    {
+      "source_name": "smp4-serial.log",
+      "source_sha256": "e5a975fc0da00db2746a7ac374501a35aa4426e962422ecf93eded478350f11a",
+      "archive": "logs/release-perf-failed-hush-serial.log",
+      "archive_sha256": "93c7b5ecdb37c6589cb19ea48cf7beff9994911036d5b9c6c9557c8255a38a6c",
+      "source_bytes": 958614,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19",
+      "archive_form": "ordered selected serial evidence; omissions explicitly stated in archive header"
+    },
+    {
+      "source_name": "perfdiag-vbox-serial-run.log",
+      "source_sha256": "8d5b2aae8af7b0f9f8236137bbab4f612da20bc93a58484cf3c4c122365a776c",
+      "archive": "logs/release-perf-failed-vbox-setup.log",
+      "archive_sha256": "7bd95f1e1e949fcbb8990bbb286ce9e3b4072091a872a3544ed6d8ac8000c43f",
+      "source_bytes": 1676,
+      "full_selftest_pass_marker": false,
+      "documents": [
+        "docs/RELEASE_PERF_DIAGNOSTICS.md"
+      ],
+      "evidence_round": "release-perf-observation-2026-10-19"
     }
   ]
 }

@@ -1,4 +1,5 @@
 #include "capmix/power.h"
+#include "capmix/abi.h"
 #include "capmix/arch.h"
 #include "capmix/klog.h"
 #include <string.h>
@@ -196,6 +197,7 @@ void cm_power_init(void)
 }
 void cm_poweroff(void)
 {
+    cm_linux_enosys_dump("poweroff",NULL);
 #ifdef CAPMIX_HOSTED
     kinfo("poweroff skipped: hosted has no hardware; no halt executed");
 #else

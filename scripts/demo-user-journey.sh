@@ -1,4 +1,6 @@
 #!/bin/sh
+# Product shell: hello; cat /example.txt; httpd 8080 2 &.
+# Explicit paths/console: run /bin/hello.faz; run -i /bin/nc.faz HOST PORT.
 # Product journey only: no kernel changes, no ISO required after prepare.
 set -eu
 repo=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -21,6 +23,7 @@ case "$action" in
     python3 scripts/install-disk.py "$lab/system.img"
     printf 'CapMix disposable product journey v1\n' > "$lab/.capmix-user-journey"
     echo "prepared: $lab/system.img; Linux OFF; boot without ISO"
+    echo 'guest commands: hello; cat /example.txt; httpd 8080 2 & (see docs/USER_JOURNEY.md)'
     ;;
  qemu|linux-on|linux-off|status|check-qemu|check-vbox)
     [ -f "$lab/.capmix-user-journey" ] && [ -f "$lab/system.img" ] || {

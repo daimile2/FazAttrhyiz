@@ -488,3 +488,14 @@ build/perf-verify.faz: tests/perf_verify.c sdk/crt0.S sdk/capmix.ld sdk/include/
 # Native release suffix; payload remains the native ELF ABI.
 build/%.faz: build/%.elf
 	cp $< $@
+
+# Optional binary-copy regression probe (not product provisioning).
+build/copy-verify.faz: tests/copy_verify.c sdk/crt0.S sdk/capmix.ld sdk/include/capmix.h
+	@mkdir -p build
+	$(CC) -std=c11 -Wall -Wextra -O2 -static -nostdlib -no-pie -ffreestanding -fno-builtin -fno-pie -fno-stack-protector -mno-red-zone -mgeneral-regs-only -fno-asynchronous-unwind-tables -Isdk/include -Wl,--build-id=none,-z,max-page-size=0x1000,-T,sdk/capmix.ld -o $@ sdk/crt0.S $<
+
+# Diagnostic wrapper; does not replace any pinned fixture.
+build/perf-hush-timer.elf: tests/perf_hush_timer.c tests/linux_l3_start.S tests/linux_l3.ld scripts/mark-linux.py
+	@mkdir -p build
+	$(CC) -std=c11 -Os -Wall -Wextra -ffreestanding -fno-builtin -fno-stack-protector -fno-pie -mno-red-zone -mgeneral-regs-only -nostdlib -static -no-pie -Wl,--build-id=none,-z,max-page-size=0x1000,-T,tests/linux_l3.ld -o $@ tests/linux_l3_start.S $<
+	python3 scripts/mark-linux.py $@

@@ -1,0 +1,33 @@
+shell protocol: seq=1 status=0 boundaries=verified
+shell protocol: seq=2 status=-7 boundaries=verified
+shell protocol: seq=3 status=-6 boundaries=verified
+shell protocol: seq=4 status=0 boundaries=verified
+shell protocol: seq=5 status=0 boundaries=verified
+shell protocol: seq=6 status=0 boundaries=verified
+shell protocol: seq=7 status=0 boundaries=verified
+shell protocol: seq=8 status=0 boundaries=verified
+shell protocol: seq=9 status=-12 boundaries=verified
+shell protocol: seq=10 status=-7 boundaries=verified
+shell protocol: seq=11 status=-12 boundaries=verified
+shell protocol: seq=12 status=0 boundaries=verified
+shell protocol: seq=13 status=0 boundaries=verified
+shell protocol: seq=14 status=0 boundaries=verified
+journey qemu native: poweroff=ok no-ISO root=disk
+shell protocol: seq=1 status=0 boundaries=verified
+shell protocol: seq=2 status=0 boundaries=verified
+shell protocol: seq=3 status=0 boundaries=verified
+shell protocol: seq=4 status=0 boundaries=verified
+shell protocol: seq=5 status=0 boundaries=verified
+shell protocol: seq=6 status=0 boundaries=verified
+shell protocol: seq=7 status=0 boundaries=verified
+shell protocol: seq=8 status=0 boundaries=verified
+shell protocol: seq=9 status=0 boundaries=verified
+journey qemu linux: poweroff=ok no-ISO root=disk
+shell protocol: seq=1 status=0 boundaries=verified
+binary cat copy: PASS 3 ELF copies + 2 all-byte 65536B copies, cold-boot verified
+shell protocol: seq=2 status=0 boundaries=verified
+shell protocol: seq=3 status=0 boundaries=verified
+shell protocol: seq=4 status=-7 boundaries=verified
+shell protocol: seq=5 status=0 boundaries=verified
+journey qemu disabled: poweroff=ok no-ISO root=disk
+user journey qemu: PASS (3 cold boots, no ISO, native -> offline Linux -> MicroPython -> native HTTP200 -> disabled/native retained)

@@ -1,0 +1,4 @@
+copy_verify.c bytes=1032 sha256=dc22fbd5f075c2404d7a6e9d42b04ff0cb4f1151991947096928fc666b764f50
+copy-verify.faz bytes=8904 sha256=187d19bc6060519f7fc64794e7db41747cb22d39048ac4c2cccb4297dfe5244c
+copy-input.bin bytes=65536 sha256=7daca2095d0438260fa849183dfc67faa459fdf4936e1bc91eec6b281b27e4c2
+copy-input.bin recipe: bytes(range(256))*256; all 256 byte values repeated 256 times.

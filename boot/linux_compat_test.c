@@ -53,6 +53,11 @@ int cm_linux_compat_selftest(void)
     cm_linux_enosys_snapshot(after);
     CHECK(after[41]==before[41]+1 && after[512]==before[512]+1 && p->linux_enosys==2);
     CHECK(after[13]==before[13] && after[14]==before[14]);
+    for(unsigned i=0;i<CM_LINUX_ENOSYS_LOG_LIMIT+3;i++)CHECK(cm_linux_dispatch(511,0,0,0,0)==-38);
+    cm_linux_enosys_snapshot(after);
+    CHECK(after[511]==before[511]+CM_LINUX_ENOSYS_LOG_LIMIT+3);
+    CHECK(p->linux_enosys==CM_LINUX_ENOSYS_LOG_LIMIT+5);
+    kinfo("linux ENOSYS budget: text=%u histogram nr=511 count=%u beyond-budget verified",CM_LINUX_ENOSYS_LOG_LIMIT,CM_LINUX_ENOSYS_LOG_LIMIT+3);
     cm_linux_enosys_dump("negative",before);
     kinfo("linux compat accounting: helper nr=41 + unknown overflow counted once verified");
     kinfo("linux compat nr=13/14: mask/action/copy/errno verified; handlers=EOPNOTSUPP delivery=SIGCHLD-only");

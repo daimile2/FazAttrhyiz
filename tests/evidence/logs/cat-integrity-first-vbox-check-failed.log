@@ -1,0 +1,14 @@
+shell protocol: seq=1 status=0 boundaries=verified
+shell protocol: seq=2 status=-7 boundaries=verified
+shell protocol: seq=3 status=-6 boundaries=verified
+shell protocol: seq=4 status=0 boundaries=verified
+Traceback (most recent call last):
+  File "<repo>/tests/check_user_journey.py", line 208, in <module>
+    command('cat < /bin/shell.faz > /copy-stdin.faz','shell redirect committed: status=0')
+  File "<repo>/tests/check_user_journey.py", line 93, in command
+    offset=len(text());input_fn() if input_fn else send(cmd)
+                                                   ^^^^^^^^^
+  File "<repo>/tests/check_user_journey.py", line 86, in send
+    shift=c in '>&' or c.isupper();key=0x34 if c=='>' else 0x08 if c=='&' else codes[c.lower()]
+                                                                               ~~~~~^^^^^^^^^^^
+KeyError: '<'

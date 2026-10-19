@@ -1,0 +1,5 @@
+PERF_SUMMARY date=2026-10-19T15:13:00+00:00 backend=qemu smp=1 nic=e1000 linux=1 workers=1 concurrency=1 samples=2 http_rps_median=8.448 hush_KiBps_median=27.63 verified=1
+LATENCY smp=1 p50_ms=117.768 p95_ms=125.289
+PERF_SUMMARY date=2026-10-19T15:13:00+00:00 backend=qemu smp=4 nic=e1000 linux=1 workers=1 concurrency=1 samples=2 http_rps_median=8.326 hush_KiBps_median=68.43 verified=1
+LATENCY smp=4 p50_ms=119.598 p95_ms=123.915
+performance evidence: PASS (read-only arithmetic/CPU/payload assertions, no VMs launched)

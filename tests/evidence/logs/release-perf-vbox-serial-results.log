@@ -1,0 +1,101 @@
+{
+  "config": {
+    "serial_only": true,
+    "diagnose": true,
+    "date": "2026-10-19T15:26:57+00:00",
+    "backend": "vbox",
+    "cpus": [
+      1,
+      4
+    ],
+    "memory_mib": 512,
+    "nic": "e1000",
+    "disk": "AHCI/no-ISO",
+    "linux": 1,
+    "linux_interp": 0,
+    "chipset": "piix3",
+    "e1000_irq": "auto",
+    "http_only": false,
+    "workers": 1,
+    "concurrency": 1,
+    "samples": 1,
+    "http_requests": 4,
+    "http_warmup": 8,
+    "pipes": 32,
+    "pipe_bytes": 6000,
+    "pipe_total_bytes": 192000,
+    "vbox_carrier_setup_wait_seconds": 6,
+    "clock": "host perf_counter, wall time",
+    "host_platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+    "git_revision": "8062b2a91b638efc85305b8d1a78289a06fe167b",
+    "qemu_cpu": "host",
+    "qemu_accel": "kvm",
+    "qemu": "QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)",
+    "vbox": "7.2.20r175154",
+    "kernel_sha256": "34ba2a780d8bae3c0ceb1be0b4b90e9b0579f7b92654f7de2245b39007a2b065"
+  },
+  "samples": [
+    {
+      "date": "2026-10-19T15:26:57+00:00",
+      "backend": "vbox",
+      "smp": 1,
+      "nic": "e1000",
+      "linux": 1,
+      "sample": 1,
+      "http_requests": 4,
+      "http_seconds": 0.4778670569648966,
+      "http_rps": 8.370528877645219,
+      "http_latency_ms": [
+        121.42275099176913,
+        123.215805971995,
+        117.1872440027073,
+        115.9805590286851
+      ],
+      "http_p50_ms": 119.30499749723822,
+      "http_p95_ms": 123.215805971995,
+      "client_peak": 1,
+      "worker_placements": [
+        {
+          "worker": 1,
+          "pid": 3,
+          "cpu": 0,
+          "port": 8080
+        }
+      ],
+      "hush_bytes": 192000,
+      "hush_seconds": 3.733197584049776,
+      "hush_Bps": 51430.44151221115
+    },
+    {
+      "date": "2026-10-19T15:26:57+00:00",
+      "backend": "vbox",
+      "smp": 4,
+      "nic": "e1000",
+      "linux": 1,
+      "sample": 1,
+      "http_requests": 4,
+      "http_seconds": 0.4616217860020697,
+      "http_rps": 8.665102300830458,
+      "http_latency_ms": [
+        116.60813307389617,
+        117.78524797409773,
+        113.03520109504461,
+        114.11648790817708
+      ],
+      "http_p50_ms": 115.36231049103662,
+      "http_p95_ms": 117.78524797409773,
+      "client_peak": 1,
+      "worker_placements": [
+        {
+          "worker": 1,
+          "pid": 3,
+          "cpu": 0,
+          "port": 8080
+        }
+      ],
+      "hush_bytes": 192000,
+      "hush_seconds": 2.966601563966833,
+      "hush_Bps": 64720.52139798123
+    }
+  ]
+}

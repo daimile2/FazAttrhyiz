@@ -314,3 +314,15 @@ pipe/UDP排队后跨CPU读回；有网卡时真实TCP连接保持，CPU0/1收发
 ## FazAttrhyiz 更名与 .faz（2026-10-19）
 
 [范围与矩阵](../../docs/FAZATTRHYIZ.md)：[hosted](logs/fazattrhyiz-hosted.log)、[QEMU Linux 全量](logs/fazattrhyiz-linux-debug.log)、[QEMU 产品](logs/fazattrhyiz-qemu-check.log)、[VBox 产品](logs/fazattrhyiz-vbox-check.log)。产品验证 `.faz` 与兼容 `.elf`、HTTP、新提示符及无 ISO 冷启动。历史记录不改名。
+
+## 短命令旅程（2026-10-19）
+
+[范围与矩阵](../../docs/SHELL.md#短命令旅程增量验收2026-10-19)：[QEMU](logs/short-commands-qemu-check.log)、[VBox](logs/short-commands-vbox-check.log)、[hosted 全量](logs/short-commands-hosted.log)。三次无 ISO 冷启动覆盖短命令、显式 run、重定向、MicroPython 开关、HTTP200、拒绝与关机。
+
+## cat 数据完整性与 v11 评审（2026-10-19）
+
+[核对/范围/矩阵](../../docs/REVIEW_V11_FOLLOWUP.md)：[QEMU复制及旅程](logs/cat-integrity-qemu-check.log)、[VBox复制及旅程](logs/cat-integrity-vbox-check.log)、[hosted开](logs/cat-integrity-hosted-on.log)、[hosted关](logs/cat-integrity-hosted-off.log)。二进制逐字节比较与冷启动验证，失败检查器日志也保留。
+
+## 发布前性能分解与观测（2026-10-19）
+
+[方法/完整矩阵](../../docs/RELEASE_PERF_DIAGNOSTICS.md)：[QEMU FB](logs/release-perf-qemu-fb-analysis.log)、[QEMU无GPU](logs/release-perf-qemu-serial-analysis.log)、[VBox FB](logs/release-perf-vbox-fb-analysis.log)、[VBox无GPU](logs/release-perf-vbox-serial-analysis.log)。本轮名称带 `-serial.log` 的档案为**显式标注的有序关键行选录**，不是全文；`archive_form`和文件头列明省略重复行并记录完整原文件SHA。JSON数值与失败检查器日志保留完整文本，不套用本索引早期“全部串口全文归档”的描述。

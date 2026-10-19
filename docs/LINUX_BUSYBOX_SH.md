@@ -92,7 +92,7 @@ Pipe首版语义：
 - 13/14现有有限元数据支持，详见 [ENOSYS兼容范围](LINUX_ENOSYS.md)。
   不提供SIGCHLD处理器执行、信号投递、trap、Ctrl-C、作业控制或futex/线程。
   固定七组脚本现要求ENOSYS=0；自定义handler仍明确EOPNOTSUPP。
-  单进程日志前8次限流，但按号汇总不再受限流影响。
+  单进程日志前32次限流，但按号汇总不再受限流影响。
 - cwd仍固定`/`，没有新增chdir、完整access/权限检查、symlink、/proc/self/exe、文件mmap或动态链接。
   本轮不承诺cd、任意脚本、shell交互会话、通用glibc或真实ld.so。
 - Linux execve只接Linux persona ELF。不要从hush直接exec原生CapMix `.elf`；使用

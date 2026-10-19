@@ -82,3 +82,7 @@ Linux多CPU、AP创建/fork/回收与CPU查询：[LINUX_SMP](LINUX_SMP.md)。
 有界Linux clone线程、futex与固定黄金探针：[LINUX_THREADS](LINUX_THREADS.md)。
 
 系统现名 **FazAttrhyiz**（原 CapMix），原生发布后缀为 **`.faz`**。旧路径、SDK/ABI 标识和安装布局的兼容策略见 [更名说明](FAZATTRHYIZ.md)。
+
+外部评审核对、cat 二进制复制修复与尚未关闭项：[v11 跟进](REVIEW_V11_FOLLOWUP.md)。
+
+发布前性能与观测：[HTTP/hush对照、干净构建、ENOSYS关机汇总](RELEASE_PERF_DIAGNOSTICS.md)。

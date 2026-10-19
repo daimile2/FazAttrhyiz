@@ -1,4 +1,5 @@
 #include "capmix/proc.h"
+#include "capmix/arch.h"
 #include "capmix/boot.h"
 #include "capmix/cap_internal.h"
 #include "capmix/io.h"
@@ -569,7 +570,28 @@ cm_error_t cm_posix_spawn(const cm_spawn_attr_t *a,cm_id_t *pid)
     cm_irq_restore(f);return e;
 }
 int64_t cm_linux_fork(void)
-{uint64_t f;if(!lifecycle_enter(&f))return -11;int64_t e=linux_fork();lifecycle_leave(f);return e;}
+{
+    /* Gate contention is not resource exhaustion. No gate/IRQ lock spans yield.
+     * Keep admission bounded; once admitted, allocation errors are not retried. */
+    #ifndef CAPMIX_HOSTED
+    uint64_t hz=cm_tsc_hz(),until=cm_rdtsc()+hz/10;
+#endif
+    for(unsigned attempts=0;attempts<64;attempts++) {
+        uint64_t f;
+        if(lifecycle_enter(&f)) {
+            int64_t e=linux_fork();lifecycle_leave(f);
+            if(attempts)kinfo("linux fork admission: gate_retries=%u result=%lld",attempts,(long long)e);
+            return e;
+        }
+#ifdef CAPMIX_HOSTED
+        break;
+#else
+        if(!hz || cm_rdtsc()>=until)break;
+        cm_sched_yield();cm_usermode_resume_entry();
+#endif
+    }
+    return -11;
+}
 cm_error_t cm_proc_release_elf(cm_id_t pid)
 {uint64_t f;if(!lifecycle_enter(&f))return CM_ERR_BUSY;cm_error_t e=release_elf(pid);lifecycle_leave(f);return e;}
 cm_error_t cm_proc_release_child(cm_id_t parent,cm_id_t child)

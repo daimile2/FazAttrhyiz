@@ -63,6 +63,7 @@ int64_t cm_linux_errno(int64_t e)
     case CM_ERR_BUSY:return -16;
     case CM_ERR_DENIED:return -13;
     case CM_ERR_AGAIN:return -11;
+    case CM_ERR_DEAD:return -104; /* ECONNRESET, consistent with socket translation. */
     case CM_ERR_NOMEM:case CM_ERR_OVERCOMMIT:return -12;
     case CM_ERR_NOSPC:return -28;
     case CM_ERR_NOENT:return -2;
@@ -201,7 +202,7 @@ int64_t cm_linux_dispatch(uint32_t nr,uint64_t a,uint64_t b,uint64_t c,uint64_t 
     if(result==-38 && p && p->abi==CM_ABI_LINUX) {
         __atomic_fetch_add(&enosys[nr<512?nr:512],1,__ATOMIC_RELAXED);
         p->linux_enosys++;
-        if(p->linux_enosys<=8)kinfo("linux ENOSYS: pid=%llu nr=%u count=%llu",(unsigned long)p->pid,nr,(unsigned long)p->linux_enosys);
+        if(p->linux_enosys<=CM_LINUX_ENOSYS_LOG_LIMIT)kinfo("linux ENOSYS: pid=%llu nr=%u count=%llu",(unsigned long)p->pid,nr,(unsigned long)p->linux_enosys);
     }
     return result;
 }

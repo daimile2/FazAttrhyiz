@@ -1,0 +1,201 @@
+[INF] boot mode: product (Limine cmdline snapshot)
+[INF] req: mmap=0xffff80001ff4b000 hhdm=0xffff80001ff38000 kaddr=0xffff80001ff3d000
+[INF] kaddr: phys=1f0dc000 virt=ffffffff80000000 size=10358784 (excluded from buddy)
+[INF] limine: usable phys=100000 pages=126908 hhdm=ffff800000000000 → buddy virt=ffff800000110000 n=16384
+[INF] gdt: lgdt + ltr 0x30 cpu=0 ist1=0xffffffff8008d000 ist2=0xffffffff8006d000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] gdt: lgdt + ltr 0x30 cpu=0 ist1=0xffffffff8008d000 ist2=0xffffffff8006d000
+[INF] gdt: seg reload was cs=8 ds=10 ss=10 -> now cs=8 ss=10
+[INF] idt: lidt base=0xffffffff800aa000 #PF/#GP/#DF/#SS IST=1 timer=0x40 IST=0
+[INF] ====================================================
+[INF] FazAttrhyiz 0.8.0-phase8 — capability hybrid kernel
+[INF] skeleton: capability hybrid (Zircon + L4 IPC + XNU split)
+[INF] mm: no-overcommit + buddy/SLUB + 4-level pressure
+[INF] sched: EEVDF + QoS bands + turnstile
+[INF] obs: trace_id on every IPC (day-0, not bolted on)
+[INF] proc: posix_spawn first-class, fork is compat-only
+[INF] fs: COW volume (APFS + Btrfs csum + XFS AG + ReFS scrub)
+[INF] io: irq split + uring + blk-mq + user-mode drivers
+[INF] net: in-kernel + XDP/eBPF (kill-switch) + nft
+[INF] sec: cap + Seatbelt + SIP + one-shot authz + signing
+[INF] virt: Type-1 KVM + job/cgroup v2
+[INF] obs: ETW session + hist + cap-gated consume
+[INF] ====================================================
+[INF] mm: commit limit 15401 pages (no-overcommit, reserve 983)
+[INF] mm: watermarks min=256 low=512 high=768 pages
+[INF] mm: commit limit 16425 pages (+1024 backed by swap)
+[INF] anon: 52428 page slots, compressor pool <= 8192 segs, swap 1024 x 4 KiB segs
+[INF] mm: buddy ready, 16384 pages (65536 KiB), max order 11
+[INF] paging: active levels=4 max=5 folded=1
+[INF] paging: mapped kernel virt=ffffffff80000000 phys=1f0dc000 pages=2529
+[INF] paging: mapped heap virt=ffff800000110000 phys=110000 pages=16384
+[INF] lapic: mapped phys=fee00000 -> ffffffff8fee0000 (PCD)
+[INF] probe rsp=ffffffff802c9150 (boot_stack=0xffffffff802a9170) land
+[INF] paging: CR3=4100000 tables=44 mapped=18914 stack=bss (own walker live)
+[INF] paging: KPTI enabled, PGE disabled
+[INF] fb console ready: 1280x800 pitch=5120 bpp=32 text=100x40 font=ASCII-mixed-case serial retained
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ff37000
+[INF] mp: mapped 1 response page(s) on demand at ffff8000000f5000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ffe1000
+[INF] numa: single node0 fallback (SRAT absent/invalid or one domain), existing arena unchanged
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ffe0000
+[INF] acpi poweroff ready: S5=0/0 PM1=604/0
+[INF] irq: top/bottom half ready, 32 lines
+[INF] mp: mapped 1 response page(s) on demand at ffff8000000f5000
+[INF] mp: mapped 2 response page(s) on demand at ffff80001ffe1000
+[INF] ioapic: MADT addr=fec00000 IRQ1 gsi=1
+[INF] ioapic: version=170011
+[INF] ioapic: IRQ1 gsi=1 -> vec 0x41 dest=0
+[INF] ps2: ready set1 IRQ1 echo (bounded i8042 initialization)
+[INF] io: uring SQ/CQ 256 entries, IOCP inflight counter on
+[INF] virtio-blk skipped: no supported PCI device
+[INF] ahci PCI: 0:3.0 ABAR=febb1000
+[INF] ahci SATA disk: port=0
+[INF] ahci ready: sectors=262144 logical=512 DMA=4096 slot=0 polling FLUSH_EXT=1
+[INF] disk install: layout verified backend=2 root_base_lba=2048 ESP separate, root window=8MiB
+[INF] blk root backend: ahci
+[INF] blk: mq 4 queues x qd 32, ramdisk 16384 sectors (raw 64 / swap 8192 / fs 8128)
+[INF] drv: user-mode framework, capability IRQ broker ready
+[INF] cowfs: mounted gen=103 (slot B, other slot valid/older) snaps=0
+[INF] vfs: '/' = cowfs (in-kernel, no IPC hop); snapshots under /.snap
+[INF] ebpf: verifier on, kill-switch available, JIT later
+[INF] udp: lo/NIC datagrams, 16 capability endpoints x 8 queued, max payload=1472
+[INF] tcp pool: slots=32 backlog=8 rx_bytes=16384 slot_bytes=17072 pool_bytes=546304 static-resident commit=0
+[INF] virtio-net skipped: no supported PCI device
+[INF] e1000 PCI: 0:4.0 device=100e BAR0=feb80000 model=8254x
+[INF] net: iface enet0 id=0 addr=a00020f
+[INF] irq rx route: PCI INTx GSI=11 pin=11 vector=0x42 dest=0 level/low
+[INF] e1000 irq rx enabled: INTx line=11 gsi=11 RXDMT0/RXO/RXT0; top=ack+notify
+[INF] e1000 ready: link=up RX/TX=16 legacy DMA=2048 MAC=52:54:0:12:34:56 irq=1
+[INF] e1000 ip: enet0=10.0.2.15/24 gateway=10.0.2.2
+[INF] net primary: enet0 (priority virtio-net > e1000)
+[INF] net: in-kernel stack (XNU lesson), XDP + nft
+[INF] sip: mask=f cr4=20
+[INF] mitigations=0 SMEP=0 SMAP=0 KPTI=0 kpti_configured=1 kaslr=unimplemented kaslr_slide=0
+[INF] mitigations: KPTI awaiting actual ring3 shadow/full CR3 verification (hosted has no hardware entry)
+[INF] sec: cap deny-by-default + Seatbelt + SIP + one-shot authz + sign
+[INF] virt: Type-1 KVM + VFIO/SR-IOV stubs, job/cgroup v2 ready
+[INF] lapic: cpuid1 edx.apic=1 ecx.tsc_deadline=1
+[INF] lapic: tsc_freq=3187467942 Hz (3187 MHz, src=pit-median)
+[INF] lapic: TSC-deadline tick_tsc=3187467 (target 1000000 ns), armed after sti
+[INF] lapic: BSP tsc-deadline=1 calib_hz=3187467942 target_ns=1000000 initial_count=0
+[INF] lapic: readback lvt(0x320)=40040 dcr(0x3E0)=0
+[INF] probe rsp=ffffffff802c9140 (boot_stack=0xffffffff802a9170) after_paging
+[INF] fault: installed error-code stubs for 8,10,11,12,13,14,17 (IST=1)
+[INF] smp: probe enter cpu_id=0
+[INF] mp: response=0xffff80001ff4d000 max_ids=8
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ff4d000
+[INF] mp: revision=0 flags=0 bsp=0 cpu_count=4 cpus=0xffff80001ff4c000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ff4c000
+[INF] mp: mapped 1 response page(s) on demand at ffff80001ff61000
+[INF] mp:   [0] info=0xffff80001ff61000 lapic_id=0
+[INF] mp:   [1] info=0xffff80001ff61020 lapic_id=1
+[INF] mp:   [2] info=0xffff80001ff61040 lapic_id=2
+[INF] mp:   [3] info=0xffff80001ff61060 lapic_id=3
+[INF] smp: cm_limine_mp rc=0 n=4 bsp=0
+[INF] smp: cpu_count=4 bsp_lapic_id=0 (this cpu=0, index=0)
+[INF] smp:   cpu[0] lapic_id=0 (BSP)
+[INF] smp:   cpu[1] lapic_id=1
+[INF] smp:   cpu[2] lapic_id=2
+[INF] smp:   cpu[3] lapic_id=3
+[INF] numa: node=0 domain=0 cpu_mask=f total=16384 free=13754
+[INF] numa: distance node0->node0=10
+[INF] gdt: lgdt + ltr 0x30 cpu=1 ist1=0xffffffff80091000 ist2=0xffffffff80071000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=1 timer armed tsc-deadline=1 calib_hz=3187467942 initial_count=0
+[INF] ap: cpu=1 lapic_id=1 up on stack 0xffffffff802d1270
+[INF] gdt: lgdt + ltr 0x30 cpu=2 ist1=0xffffffff80095000 ist2=0xffffffff80075000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=2 timer armed tsc-deadline=1 calib_hz=3187467942 initial_count=0
+[INF] ap: cpu=2 lapic_id=2 up on stack 0xffffffff802d5270
+[INF] gdt: lgdt + ltr 0x30 cpu=3 ist1=0xffffffff80099000 ist2=0xffffffff80079000
+[INF] gdt: seg reload was cs=28 ds=30 ss=30 -> now cs=8 ss=10
+[INF] paging: KPTI enabled, PGE disabled
+[INF] ap: cpu=3 timer armed tsc-deadline=1 calib_hz=3187467942 initial_count=0
+[INF] ap: cpu=3 lapic_id=3 up on stack 0xffffffff802d9270
+[INF] smp: started 3 AP(s), online=4/4
+[INF] fault: installed error-code stubs for 8,10,11,12,13,14,17 (IST=1)
+[INF] idt[64]: off=ffffffff8006613e sel=8 ist=0 type=8e present=1
+[INF] idt[64]: timer stub is MATCHED (cm_timer_stub=ffffffff8006613e)
+[INF] probe rsp=ffffffff802c9130 (boot_stack=0xffffffff802a9170) pre-sti
+[INF] lapic: pre-sti lvt=40040 id=0 svr=1ff
+[INF] lapic: armed dl=597489d3 tsc=5944014c (dl>tsc=1)
+[INF] irq: after bare-spin IF=1 firings=52 ticks=4 ccr=0
+[INF] timer: tick=1 tsc=597ac38d (baseline, no delta yet)
+[INF] timer: tick=2 tsc=59ab77e7 delta_tsc=3191898 (~1001 us, target 1000 us)
+[INF] timer: tick=3 tsc=59dc2a66 delta_tsc=3191423 (~1001 us, target 1000 us)
+[INF] timer: tick=4 tsc=5a0cdc2f delta_tsc=3191241 (~1001 us, target 1000 us)
+[INF] timer: tick=5 tsc=5a5d997a delta_tsc=5291339 (~1660 us, target 1000 us)
+[INF] elf load: path=/sbin/init.faz ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=1 path=/sbin/init.faz ELF entry=400000 full=14c000 shadow=159000
+[INF] disk install: system ELF provisioning synced; root=disk base_lba=2048 ready
+[INF] linux persona: compiled=1 enabled=0 product default=off native files retained
+[INF] init: kernel bootstrap -> /sbin/init.faz PID1 (user ELF)
+[INF] net bg RX started: scheduler thread tid=2 budget=16/interface IRQ=e1000/virtio-net-if-routed; idle=BLOCKED timer=10ms watchdog=100ms
+[INF] usermode: EFER.SCE LSTAR=0xffffffff80066232 STAR user=0x18 kernel=0x08
+[INF] exec ring3: pid=1 entry=400000 rsp=7fff90 cpu=0
+init ELF: pid=1 CPL=3
+[INF] cowfs: mounted gen=103 (slot B, other slot valid/older) snaps=0
+[INF] user init: root mount finalized backend=ahci
+[INF] dhcp enet0 discover: UDP 68->67 broadcast timeout_ms=3000
+[INF] net irq rx active: if=enet0 hardware=1 notified-frame=1
+[INF] dhcp enet0 offer/request: offered=0xa00020f server=0xa000202 attempt=1
+[INF] dhcp enet0 ack: ip=10.0.2.15 mask=0xffffff00 gateway=0xa000202 server=0xa000202 lease=86400 seconds renew=unimplemented expire=not-scheduled
+init: FazAttrhyiz product root=disk backend=ahci nic=enet0/up
+[INF] elf load: path=/bin/shell.faz ET_EXEC entry=400000 PT_LOAD=2 pages=7 BSS zeroed
+[INF] exec spawn: pid=2 path=/bin/shell.faz ELF entry=400000 full=149000 shadow=17a000
+[INF] user spawn: parent=1 child=2 cpu=0 child-cap=4
+init: shell pid=2 user ELF launched
+[INF] exec ring3: pid=2 entry=400000 rsp=7fff90 cpu=0
+shell ELF ready: CPL=3 PS/2 -> user shell -> FB+serial
+
+[SHELL v=1 event=ready seq=1 status=0]
+fazattrhyiz> cat /journey-native.txt
+[SHELL v=1 event=begin seq=1 status=0]
+journey-native
+
+
+[SHELL v=1 event=end seq=1 status=0]
+
+[SHELL v=1 event=ready seq=2 status=0]
+fazattrhyiz> cat /journey-python.txt
+[SHELL v=1 event=begin seq=2 status=0]
+micropython golden
+42
+
+
+[SHELL v=1 event=end seq=2 status=0]
+
+[SHELL v=1 event=ready seq=3 status=0]
+fazattrhyiz> micropython /data/linux/micropython-demo.py
+[SHELL v=1 event=begin seq=3 status=0]
+[INF] linux persona disabled: static Linux ELF refused; native ABI unchanged
+
+[SHELL v=1 event=end seq=3 status=-7]
+shell error=-7
+
+[SHELL v=1 event=ready seq=4 status=0]
+fazattrhyiz> hello
+[SHELL v=1 event=begin seq=4 status=0]
+[INF] elf load: path=/bin/hello.faz ET_EXEC entry=400000 PT_LOAD=2 pages=6 BSS zeroed
+[INF] exec spawn: pid=3 path=/bin/hello.faz ELF entry=400000 full=188000 shadow=195000
+[INF] user spawn: parent=2 child=3 cpu=0 child-cap=4
+shell run: pid=3 cpu=0
+[INF] exec ring3: pid=3 entry=400000 rsp=7fff90 cpu=0
+[INF] user[3]: hello from elf
+[INF] sys: exit pid=3 code=0
+[INF] exec exit: pid=3 code=0 writes=1 bytes=15 timer_entries=29
+[INF] elf preempt: pid=3 preempts=29 run_ticks=30 cpu=0
+[INF] exec reap: pid=3 image/pages/commit reclaimed entry-stack inactive
+[INF] exec record reap: pid=3 task/entry-stack slot recycled
+shell child done: pid=3 exit=0 reap=ok
+
+[SHELL v=1 event=end seq=4 status=0]
+
+[SHELL v=1 event=ready seq=5 status=0]
+fazattrhyiz> poweroff
+[SHELL v=1 event=begin seq=5 status=0]
+[INF] user poweroff: capability authorized root sync=0
+[INF] poweroff: ACPI S5 request

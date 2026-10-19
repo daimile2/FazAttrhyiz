@@ -16,6 +16,7 @@ p.add_argument('--backend',choices=['qemu','vbox'],required=True)
 p.add_argument('--lab',type=Path,required=True)
 p.add_argument('--port',type=int,default=18080)
 p.add_argument('--scenario',choices=['journey','console-case'],default='journey')
+p.add_argument('--copy-safety',action='store_true',help='verify binary cat copies across cold boots')
 a=p.parse_args();lab=a.lab.resolve();disk=lab/'system.img'
 assert (lab/'.capmix-user-journey').is_file() and disk.is_file(), 'prepare a disposable lab first'
 assert 1024<=a.port<=65535
@@ -71,7 +72,7 @@ def boot(stage):
 
 def send(command,enter=True):
     if a.backend=='qemu':
-        keys={' ':'spc','/':'slash','.':'dot','-':'minus','>':'shift-dot','&':'shift-7'}
+        keys={' ':'spc','/':'slash','.':'dot','-':'minus','>':'shift-dot','<':'shift-comma','&':'shift-7'}
         for c in command+('\n' if enter else ''):
             key='ret' if c=='\n' else ('shift-'+c.lower() if c.isupper() else keys.get(c,c))
             monitor.sendall(('sendkey '+key+' 8\n').encode());time.sleep(.035)
@@ -82,7 +83,7 @@ def send(command,enter=True):
             '02 03 04 05 06 07 08 09 0a 0b 10 11 12 13 14 15 16 17 18 19 1e 1f 20 21 22 23 24 25 26 2c 2d 2e 2f 30 31 32'.split())}
         codes.update({' ':0x39,'/':0x35,'.':0x34,'-':0x0c,'\n':0x1c})
         for c in command+('\n' if enter else ''):
-            shift=c in '>&' or c.isupper();key=0x34 if c=='>' else 0x08 if c=='&' else codes[c.lower()]
+            shift=c in '<>&' or c.isupper();key=0x34 if c=='>' else 0x33 if c=='<' else 0x08 if c=='&' else codes[c.lower()]
             seq=([0x2a] if shift else [])+[key,key|0x80]+([0xaa] if shift else [])
             call('VBoxManage','controlvm',vm,'keyboardputscancode',*[f'{n:02x}' for n in seq])
             time.sleep(.025)
@@ -152,10 +153,10 @@ try:
         for stage in ('case-first','case-second'):
             boot(stage)
             assert 'FazAttrhyiz' in text() and '/sbin/init.faz' in text()
-            command('run /bin/hello.faz','exit=0 reap=ok')
-            command('run /bin/cat.faz /example.txt','exit=0 reap=ok')
+            command('hello','exit=0 reap=ok')
+            command('cat /example.txt','persistent root ready')
             command('run /bin/hello.elf','exit=0 reap=ok')
-            command('run /bin/httpd.faz 8080 1 &','httpd listening')
+            command('httpd 8080 1 &','httpd listening')
             reply=call('python3',ROOT/'tests/check_httpd.py','--port',a.port,'--requests','1')
             (lab/(stage+'-http-client.log')).write_text(reply)
             wait('httpd handled=1')
@@ -199,34 +200,60 @@ try:
         (lab/'journey-result.log').write_text(result);print(result,end='')
     else:
         boot('native')
-        command('help','help | > >> <')
-        assert 'hello from elf' in command('run /bin/hello.elf','exit=0 reap=ok')
+        command('help','COMMAND [ARGS]')
+        if a.copy_safety:
+            command('nc 10.0.2.2 9998','use run -i /bin/nc.faz HOST PORT',status=-7)
+            command('cat /bin/shell.faz','terminal preview limited',status=-6)
+            command('cat /bin/shell.faz > /copy-direct.faz','shell redirect committed: status=0')
+            command('cat < /bin/shell.faz > /copy-stdin.faz','shell redirect committed: status=0')
+            command('run /bin/cat.faz /bin/shell.faz > /copy-external.faz','shell redirect committed: status=0')
+        assert 'hello from elf' in command('hello','exit=0 reap=ok')
+        command('run /bin/hello.faz','exit=0 reap=ok')
+        command('missing-journey-command','shell error=-12',status=-12)
+        command('poweroff > /short-guard.txt','shell error=-7',status=-7)
+        command('cat /short-guard.txt','shell error=-12',status=-12)
+        command('hello > /short-output.txt','shell redirect committed: status=0')
+        command('cat /short-output.txt','hello from elf')
         command('echo journey-native > /journey-native.txt','shell redirect committed: status=0')
         stop('native')
+        if a.copy_safety:
+            call('make','build/copy-verify.faz')
+            blob=lab/'copy-input.bin';blob.write_bytes(bytes(range(256))*256)
+            for source,dest in ((ROOT/'build/copy-verify.faz','/bin/copy-verify.faz'),(blob,'/copy-input.bin')):
+                call('python3',ROOT/'scripts/copy-to-disk.py',disk,source,dest)
         (lab/'journey-enable.log').write_text(call('python3',ROOT/'scripts/linux_package.py','enable',disk))
         boot('linux')
-        assert 'journey-native' in command('run /bin/cat.elf /journey-native.txt','exit=0 reap=ok')
+        if a.copy_safety:
+            r=command('run /bin/copy-verify.faz /bin/shell.faz /copy-direct.faz /copy-stdin.faz /copy-external.faz','exit=0 reap=ok')
+            assert r.count('copy integrity verified bytes')==3
+            command('cat /copy-input.bin > /blob-builtin.bin','shell redirect committed: status=0')
+            command('run /bin/cat.faz /copy-input.bin > /blob-external.bin','shell redirect committed: status=0')
+        assert 'journey-native' in command('cat /journey-native.txt','journey-native')
         # SMP shell status writes may interleave with direct stdout. Verify exit
         # here, then verify the complete output through the existing FILE path.
-        command('run /bin/micropython.elf /data/linux/micropython-demo.py','exit=0 reap=ok')
-        command('run /bin/micropython.elf /data/linux/micropython-demo.py > /journey-python.txt','shell redirect committed: status=0')
-        assert 'micropython golden\n42\n' in command('run /bin/cat.elf /journey-python.txt','exit=0 reap=ok')
-        command('run /bin/httpd.elf 8080 2 &','httpd listening')
+        command('micropython /data/linux/micropython-demo.py','exit=0 reap=ok')
+        command('micropython /data/linux/micropython-demo.py > /journey-python.txt','shell redirect committed: status=0')
+        assert 'micropython golden\n42\n' in command('cat /journey-python.txt','micropython golden')
+        command('httpd 8080 2 &','httpd listening')
         # The full host payload/EOF checker proves wire traffic, not just link-up.
         result=subprocess.run(['python3',str(ROOT/'tests/check_httpd.py'),'--port',str(a.port),'--requests','2'],
             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
         (lab/'journey-http-client.log').write_text(result.stdout)
         result.check_returncode()
         wait('httpd handled=2')
-        command('run /bin/hello.elf','exit=0 reap=ok')
+        command('hello','exit=0 reap=ok')
         stop('linux')
         (lab/'journey-disable.log').write_text(call('python3',ROOT/'scripts/linux_package.py','disable',disk))
         boot('disabled')
-        assert 'journey-native' in command('run /bin/cat.elf /journey-native.txt','exit=0 reap=ok')
-        assert 'micropython golden\n42\n' in command('run /bin/cat.elf /journey-python.txt','exit=0 reap=ok')
-        s=command('run /bin/micropython.elf /data/linux/micropython-demo.py','shell error=-7',status=-7)
+        if a.copy_safety:
+            r=command('run /bin/copy-verify.faz /copy-input.bin /blob-builtin.bin /blob-external.bin','exit=0 reap=ok')
+            assert r.count('copy integrity verified bytes=65536')==2
+            print('binary cat copy: PASS 3 ELF copies + 2 all-byte 65536B copies, cold-boot verified',flush=True)
+        assert 'journey-native' in command('cat /journey-native.txt','journey-native')
+        assert 'micropython golden\n42\n' in command('cat /journey-python.txt','micropython golden')
+        s=command('micropython /data/linux/micropython-demo.py','shell error=-7',status=-7)
         assert 'linux persona disabled' in s
-        command('run /bin/hello.elf','exit=0 reap=ok')
+        command('hello','exit=0 reap=ok')
         stop('disabled')
         result=f'user journey {a.backend}: PASS (3 cold boots, no ISO, native -> offline Linux -> MicroPython -> native HTTP200 -> disabled/native retained)\n'
         (lab/'journey-result.log').write_text(result);print(result,end='')
